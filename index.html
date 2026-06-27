@@ -6,6 +6,7 @@
 <title>Suivi Mémoires — Jain Loic</title>
 <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:Inter,system-ui,sans-serif;background:#0D1117}
@@ -50,6 +51,53 @@ const RESSOURCES=[
   {id:"r3",label:"Faire une bibliographie",icon:"📚",contenu:"Norme APA :\n\nLivre : Auteur, A. (Année). Titre. Éditeur.\nArticle : Auteur, A. (Année). Titre. Revue, vol(n), pages.\nSite : Auteur. (Année). Titre. Consulté le JJ/MM/AAAA sur https://...\n\nMinimum 10 références."},
   {id:"r4",label:"Préparer la soutenance",icon:"🎓",contenu:"• Durée : 10 à 15 minutes\n• Structure : sujet - cheminement - résultats - apports\n• Questions fréquentes : Pourquoi ce sujet ? Comment as-tu choisi tes concepts ?\n• Entraîne-toi à voix haute plusieurs fois"}
 ];
+
+const ZOOM_LINK="https://u-paris.zoom.us/j/8813251138?pwd=WFpwcHJQZlVJSkpnQXNHVmp3TkxHUT09";
+const ZOOM_CODE="123456";
+
+const GRILLE_NR=[
+  {capacite:"Présenter la/les situation(s) d'appel",criteres:["La situation est décrite de façon pertinente, précise, objective","Le choix est argumenté en regard de l'intérêt professionnel","Une question de départ est formulée"],points:5},
+  {capacite:"Proposer des références théoriques et/ou conceptuelles",criteres:["La question de départ est explorée en référence à différents champs disciplinaires","Les notions et concepts sont repérés et pertinents","La recension des écrits est effective et actualisée","Les références sont argumentées, cohérentes, pertinentes, fiables","Les auteurs sont cités"],points:6},
+  {capacite:"Choisir la/les méthode(s) d'exploration",criteres:["La méthode envisagée pour l'enquête exploratoire est décrite, cohérente, pertinente"],points:3},
+  {capacite:"Présenter par écrit une note de recherche",criteres:["La présentation est structurée et compréhensible","Vocabulaire précis et professionnel","Orthographe, ponctuation, syntaxe correctes","Bibliographie conforme aux normes","Consignes respectées (4 à 5 pages)"],points:6},
+];
+const GRILLE_MFE_ECRIT=[
+  {capacite:"Construire un cadre de références",criteres:["Références théoriques cohérentes, pertinentes, suffisantes","Définitions scientifiques","Références utilisées pour comprendre les relations entre éléments"],points:4},
+  {capacite:"Analyser des données",criteres:["Méthode d'enquête exploratoire argumentée et cohérente","Résultats fiables et utiles","Cadre de références et résultats confrontés","Raisonnement logique et objectif"],points:5},
+  {capacite:"Construire une problématique",criteres:["Cheminement de la réflexion repérable","Aboutit à une question de recherche (et hypothèse si pertinent)","Question de recherche cohérente et précise"],points:3},
+  {capacite:"Conclure le travail",criteres:["Conclusion en lien avec l'ensemble du travail","Ouvre sur la recherche ultérieure","Témoigne de l'implication en tant que futur professionnel","Met en évidence l'intérêt pour la qualité des soins"],points:3},
+  {capacite:"Présenter un document écrit",criteres:["Consignes de présentation respectées","Liens entre les parties effectifs","Orthographe, ponctuation, syntaxe correctes","Vocabulaire précis et professionnel","Bibliographie pertinente, actualisée, conforme","Annexes utiles, ordonnées, référencées"],points:4},
+  {capacite:"Rédiger un abstract",criteres:["Reprend les éléments principaux de façon claire, précise, concise","Mots clés identifiés"],points:1},
+];
+const GRILLE_MFE_ORAL=[
+  {capacite:"Présenter oralement le travail",criteres:["Exposé structuré, compréhensible, enrichi d'une analyse critique","Respecte le temps imparti (10 min)","Cheminement de la réflexion explicité"],points:7},
+  {capacite:"Argumenter le travail",criteres:["Argumentation pertinente","La controverse est acceptée","Implication dans les échanges effective","Positionnement professionnel exprimé"],points:10},
+  {capacite:"S'exprimer oralement",criteres:["Vocabulaire précis et professionnel","Elocution claire et aisée"],points:3},
+];
+const GUIDE_ARS=[
+  {titre:"Finalité du mémoire",contenu:"Le mémoire contribue aux compétences 7 et 8 :\n• Analyser la qualité des soins et ameliorer sa pratique\n• Rechercher et traiter des données professionnelles et scientifiques\n\nIl s'agit d'un travail réflexif, méthodique et rigoureux à partir d'une situation clinique vécue."},
+  {titre:"La note de recherche (UE 3.4.S6 - 2 ECTS)",contenu:"4 à 5 pages. Doit comporter :\n• Description de la situation d'appel\n• Exploration de la situation et intérêt professionnel\n• Question de départ\n• Notions et/ou concepts choisis\n• Recension des écrits\n• Références théoriques\n• Méthode d'enquête envisagée\n\nNote sur 20 points."},
+  {titre:"Le mémoire de fin d'études (UE 5.6.S6 - 8 ECTS)",contenu:"25 à 30 pages hors annexes. Doit comporter :\n• Description de la situation d'appel\n• Exploration de la situation et intérêt professionnel\n• Question de départ\n• La problématique\n• Le cadre de références\n• L'enquête exploratoire\n• La question de recherche (et hypothèse si pertinent)\n• La bibliographie\n\nNote écrit /20 + soutenance /20 = total /40 ramené à /20."},
+  {titre:"La soutenance orale",contenu:"• L'étudiant présente son travail pendant 10 minutes\n• Echanges avec le jury : 45 minutes maximum\n• Jury : directeur de mémoire + personne qualifiée extérieure\n• Les deux évaluateurs s'accordent avant la soutenance sur la note de l'écrit\n• La soutenance peut être publique\n• Date communiquée au moins 1 semaine avant"},
+  {titre:"Consignes de présentation",contenu:"• Format A4, recto uniquement\n• Marges : 3 cm haut/bas/gauche, 2 cm droite\n• Police : Times New Roman ou Arial, taille 12\n• Interligne 1,5, alignement justifié\n• Paginé en chiffres arabes (25-30 pages)\n• Citations en italique entre guillemets\n• Résumé (abstract) en français et anglais en 4e de couverture\n• 5 mots clés maximum"},
+  {titre:"Bibliographie - Norme ISO 690",contenu:"Livre :\nAUTEUR (MAJUSCULE), Prénom. Titre en italique. Ville : Editeur, année.\n\nArticle :\nAUTEUR, Prénom. Titre article. Titre revue. Année, vol., n°, pages.\n\nSite internet :\nAUTEUR. Titre [en ligne]. [Consulté le JJ/MM/AAAA]. Disponible : URL\n\nMinimum 10 références, de préférence moins de 10 ans."},
+];
+
+// EmailJS configuration
+const EJS_SERVICE="service_kaqyuwv";
+const EJS_TEMPLATE="template_qlyy59l";
+const EJS_KEY="3-vR92lSwgE2qExz4";
+emailjs.init(EJS_KEY);
+
+function envoyerNotification(esiPrenom, avancement){
+  emailjs.send(EJS_SERVICE, EJS_TEMPLATE, {
+    student_name: esiPrenom,
+    document_name: "Analyse IA",
+    date: new Date().toLocaleDateString("fr-FR", {day:"numeric",month:"long",year:"numeric",hour:"2-digit",minute:"2-digit"}),
+    avancement: avancement+"%",
+    name: "Suivi Mémoires"
+  }).catch(function(){});
+}
 
 const SK="jain-loic-v2";
 function initESI(){return ESI_DEFAUT.map(function(e){return Object.assign({},e,{etapes:{},commentaires:[],documents:[],retours:[],visio:"",prochainRdv:"",derniereMAJ:null});});}
@@ -107,6 +155,7 @@ function AnalyseIA(props){
   function sauvegarder(){
     if(!res)return;
     onRetour(Object.assign({id:uid(),date:new Date().toISOString()},res));
+    envoyerNotification(esi.prenom, res.avancement);
     setRes(null);setTxt("");
   }
 
@@ -286,7 +335,7 @@ function EsiApp(props){
   if(!data)return null;
   var p=pct(data.etapes);
   var dr=(data.retours||[]).slice(-1)[0];
-  var tabs=[{id:"accueil",l:"🏠 Accueil"},{id:"etapes",l:"📊 Avancement"},{id:"retours",l:"💬 Retours"+((data.retours||[]).length>0?" ("+(data.retours||[]).length+")":"")},{id:"docs",l:"📎 Docs"+((data.documents||[]).length>0?" ("+(data.documents||[]).length+")":"")},{id:"methodo",l:"📚 Méthodo"}];
+  var tabs=[{id:"accueil",l:"🏠 Accueil"},{id:"etapes",l:"📊 Avancement"},{id:"retours",l:"💬 Retours"+((data.retours||[]).length>0?" ("+(data.retours||[]).length+")":"")},{id:"docs",l:"📎 Docs"+((data.documents||[]).length>0?" ("+(data.documents||[]).length+")":"")},{id:"methodo",l:"📚 Méthodo"},{id:"grilles",l:"📋 Grilles"},{id:"visio",l:"🎥 Visio"}];
 
   return h("div",{style:{background:C2.bg,minHeight:"100vh",display:"flex",flexDirection:"column",color:C2.text}},
     h("div",{style:{background:C2.panel,borderBottom:"1px solid "+C2.border,padding:"12px 20px",display:"flex",alignItems:"center",gap:12,flexWrap:"wrap"}},
@@ -366,14 +415,49 @@ function EsiApp(props){
       tab==="methodo"&&h("div",null,
         h("h2",{style:{color:C2.text,fontSize:16,fontWeight:800,marginBottom:4}},"Guide méthodologique"),
         h("p",{style:{color:C2.muted,fontSize:13,marginBottom:20}},"Tout ce qu'il faut pour réussir ton mémoire"),
-        RESSOURCES.map(function(r){return h("div",{key:r.id,style:{background:C2.panel,borderRadius:14,marginBottom:12,overflow:"hidden"}},
-          h("button",{onClick:function(){setRo(ro===r.id?null:r.id);},style:{width:"100%",background:"transparent",border:"none",color:C2.text,padding:"16px 20px",cursor:"pointer",display:"flex",alignItems:"center",gap:12,textAlign:"left"}},
+        GUIDE_ARS.concat(RESSOURCES).map(function(r){return h("div",{key:r.id||r.titre,style:{background:C2.panel,borderRadius:14,marginBottom:12,overflow:"hidden"}},
+          h("button",{onClick:function(){setRo((ro===r.id||ro===r.titre)?null:(r.id||r.titre));},style:{width:"100%",background:"transparent",border:"none",color:C2.text,padding:"16px 20px",cursor:"pointer",display:"flex",alignItems:"center",gap:12,textAlign:"left"}},
             h("span",{style:{fontSize:22}},r.icon),
-            h("span",{style:{flex:1,fontWeight:700,fontSize:14}},r.label),
+            h("span",{style:{flex:1,fontWeight:700,fontSize:14}},r.label||r.titre),
             h("span",{style:{color:C2.muted,fontSize:20,transform:ro===r.id?"rotate(90deg)":"none",transition:"transform .2s",display:"inline-block"}},"›")),
-          ro===r.id&&h("div",{style:{padding:"0 20px 20px",color:C2.muted,fontSize:13,lineHeight:1.9,whiteSpace:"pre-line",borderTop:"1px solid "+C2.border,paddingTop:16}},r.contenu));}))
+          (ro===r.id||ro===r.titre)&&h("div",{style:{padding:"0 20px 20px",color:C2.muted,fontSize:13,lineHeight:1.9,whiteSpace:"pre-line",borderTop:"1px solid "+C2.border,paddingTop:16}},r.contenu||""));}))
     ));
 }
+      ,tab==="grilles"&&h("div",null,
+        h("h2",{style:{color:C2.text,fontSize:16,fontWeight:800,marginBottom:4}},"Grilles d'evaluation"),
+        h("p",{style:{color:C2.muted,fontSize:13,marginBottom:20}},"Criteres officiels IFSI Beaujon - ARS Ile-de-France"),
+        h("div",{style:{background:C2.amberDim,border:"1px solid "+C2.amber+"44",borderRadius:10,padding:"12px 16px",marginBottom:20,fontSize:13,color:C2.amber}},
+          "📋 UE 3.4.S6 - Note de recherche : ",h("strong",null,"20 points")," | ",
+          "📝 UE 5.6.S6 - Mémoire écrit : ",h("strong",null,"20 points")," + Soutenance : ",h("strong",null,"20 points")," = Total : ",h("strong",null,"40 pts ramené à /20")),
+        h("h3",{style:{color:C2.accent,fontSize:14,fontWeight:700,marginBottom:12}},"Grille UE 3.4.S6 - Note de recherche"),
+        GRILLE_NR.map(function(g,i){return h("div",{key:i,style:{background:C2.panel,borderRadius:12,padding:14,marginBottom:10}},
+          h("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}},
+            h("div",{style:{color:C2.text,fontWeight:700,fontSize:13,flex:1}},g.capacite),
+            h("span",{style:{color:C2.green,fontWeight:800,fontSize:13,background:C2.greenDim,borderRadius:99,padding:"2px 10px"}},"/"+g.points+" pts")),
+          h("div",null,g.criteres.map(function(c,j){return h("div",{key:j,style:{color:C2.muted,fontSize:12,marginBottom:3}},"• "+c);})));}),
+        h("h3",{style:{color:C2.accent,fontSize:14,fontWeight:700,margin:"20px 0 12px"}},"Grille UE 5.6.S6 - Mémoire écrit (/20)"),
+        GRILLE_MFE_ECRIT.map(function(g,i){return h("div",{key:i,style:{background:C2.panel,borderRadius:12,padding:14,marginBottom:10}},
+          h("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}},
+            h("div",{style:{color:C2.text,fontWeight:700,fontSize:13,flex:1}},g.capacite),
+            h("span",{style:{color:C2.green,fontWeight:800,fontSize:13,background:C2.greenDim,borderRadius:99,padding:"2px 10px"}},"/"+g.points+" pts")),
+          h("div",null,g.criteres.map(function(c,j){return h("div",{key:j,style:{color:C2.muted,fontSize:12,marginBottom:3}},"• "+c);})));}),
+        h("h3",{style:{color:C2.accent,fontSize:14,fontWeight:700,margin:"20px 0 12px"}},"Grille UE 5.6.S6 - Soutenance orale (/20)"),
+        GRILLE_MFE_ORAL.map(function(g,i){return h("div",{key:i,style:{background:C2.panel,borderRadius:12,padding:14,marginBottom:10}},
+          h("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}},
+            h("div",{style:{color:C2.text,fontWeight:700,fontSize:13,flex:1}},g.capacite),
+            h("span",{style:{color:C2.green,fontWeight:800,fontSize:13,background:C2.greenDim,borderRadius:99,padding:"2px 10px"}},"/"+g.points+" pts")),
+          h("div",null,g.criteres.map(function(c,j){return h("div",{key:j,style:{color:C2.muted,fontSize:12,marginBottom:3}},"• "+c);})));}))
+      ,tab==="visio"&&h("div",null,
+        h("h2",{style:{color:C2.text,fontSize:16,fontWeight:800,marginBottom:4}},"Rejoindre la visio"),
+        h("p",{style:{color:C2.muted,fontSize:13,marginBottom:24}},"Rendez-vous en ligne avec ton directeur de memoire"),
+        h("div",{style:{background:C2.panel,borderRadius:16,padding:28,textAlign:"center",marginBottom:20}},
+          h("div",{style:{fontSize:48,marginBottom:16}},"🎥"),
+          h("div",{style:{color:C2.text,fontWeight:700,fontSize:16,marginBottom:8}},"Zoom - Jain Loic"),
+          h("div",{style:{color:C2.muted,fontSize:13,marginBottom:6}},"Code secret : ",h("strong",{style:{color:C2.amber}},ZOOM_CODE)),
+          h("a",{href:ZOOM_LINK,target:"_blank",rel:"noopener noreferrer",style:{display:"inline-block",marginTop:16,background:C2.accent,color:"#fff",borderRadius:12,padding:"14px 32px",fontWeight:700,fontSize:16,textDecoration:"none"}},"🎥 Rejoindre la visio Zoom"),
+          h("div",{style:{color:C2.subtle,fontSize:12,marginTop:16}},"Clique sur le bouton pour rejoindre. Code secret : "+ZOOM_CODE)),
+        h("div",{style:{background:C2.amberDim,border:"1px solid "+C2.amber+"44",borderRadius:12,padding:16,fontSize:13,color:C2.amber}},
+          "💡 Assure-toi d'etre dans un endroit calme et d'avoir ton travail sous la main avant la visio."))
 
 function Main(){
   var _s1=useState(null),mode=_s1[0],setMode=_s1[1];
@@ -388,4 +472,3 @@ ReactDOM.createRoot(document.getElementById("root")).render(h(Main,null));
 </script>
 </body>
 </html>
-
