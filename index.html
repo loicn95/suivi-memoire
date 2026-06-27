@@ -589,15 +589,32 @@ function DeadlineView(props){
 
 // ---- NOTIFICATIONS BADGE ----
 function useNotifs(esiId){
-  var _s1=useState(0),count=_s1[0],setCount=_s1[1];
+  var _s1=useState(0),countMsg=_s1[0],setCountMsg=_s1[1];
+  var _s2=useState(0),countRetours=_s2[0],setCountRetours=_s2[1];
+  var _s3=useState(0),countDocs=_s3[0],setCountDocs=_s3[1];
+
   useEffect(function(){
     if(!esiId)return;
+    // Messages non lus
     fbLire("messages/"+esiId,function(data){
-      if(!data)return setCount(0);
+      if(!data)return setCountMsg(0);
       var nonLus=Object.values(data).filter(function(m){return m.auteur==="dir"&&!m.lu;}).length;
-      setCount(function(prev){return prev!==nonLus?nonLus:prev;});
+      setCountMsg(nonLus);
+    });
+    // Retours et docs non vus (basé sur lastSeen)
+    fbLire("lastSeen/"+esiId,function(lastSeenData){
+      var lastRetour=lastSeenData&&lastSeenData.retours?new Date(lastSeenData.retours):new Date(0);
+      var lastDoc=lastSeenData&&lastSeenData.docs?new Date(lastSeenData.docs):new Date(0);
+      fbLire("esis/"+esiId,function(esiData){
+        if(!esiData)return;
+        var nouveauxRetours=(esiData.retours?Object.values(esiData.retours):[]).filter(function(r){return new Date(r.date)>lastRetour;}).length;
+        var nouveauxDocs=(esiData.documents?Object.values(esiData.documents):[]).filter(function(d){return new Date(d.date)>lastDoc;}).length;
+        setCountRetours(nouveauxRetours);
+        setCountDocs(nouveauxDocs);
+      });
     });
   },[esiId]);
+
   function marquerLus(){
     fbLire("messages/"+esiId,function(data){
       if(!data)return;
@@ -605,9 +622,17 @@ function useNotifs(esiId){
         if(m.auteur==="dir"&&!m.lu) fbEcrire("messages/"+esiId+"/"+m.id+"/lu",true);
       });
     });
-    setCount(0);
+    setCountMsg(0);
   }
-  return {count:count,marquerLus:marquerLus};
+  function marquerRetoursVus(){
+    fbEcrire("lastSeen/"+esiId+"/retours",new Date().toISOString());
+    setCountRetours(0);
+  }
+  function marquerDocsVus(){
+    fbEcrire("lastSeen/"+esiId+"/docs",new Date().toISOString());
+    setCountDocs(0);
+  }
+  return {count:countMsg,countRetours:countRetours,countDocs:countDocs,marquerLus:marquerLus,marquerRetoursVus:marquerRetoursVus,marquerDocsVus:marquerDocsVus};
 }
 
 function Planning(props){
@@ -914,6 +939,61 @@ txt+"\n\n"+
 // ---- JOURNAL DE BORD ----
 var ICONES_TYPE={etape:"✅",retour:"💬",doc:"📎",depot:"📤",rdv:"📅",validation:"✋",default:"📝"};
 
+function useNotifsDir(esiId){
+  var _s1=useState(0),countMsg=_s1[0],setCountMsg=_s1[1];
+  var _s2=useState(0),countDepots=_s2[0],setCountDepots=_s2[1];
+  useEffect(function(){
+    if(!esiId)return;
+    // Messages non lus envoyés par l'ESI
+    fbLire("messages/"+esiId,function(data){
+      if(!data)return setCountMsg(0);
+      setCountMsg(Object.values(data).filter(function(m){return m.auteur==="esi"&&!m.lu;}).length);
+    });
+    // Dépôts ESI non vus
+    fbLire("lastSeen/dir/"+esiId,function(lastSeenData){
+      var lastDepot=lastSeenData&&lastSeenData.docs?new Date(lastSeenData.docs):new Date(0);
+      fbLire("esis/"+esiId,function(esiData){
+        if(!esiData||!esiData.documentsEsi)return setCountDepots(0);
+        var nvx=Object.values(esiData.documentsEsi).filter(function(d){return new Date(d.date)>lastDepot;}).length;
+        setCountDepots(nvx);
+      });
+    });
+  },[esiId]);
+  function marquerMsgLus(){
+    fbLire("messages/"+esiId,function(data){
+      if(!data)return;
+      Object.values(data).forEach(function(m){
+        if(m.auteur==="esi"&&!m.lu) fbEcrire("messages/"+esiId+"/"+m.id+"/lu",true);
+      });
+    });
+    setCountMsg(0);
+  }
+  function marquerDepotsVus(){
+    fbEcrire("lastSeen/dir/"+esiId+"/docs",new Date().toISOString());
+    setCountDepots(0);
+  }
+  return {countMsg:countMsg,countDepots:countDepots,marquerMsgLus:marquerMsgLus,marquerDepotsVus:marquerDepotsVus};
+}
+
+function CarteESISidebar(props){
+  var e=props.e,sel=props.sel,setSel=props.setSel,C=props.C;
+  var pp=pct(e.etapes);
+  var notifs=useNotifsDir(e.id);
+  var totalBadge=notifs.countMsg+notifs.countDepots;
+  return h("div",{onClick:function(){setSel(e.id);},style:{background:e.id===sel?C.accentDim:C.card,border:"1.5px solid "+(e.id===sel?C.accent:C.border),borderRadius:12,padding:"12px 14px",cursor:"pointer",marginBottom:8,position:"relative"}},
+    totalBadge>0&&h("div",{style:{position:"absolute",top:8,right:8,background:C.red,color:"#fff",borderRadius:99,width:18,height:18,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:800}},totalBadge),
+    h("div",{style:{display:"flex",justifyContent:"space-between",marginBottom:6}},
+      h("span",{style:{color:C.text,fontWeight:700,fontSize:13}},e.prenom),
+      h("span",{style:{color:pp===100?C.green:C.accent,fontWeight:800,fontSize:13}},pp+"%")),
+    h("div",{style:{background:C.border,borderRadius:99,height:4,overflow:"hidden"}},
+      h("div",{style:{width:pp+"%",height:"100%",background:pp===100?C.green:C.accent,borderRadius:99}})),
+    h("div",{style:{display:"flex",gap:4,marginTop:6,flexWrap:"wrap"}},
+      notifs.countMsg>0&&h("span",{style:{fontSize:10,color:"#fff",background:C.red,borderRadius:99,padding:"1px 7px",fontWeight:700}},"✉️ "+notifs.countMsg),
+      notifs.countDepots>0&&h("span",{style:{fontSize:10,color:"#fff",background:C.green,borderRadius:99,padding:"1px 7px",fontWeight:700}},"📤 "+notifs.countDepots),
+      futur(e.prochainRdv)&&h("span",{style:{fontSize:10,color:C.amber,background:C.amberDim,borderRadius:99,padding:"1px 7px",fontWeight:700}},"📅 RDV"),
+      (Object.values(e.etapesEsi||{}).filter(function(v){return v==="demande";}).length>0)&&h("span",{style:{fontSize:10,color:C.amber,background:C.amberDim,borderRadius:99,padding:"1px 7px",fontWeight:700}},"✋ À valider")));
+}
+
 function JournalESI(props){
   var esiId=props.esiId,esiPrenom=props.esiPrenom,C=props.c;
   var _s1=useState([]),entries=_s1[0],setEntries=_s1[1];
@@ -1013,6 +1093,7 @@ function Directeur(props){
 
   var esi=esis.find(function(e){return e.id===sel;});
   useEffect(function(){if(esi){setEv(esi.visio||"");setEr(esi.prochainRdv||"");};},[sel,esis]);
+  var notifsDir=useNotifsDir(sel);
 
   // Mise à jour Firebase + state local
   function up(u){
@@ -1204,16 +1285,7 @@ function Directeur(props){
       h("div",{style:{width:250,minWidth:250,background:C.panel,borderRight:"1px solid "+C.border,overflowY:"auto",padding:"12px 8px"}},
         esis.map(function(e){
           var pp=pct(e.etapes);
-          return h("div",{key:e.id,onClick:function(){setSel(e.id);},style:{background:e.id===sel?C.accentDim:C.card,border:"1.5px solid "+(e.id===sel?C.accent:C.border),borderRadius:12,padding:"12px 14px",cursor:"pointer",marginBottom:8}},
-            h("div",{style:{display:"flex",justifyContent:"space-between",marginBottom:6}},
-              h("span",{style:{color:C.text,fontWeight:700,fontSize:13}},e.prenom),
-              h("span",{style:{color:pp===100?C.green:C.accent,fontWeight:800,fontSize:13}},pp+"%")),
-            h("div",{style:{background:C.border,borderRadius:99,height:4,overflow:"hidden"}},
-              h("div",{style:{width:pp+"%",height:"100%",background:pp===100?C.green:C.accent,borderRadius:99}})),
-            h("div",{style:{display:"flex",gap:4,marginTop:6,flexWrap:"wrap"}},
-              e.retours&&e.retours.length>0&&h("span",{style:{fontSize:10,color:C.accent,background:C.accentDim,borderRadius:99,padding:"1px 7px",fontWeight:700}},"💬 "+e.retours.length),
-              futur(e.prochainRdv)&&h("span",{style:{fontSize:10,color:C.amber,background:C.amberDim,borderRadius:99,padding:"1px 7px",fontWeight:700}},"📅 RDV"),
-              (Object.values(e.etapesEsi||{}).filter(function(v){return v==="demande";}).length>0)&&h("span",{style:{fontSize:10,color:C.amber,background:C.amberDim,borderRadius:99,padding:"1px 7px",fontWeight:700}},"✋ À valider")));
+          return h(CarteESISidebar,{key:e.id,e:e,sel:sel,setSel:setSel,C:C});
         })),
       h("div",{style:{flex:1,display:"flex",flexDirection:"column",overflow:"hidden"}},
         h("div",{style:{padding:"16px 24px 0",borderBottom:"1px solid "+C.border}},
@@ -1310,6 +1382,7 @@ function Directeur(props){
                 h("div",{style:{color:C.text,fontSize:13,lineHeight:1.7,fontStyle:"italic"}},r.commentaire_esi)));
             })),
           tab==="docs"&&h("div",null,
+            notifsDir.countDepots>0&&(function(){notifsDir.marquerDepotsVus();return null;})(),
             h("div",{style:{display:"flex",flexDirection:"column",gap:8,marginBottom:12}},
               (esi.documentsEsi||[]).length>0&&h("div",{style:{marginBottom:16}},
               h("div",{style:{color:C.green,fontSize:12,fontWeight:700,marginBottom:8}},"📤 DÉPÔTS DE L'ESI"),
@@ -1334,6 +1407,7 @@ function Directeur(props){
                 h("button",{onClick:function(){setShowDoc(false);},style:bs(C.card,C.muted,{border:"1px solid "+C.border})},"Annuler")))
             :h("button",{onClick:function(){setShowDoc(true);},style:Object.assign({},bs("transparent",C.accent),{border:"1.5px dashed "+C.accent+"44",width:"100%",padding:"10px 0"})},"+ Partager un document ou lien")),
           tab==="messages"&&h("div",null,
+            notifsDir.countMsg>0&&(function(){notifsDir.marquerMsgLus();return null;})(),
             h("h2",{style:{color:C.text,fontSize:16,fontWeight:800,marginBottom:4}},"Messages avec "+esi.prenom),
             h("div",{style:{color:C.muted,fontSize:13,marginBottom:20}},"Échanges directs avec l'ESI"),
             h(Messagerie,{esiId:esi.id,esiPrenom:esi.prenom,mode:"dir",c:C})),
@@ -1446,8 +1520,10 @@ function EsiApp(props){
   var p=pct(data.etapes);
   var dr=(data.retours||[]).slice(-1)[0];
   var notifs=useNotifs(esiId);
-  var msgBadge=notifs.count>0?" ("+notifs.count+")":"";
-  var tabs=[{id:"accueil",l:"🏠 Accueil"},{id:"etapes",l:"📊 Avancement"},{id:"position",l:"📈 Ma position"},{id:"retours",l:"💬 Retours"+((data.retours||[]).length>0?" ("+(data.retours||[]).length+")":"")},{id:"messages",l:"✉️ Messages"+msgBadge},{id:"docs",l:"📎 Docs"+((data.documents||[]).length>0?" ("+(data.documents||[]).length+")":"")},{id:"planning",l:"📅 Planning"},{id:"notes",l:"📋 Comptes rendus"},{id:"deadlines",l:"⚠️ Deadlines"},{id:"methodo",l:"📚 Méthodo"},{id:"grilles",l:"📋 Grilles"},{id:"visio",l:"🎥 Visio"}];
+  var msgBadge=notifs.count>0?" 🔴":"";
+  var retourBadge=notifs.countRetours>0?" 🔴":"";
+  var docBadge=notifs.countDocs>0?" 🔴":"";
+  var tabs=[{id:"accueil",l:"🏠 Accueil"},{id:"etapes",l:"📊 Avancement"},{id:"position",l:"📈 Ma position"},{id:"retours",l:"💬 Retours"+retourBadge+((data.retours||[]).length>0?" ("+(data.retours||[]).length+")":"")},{id:"messages",l:"✉️ Messages"+msgBadge},{id:"docs",l:"📎 Docs"+docBadge+((data.documents||[]).length>0?" ("+(data.documents||[]).length+")":"")},{id:"planning",l:"📅 Planning"},{id:"notes",l:"📋 Comptes rendus"},{id:"deadlines",l:"⚠️ Deadlines"},{id:"methodo",l:"📚 Méthodo"},{id:"grilles",l:"📋 Grilles"},{id:"visio",l:"🎥 Visio"}];
 
   return h("div",{style:{background:C2.bg,minHeight:"100vh",display:"flex",flexDirection:"column",color:C2.text}},
     h("div",{style:{background:C2.panel,borderBottom:"1px solid "+C2.border,padding:"12px 20px",display:"flex",alignItems:"center",gap:12,flexWrap:"wrap"}},
@@ -1556,6 +1632,7 @@ function EsiApp(props){
               enDemande&&h("button",{onClick:annulerDemande,style:bs("transparent",C2.subtle,{fontSize:11,padding:"5px 10px",border:"1px solid "+C2.border})},"Annuler")),
             !valide&&h("div",{style:{color:C2.muted,fontSize:12,lineHeight:1.6,paddingLeft:30,marginTop:8}},et.conseil));})),
       tab==="retours"&&h("div",null,
+        notifs.countRetours>0&&(function(){notifs.marquerRetoursVus();return null;})(),
         h("h2",{style:{color:C2.text,fontSize:16,fontWeight:800,marginBottom:20}},"Retours de ton directeur"),
         (data.retours||[]).length===0?h("div",{style:{color:C2.subtle,fontSize:14,fontStyle:"italic",textAlign:"center",padding:"40px 0"}},"Aucun retour pour l'instant.")
         :(data.retours||[]).slice().reverse().map(function(r){return h("div",{key:r.id,style:{background:C2.panel,borderRadius:14,padding:20,marginBottom:16}},
@@ -1573,6 +1650,7 @@ function EsiApp(props){
               h("div",{style:{color:C2.amber,fontSize:11,fontWeight:700,marginBottom:6}},"⚠️ À AMÉLIORER"),
               (r.axes_amelioration||[]).map(function(a,i){return h("div",{key:i,style:{color:C2.text,fontSize:13,marginBottom:4}},"• "+a);}))));})),
       tab==="docs"&&h("div",null,
+        notifs.countDocs>0&&(function(){notifs.marquerDocsVus();return null;})(),
         h("h2",{style:{color:C2.text,fontSize:16,fontWeight:800,marginBottom:4}},"Documents"),
         h("div",{style:{color:C2.muted,fontSize:13,marginBottom:16}},"Déposez vos travaux via un lien Google Drive, OneDrive, etc."),
         depotOk&&h("div",{style:{background:C2.greenDim,border:"1px solid "+C2.green+"44",borderRadius:10,padding:"10px 14px",marginBottom:14,color:C2.green,fontWeight:700,fontSize:13}},depotOk),
