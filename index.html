@@ -4,20 +4,21 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Suivi Mémoires — Jain Loic</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
-<style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:'Inter',system-ui,sans-serif}</style>
+<script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Inter,system-ui,sans-serif;background:#0D1117}
+textarea,input{font-family:inherit}
+a{text-decoration:none}
+</style>
 </head>
 <body>
-<div id="root"></div>
-<script type="text/babel">
-const C = {
-  bg:"#0D1117",panel:"#161B22",card:"#21262D",cardHover:"#2D333B",
-  border:"#30363D",accent:"#58A6FF",accentDim:"#1F3A5F",
-  green:"#3FB950",greenDim:"#1A3A2A",amber:"#D29922",amberDim:"#3A2A0A",
-  red:"#F85149",redDim:"#3A1A1A",text:"#E6EDF3",muted:"#8B949E",subtle:"#484F58"
-};
+<div id="root"><div style="color:#8B949E;text-align:center;padding:40px;font-family:sans-serif">Chargement…</div></div>
+<script type="text/babel" data-presets="react">
+
+const C={bg:"#0D1117",panel:"#161B22",card:"#21262D",cardHover:"#2D333B",border:"#30363D",accent:"#58A6FF",accentDim:"#1F3A5F",green:"#3FB950",greenDim:"#1A3A2A",amber:"#D29922",amberDim:"#3A2A0A",red:"#F85149",redDim:"#3A1A1A",text:"#E6EDF3",muted:"#8B949E",subtle:"#484F58"};
 const C2={bg:"#0F172A",panel:"#1E293B",card:"#273449",border:"#334155",accent:"#6366F1",accentDim:"#1e1b4b",green:"#22C55E",greenDim:"#14532d",amber:"#F59E0B",amberDim:"#451a03",red:"#EF4444",redDim:"#450a0a",text:"#F1F5F9",muted:"#94A3B8",subtle:"#475569"};
 
 const ETAPES=[
@@ -36,7 +37,7 @@ const STATUTS=[
   {id:"fait",label:"Fait",color:"#3FB950",bg:"#1A3A2A"},
   {id:"bloque",label:"Bloqué",color:"#F85149",bg:"#3A1A1A"}
 ];
-const ESI_LIST=[
+const ESI_DEFAUT=[
   {id:"e1",prenom:"BRUCTER Naïma",sujet:"Refus de soins / manque d'asepsie"},
   {id:"e2",prenom:"IOJE Paula",sujet:"Levée de sédation patient intubé ventilé"},
   {id:"e3",prenom:"JEAN Lisa",sujet:"Soins palliatifs / fin de vie"},
@@ -48,258 +49,282 @@ const RESSOURCES=[
   {id:"r1",label:"Formuler une problématique",icon:"🎯",contenu:"La problématique est une question centrale.\n• Découler d'une situation clinique réelle\n• Formulée sous forme de question ouverte\n• Ni trop large, ni trop précise\n\nEx : « En quoi la relation soignant-soigné influence-t-elle la prise en charge de la douleur ? »"},
   {id:"r2",label:"Construire un plan",icon:"📋",contenu:"1. Introduction\n   • Situation d'appel\n   • Question de départ\n\n2. Cadre conceptuel\n   • Définitions des concepts\n   • Appui littérature\n\n3. Partie terrain\n   • Confrontation théorie/pratique\n   • Problématique + hypothèses\n\n4. Conclusion"},
   {id:"r3",label:"Faire une bibliographie",icon:"📚",contenu:"Norme APA :\n\nLivre : Auteur, A. (Année). Titre. Éditeur.\nArticle : Auteur, A. (Année). Titre. Revue, vol(n°), pages.\nSite : Auteur. (Année). Titre. Consulté le JJ/MM/AAAA sur https://...\n\nMinimum 10 références."},
-  {id:"r4",label:"Préparer la soutenance",icon:"🎓",contenu:"• Durée : 10 à 15 minutes\n• Structure : sujet → cheminement → résultats → apports\n• Questions : « Pourquoi ce sujet ? », « Comment as-tu choisi tes concepts ? »\n• Entraîne-toi à voix haute"}
+  {id:"r4",label:"Préparer la soutenance",icon:"🎓",contenu:"• Durée : 10 à 15 minutes\n• Structure : sujet → cheminement → résultats → apports\n• Questions fréquentes : Pourquoi ce sujet ? Comment as-tu choisi tes concepts ?\n• Entraîne-toi à voix haute"}
 ];
 
-const SK="jain-loic-suivi-v1";
-function load(){try{const d=localStorage.getItem(SK);return d?JSON.parse(d):ESI_LIST.map(e=>({...e,etapes:{},commentaires:[],documents:[],retours:[],visio:"",prochainRdv:"",derniereMAJ:null}))}catch{return ESI_LIST.map(e=>({...e,etapes:{},commentaires:[],documents:[],retours:[],visio:"",prochainRdv:"",derniereMAJ:null}))}}
-function save(d){try{localStorage.setItem(SK,JSON.stringify(d))}catch{}}
-function genId(){return Math.random().toString(36).slice(2,9)}
-function progress(etapes){return Math.round(ETAPES.filter(e=>etapes[e.id]==="fait").length/ETAPES.length*100)}
-function dateFr(iso){if(!iso)return"—";return new Date(iso).toLocaleDateString("fr-FR",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})}
-function rdvFr(str){if(!str)return null;return new Date(str).toLocaleDateString("fr-FR",{weekday:"long",day:"numeric",month:"long",hour:"2-digit",minute:"2-digit"})}
-function isUp(str){return str&&new Date(str)>new Date()}
-const inp=(c)=>({background:c.card,border:`1px solid ${c.border}`,borderRadius:8,color:c.text,fontSize:13,padding:"7px 10px",outline:"none",width:"100%",boxSizing:"border-box"});
-const btnS=(bg,color,extra={})=>({background:bg,color,border:"none",borderRadius:8,padding:"7px 14px",cursor:"pointer",fontWeight:600,fontSize:13,...extra});
+const SK="jain-loic-v1";
+function initESI(){return ESI_DEFAUT.map(e=>({...e,etapes:{},commentaires:[],documents:[],retours:[],visio:"",prochainRdv:"",derniereMAJ:null}));}
+function charger(){try{const d=localStorage.getItem(SK);return d?JSON.parse(d):initESI();}catch{return initESI();}}
+function sauver(d){try{localStorage.setItem(SK,JSON.stringify(d));}catch{}}
+function uid(){return Math.random().toString(36).slice(2,9);}
+function pct(etapes){return Math.round(ETAPES.filter(e=>etapes[e.id]==="fait").length/ETAPES.length*100);}
+function dfr(iso){if(!iso)return"—";return new Date(iso).toLocaleDateString("fr-FR",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"});}
+function rfr(s){if(!s)return null;return new Date(s).toLocaleDateString("fr-FR",{weekday:"long",day:"numeric",month:"long",hour:"2-digit",minute:"2-digit"});}
+function futur(s){return s&&new Date(s)>new Date();}
+function inp(c){return{background:c.card,border:`1px solid ${c.border}`,borderRadius:8,color:c.text,fontSize:13,padding:"7px 10px",outline:"none",width:"100%",boxSizing:"border-box"};}
+function bs(bg,color,x){return{background:bg,color,border:"none",borderRadius:8,padding:"7px 14px",cursor:"pointer",fontWeight:600,fontSize:13,...x};}
 
-function PBar({pct,c}){
-  const col=pct===100?c.green:pct>=50?c.accent:c.amber;
-  return <div style={{background:c.border,borderRadius:99,height:6,overflow:"hidden",flex:1}}><div style={{width:`${pct}%`,height:"100%",background:col,borderRadius:99,transition:"width .4s"}}/></div>
+function Barre({v,c}){
+  const col=v===100?c.green:v>=50?c.accent:c.amber;
+  return <div style={{background:c.border,borderRadius:99,height:6,overflow:"hidden",flex:1}}><div style={{width:`${v}%`,height:"100%",background:col,borderRadius:99,transition:"width .4s"}}/></div>;
 }
 
-// ── ECRAN ACCUEIL ──
+// ── ACCUEIL ──
 function Accueil({onDir,onEsi}){
-  return <div style={{minHeight:"100vh",background:C.bg,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",fontFamily:"Inter,system-ui,sans-serif",padding:24}}>
-    <div style={{fontSize:52,marginBottom:16}}>🎓</div>
-    <h1 style={{color:C.text,fontSize:22,fontWeight:800,marginBottom:8,textAlign:"center"}}>Suivi Mémoires Infirmiers</h1>
-    <p style={{color:C.muted,fontSize:15,marginBottom:40,textAlign:"center"}}>Directeur : <strong style={{color:C.accent}}>Jain Loic</strong> · Promo 2024-27</p>
-    <div style={{display:"flex",gap:16,flexWrap:"wrap",justifyContent:"center"}}>
-      <button onClick={onDir} style={{background:C.accent,color:"#fff",border:"none",borderRadius:14,padding:"20px 36px",cursor:"pointer",fontSize:16,fontWeight:700,boxShadow:`0 4px 24px ${C.accent}33`}}>👨‍🏫 Espace Directeur</button>
-      <button onClick={onEsi} style={{background:C.panel,color:C.text,border:`2px solid ${C.border}`,borderRadius:14,padding:"20px 36px",cursor:"pointer",fontSize:16,fontWeight:700}}>👩‍🎓 Espace ESI</button>
+  return <div style={{minHeight:"100vh",background:C.bg,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:24}}>
+    <div style={{fontSize:56,marginBottom:16}}>🎓</div>
+    <h1 style={{color:C.text,fontSize:24,fontWeight:800,marginBottom:8,textAlign:"center"}}>Suivi Mémoires Infirmiers</h1>
+    <p style={{color:C.muted,fontSize:15,marginBottom:40,textAlign:"center"}}>Directeur : <strong style={{color:C.accent}}>Jain Loic</strong> · IFSI Bichat-Beaujon · Promo 2024-27</p>
+    <div style={{display:"flex",gap:20,flexWrap:"wrap",justifyContent:"center"}}>
+      <button onClick={onDir} style={{background:C.accent,color:"#fff",border:"none",borderRadius:16,padding:"22px 40px",cursor:"pointer",fontSize:17,fontWeight:700,boxShadow:`0 4px 24px ${C.accent}44`}}>👨‍🏫 Espace Directeur</button>
+      <button onClick={onEsi} style={{background:C.panel,color:C.text,border:`2px solid ${C.border}`,borderRadius:16,padding:"22px 40px",cursor:"pointer",fontSize:17,fontWeight:700}}>👩‍🎓 Espace ESI</button>
     </div>
-  </div>
+  </div>;
+}
+
+// ── ANALYSE IA ──
+function AnalyseIA({esi,onRetour}){
+  const [load,setLoad]=React.useState(false);
+  const [txt,setTxt]=React.useState("");
+  const [res,setRes]=React.useState(null);
+  const [err,setErr]=React.useState("");
+
+  async function analyser(){
+    if(!txt.trim()){setErr("Colle d'abord le contenu du document.");return;}
+    setLoad(true);setErr("");setRes(null);
+    try{
+      const r=await fetch("https://api.anthropic.com/v1/messages",{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({
+          model:"claude-sonnet-4-6",max_tokens:1000,
+          messages:[{role:"user",content:`Tu es formateur IFSI expert en mémoires infirmiers.\nESI: ${esi.prenom}\nSujet: ${esi.sujet}\n\nDocument:\n${txt}\n\nRéponds UNIQUEMENT en JSON valide sans markdown:\n{"structure":"...","points_forts":["...","...","..."],"axes_amelioration":["...","...","..."],"commentaire_esi":"...","avancement":0}`}]
+        })
+      });
+      const data=await r.json();
+      const t=data.content?.filter(b=>b.type==="text").map(b=>b.text).join("")||"";
+      setRes(JSON.parse(t.replace(/```json|```/g,"").trim()));
+    }catch(e){setErr("Erreur d'analyse. Réessaie.");}
+    setLoad(false);
+  }
+
+  function sauvegarder(){
+    if(!res)return;
+    onRetour({id:uid(),date:new Date().toISOString(),...res});
+    setRes(null);setTxt("");
+  }
+
+  return <div>
+    <div style={{background:C.amberDim,border:`1px solid ${C.amber}44`,borderRadius:10,padding:"12px 16px",marginBottom:14,fontSize:13,color:C.amber,lineHeight:1.6}}>
+      💡 Colle le texte du document de l'ESI (mémoire, plan, note de recherche…). L'IA va analyser la structure, identifier les points forts et générer un commentaire à transmettre à l'étudiant.
+    </div>
+    <textarea value={txt} onChange={e=>setTxt(e.target.value)} placeholder="Colle ici le contenu du document…" rows={8} style={{...inp(C),resize:"vertical",lineHeight:1.6,marginBottom:8}}/>
+    {err&&<div style={{color:C.red,fontSize:12,marginBottom:8}}>{err}</div>}
+    <button onClick={analyser} disabled={load} style={bs(load?C.subtle:C.accent,"#fff",{width:"100%",padding:"11px 0",opacity:load?.7:1,fontSize:14})}>
+      {load?"⏳ Analyse en cours…":"🔍 Analyser avec l'IA"}
+    </button>
+    {res&&<div style={{marginTop:18,background:C.card,borderRadius:12,padding:18}}>
+      <div style={{color:C.green,fontWeight:700,fontSize:14,marginBottom:14}}>✅ Analyse terminée — Avancement estimé : {res.avancement}%</div>
+      <div style={{marginBottom:14}}>
+        <div style={{color:C.muted,fontSize:11,fontWeight:700,letterSpacing:".06em",marginBottom:6}}>STRUCTURE DU DOCUMENT</div>
+        <div style={{color:C.text,fontSize:13,lineHeight:1.7}}>{res.structure}</div>
+      </div>
+      <div style={{display:"flex",gap:12,marginBottom:14,flexWrap:"wrap"}}>
+        <div style={{flex:1,minWidth:160,background:C.greenDim,borderRadius:10,padding:12}}>
+          <div style={{color:C.green,fontSize:11,fontWeight:700,marginBottom:8}}>✅ POINTS FORTS</div>
+          {res.points_forts?.map((p,i)=><div key={i} style={{color:C.text,fontSize:13,marginBottom:5}}>• {p}</div>)}
+        </div>
+        <div style={{flex:1,minWidth:160,background:C.amberDim,borderRadius:10,padding:12}}>
+          <div style={{color:C.amber,fontSize:11,fontWeight:700,marginBottom:8}}>⚠️ AXES D'AMÉLIORATION</div>
+          {res.axes_amelioration?.map((a,i)=><div key={i} style={{color:C.text,fontSize:13,marginBottom:5}}>• {a}</div>)}
+        </div>
+      </div>
+      <div style={{background:C.panel,borderRadius:10,padding:14,marginBottom:14,borderLeft:`3px solid ${C.accent}`}}>
+        <div style={{color:C.accent,fontSize:11,fontWeight:700,marginBottom:8}}>💬 COMMENTAIRE À TRANSMETTRE À L'ESI</div>
+        <div style={{color:C.text,fontSize:13,lineHeight:1.8,fontStyle:"italic"}}>{res.commentaire_esi}</div>
+      </div>
+      <button onClick={sauvegarder} style={bs(C.green,"#fff",{width:"100%",padding:"10px 0",fontSize:14})}>💾 Sauvegarder et envoyer à l'ESI</button>
+    </div>}
+  </div>;
 }
 
 // ── DIRECTEUR ──
-function AnalyseIA({esi,onRetour}){
-  const [loading,setLoading]=React.useState(false);
-  const [texte,setTexte]=React.useState("");
-  const [result,setResult]=React.useState(null);
-  const [err,setErr]=React.useState("");
-  async function analyser(){
-    if(!texte.trim()){setErr("Colle le contenu du document.");return}
-    setLoading(true);setErr("");setResult(null);
-    try{
-      const r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-6",max_tokens:1000,messages:[{role:"user",content:`Tu es formateur IFSI expert. ESI: ${esi.prenom}. Sujet: ${esi.sujet}.\n\nDocument:\n${texte}\n\nRéponds UNIQUEMENT en JSON sans markdown:\n{"structure":"...","points_forts":["..."],"axes_amelioration":["..."],"commentaire_esi":"...","avancement":0}`}]})});
-      const data=await r.json();
-      const txt=data.content?.filter(b=>b.type==="text").map(b=>b.text).join("")||"";
-      setResult(JSON.parse(txt.replace(/```json|```/g,"").trim()));
-    }catch{setErr("Erreur d'analyse. Réessaie.");}
-    setLoading(false);
-  }
-  function sauvegarder(){
-    if(!result)return;
-    onRetour({id:genId(),date:new Date().toISOString(),...result});
-    setResult(null);setTexte("");
-  }
-  return <div>
-    <div style={{background:C.amberDim,border:`1px solid ${C.amber}44`,borderRadius:10,padding:"10px 14px",marginBottom:14,fontSize:13,color:C.amber}}>
-      💡 Colle le texte du document de l'ESI. L'IA génère une analyse + un commentaire à lui transmettre.
-    </div>
-    <textarea value={texte} onChange={e=>setTexte(e.target.value)} placeholder="Colle ici le contenu du document…" rows={6} style={{...inp(C),resize:"vertical",lineHeight:1.6,marginBottom:8}}/>
-    {err&&<div style={{color:C.red,fontSize:12,marginBottom:8}}>{err}</div>}
-    <button onClick={analyser} disabled={loading} style={btnS(loading?C.subtle:C.accent,"#fff",{width:"100%",padding:"10px 0",opacity:loading?.7:1})}>
-      {loading?"⏳ Analyse en cours…":"🔍 Analyser avec l'IA"}
-    </button>
-    {result&&<div style={{marginTop:16,background:C.card,borderRadius:12,padding:16}}>
-      <div style={{color:C.green,fontWeight:700,fontSize:14,marginBottom:12}}>✅ Analyse — Avancement estimé : {result.avancement}%</div>
-      <div style={{marginBottom:12}}><div style={{color:C.muted,fontSize:11,fontWeight:700,marginBottom:6}}>STRUCTURE</div><div style={{color:C.text,fontSize:13,lineHeight:1.6}}>{result.structure}</div></div>
-      <div style={{display:"flex",gap:12,marginBottom:12,flexWrap:"wrap"}}>
-        <div style={{flex:1,minWidth:150}}><div style={{color:C.green,fontSize:11,fontWeight:700,marginBottom:6}}>✅ POINTS FORTS</div>{result.points_forts?.map((p,i)=><div key={i} style={{color:C.text,fontSize:13,marginBottom:4}}>• {p}</div>)}</div>
-        <div style={{flex:1,minWidth:150}}><div style={{color:C.amber,fontSize:11,fontWeight:700,marginBottom:6}}>⚠️ À AMÉLIORER</div>{result.axes_amelioration?.map((a,i)=><div key={i} style={{color:C.text,fontSize:13,marginBottom:4}}>• {a}</div>)}</div>
-      </div>
-      <div style={{background:C.panel,borderRadius:8,padding:12,marginBottom:12,borderLeft:`3px solid ${C.accent}`}}>
-        <div style={{color:C.accent,fontSize:11,fontWeight:700,marginBottom:6}}>💬 COMMENTAIRE POUR L'ESI</div>
-        <div style={{color:C.text,fontSize:13,lineHeight:1.7,fontStyle:"italic"}}>{result.commentaire_esi}</div>
-      </div>
-      <button onClick={sauvegarder} style={btnS(C.green,"#fff",{width:"100%",padding:"9px 0"})}>💾 Sauvegarder et envoyer à l'ESI</button>
-    </div>}
-  </div>
-}
-
 function Directeur({onBack,esis,setEsis}){
   const [sel,setSel]=React.useState(esis[0]?.id);
   const [tab,setTab]=React.useState("suivi");
-  const [newComment,setNewComment]=React.useState("");
-  const [newDocLabel,setNewDocLabel]=React.useState("");
-  const [newDocUrl,setNewDocUrl]=React.useState("");
+  const [nc,setNc]=React.useState("");
+  const [ndl,setNdl]=React.useState("");
+  const [ndu,setNdu]=React.useState("");
   const [showDoc,setShowDoc]=React.useState(false);
-  const [editVisio,setEditVisio]=React.useState("");
-  const [editRdv,setEditRdv]=React.useState("");
+  const [ev,setEv]=React.useState("");
+  const [er,setEr]=React.useState("");
   const esi=esis.find(e=>e.id===sel);
-  React.useEffect(()=>{if(esi){setEditVisio(esi.visio||"");setEditRdv(esi.prochainRdv||"")}},[sel]);
-  function upd(updated){const next=esis.map(e=>e.id===updated.id?updated:e);setEsis(next);save(next);}
-  function setEtape(id,s){upd({...esi,etapes:{...esi.etapes,[id]:s},derniereMAJ:new Date().toISOString()});}
-  function saveInfo(){upd({...esi,visio:editVisio,prochainRdv:editRdv,derniereMAJ:new Date().toISOString()});}
-  function addComment(){if(!newComment.trim())return;upd({...esi,commentaires:[...(esi.commentaires||[]),{id:genId(),texte:newComment.trim(),date:new Date().toISOString()}],derniereMAJ:new Date().toISOString()});setNewComment("");}
-  function delComment(id){upd({...esi,commentaires:esi.commentaires.filter(c=>c.id!==id)});}
-  function addDoc(){if(!newDocLabel.trim()||!newDocUrl.trim())return;upd({...esi,documents:[...(esi.documents||[]),{id:genId(),label:newDocLabel.trim(),url:newDocUrl.trim(),date:new Date().toISOString()}],derniereMAJ:new Date().toISOString()});setNewDocLabel("");setNewDocUrl("");setShowDoc(false);}
-  function delDoc(id){upd({...esi,documents:(esi.documents||[]).filter(d=>d.id!==id)});}
-  function delRetour(id){upd({...esi,retours:(esi.retours||[]).filter(r=>r.id!==id)});}
-  function onRetour(retour){
+  React.useEffect(()=>{if(esi){setEv(esi.visio||"");setEr(esi.prochainRdv||"");}},[sel]);
+  function up(u){const n=esis.map(e=>e.id===u.id?u:e);setEsis(n);sauver(n);}
+  function se(id,s){up({...esi,etapes:{...esi.etapes,[id]:s},derniereMAJ:new Date().toISOString()});}
+  function si(){up({...esi,visio:ev,prochainRdv:er,derniereMAJ:new Date().toISOString()});}
+  function ac(){if(!nc.trim())return;up({...esi,commentaires:[...(esi.commentaires||[]),{id:uid(),texte:nc.trim(),date:new Date().toISOString()}],derniereMAJ:new Date().toISOString()});setNc("");}
+  function dc(id){up({...esi,commentaires:esi.commentaires.filter(c=>c.id!==id)});}
+  function ad(){if(!ndl.trim()||!ndu.trim())return;up({...esi,documents:[...(esi.documents||[]),{id:uid(),label:ndl.trim(),url:ndu.trim(),date:new Date().toISOString()}],derniereMAJ:new Date().toISOString()});setNdl("");setNdu("");setShowDoc(false);}
+  function dd(id){up({...esi,documents:(esi.documents||[]).filter(d=>d.id!==id)});}
+  function dr(id){up({...esi,retours:(esi.retours||[]).filter(r=>r.id!==id)});}
+  function onR(retour){
     const av=retour.avancement,ne={...esi.etapes};
     if(av>=10)ne.sujet="fait";if(av>=25)ne.plan="fait";if(av>=35)ne.biblio="fait";
     if(av>=50)ne.chap1="fait";if(av>=65)ne.chap2="fait";if(av>=80)ne.chap3="fait";
     if(av>=90)ne.relecture="fait";if(av>=100)ne.soutenance="fait";
-    upd({...esi,retours:[...(esi.retours||[]),retour],etapes:ne,derniereMAJ:new Date().toISOString()});
+    up({...esi,retours:[...(esi.retours||[]),retour],etapes:ne,derniereMAJ:new Date().toISOString()});
     setTab("retours");
   }
   if(!esi)return null;
-  const pct=progress(esi.etapes);
+  const p=pct(esi.etapes);
   const tabs=[{id:"suivi",l:"📊 Suivi"},{id:"analyse",l:"🔍 Analyser"},{id:"retours",l:`💬 Retours${(esi.retours||[]).length>0?` (${esi.retours.length})`:""}`},{id:"docs",l:`📎 Docs${(esi.documents||[]).length>0?` (${esi.documents.length})`:""}`},{id:"notes",l:"📝 Notes"}];
-  return <div style={{background:C.bg,minHeight:"100vh",display:"flex",flexDirection:"column",fontFamily:"Inter,system-ui,sans-serif",color:C.text}}>
+  return <div style={{background:C.bg,minHeight:"100vh",display:"flex",flexDirection:"column",color:C.text}}>
     <div style={{background:C.panel,borderBottom:`1px solid ${C.border}`,padding:"12px 20px",display:"flex",alignItems:"center",gap:12,flexWrap:"wrap"}}>
-      <button onClick={onBack} style={btnS(C.card,C.muted,{border:`1px solid ${C.border}`})}>← Accueil</button>
-      <div><div style={{fontWeight:800,fontSize:15}}>👨‍🏫 Espace Directeur · <span style={{color:C.accent}}>Jain Loic</span></div><div style={{color:C.muted,fontSize:12}}>{esis.length} ESI · Promo 2024-27</div></div>
+      <button onClick={onBack} style={bs(C.card,C.muted,{border:`1px solid ${C.border}`})}>← Accueil</button>
+      <div><div style={{fontWeight:800,fontSize:15}}>👨‍🏫 Espace Directeur · <span style={{color:C.accent}}>Jain Loic</span></div><div style={{color:C.muted,fontSize:12}}>IFSI Bichat-Beaujon · {esis.length} ESI · Promo 2024-27</div></div>
     </div>
-    <div style={{display:"flex",flex:1,overflow:"hidden"}}>
+    <div style={{display:"flex",flex:1,overflow:"hidden",minHeight:0}}>
       <div style={{width:250,minWidth:250,background:C.panel,borderRight:`1px solid ${C.border}`,overflowY:"auto",padding:"12px 8px"}}>
-        {esis.map(e=>{const p=progress(e.etapes);return<div key={e.id} onClick={()=>{setSel(e.id);setTab("suivi")}} style={{background:e.id===sel?C.accentDim:C.card,border:`1.5px solid ${e.id===sel?C.accent:C.border}`,borderRadius:12,padding:"12px 14px",cursor:"pointer",marginBottom:8}}>
-          <div style={{display:"flex",justifyContent:"space-between",marginBottom:6}}><span style={{color:C.text,fontWeight:700,fontSize:13}}>{e.prenom}</span><span style={{color:p===100?C.green:C.accent,fontWeight:800}}>{p}%</span></div>
-          <div style={{background:C.border,borderRadius:99,height:4,overflow:"hidden"}}><div style={{width:`${p}%`,height:"100%",background:p===100?C.green:C.accent,borderRadius:99}}/></div>
+        {esis.map(e=>{const pp=pct(e.etapes);return<div key={e.id} onClick={()=>{setSel(e.id);setTab("suivi");}} style={{background:e.id===sel?C.accentDim:C.card,border:`1.5px solid ${e.id===sel?C.accent:C.border}`,borderRadius:12,padding:"12px 14px",cursor:"pointer",marginBottom:8}}>
+          <div style={{display:"flex",justifyContent:"space-between",marginBottom:6}}><span style={{color:C.text,fontWeight:700,fontSize:13}}>{e.prenom}</span><span style={{color:pp===100?C.green:C.accent,fontWeight:800,fontSize:13}}>{pp}%</span></div>
+          <div style={{background:C.border,borderRadius:99,height:4,overflow:"hidden"}}><div style={{width:`${pp}%`,height:"100%",background:pp===100?C.green:C.accent,borderRadius:99}}/></div>
           <div style={{display:"flex",gap:4,marginTop:6,flexWrap:"wrap"}}>
             {(e.retours||[]).length>0&&<span style={{fontSize:10,color:C.accent,background:C.accentDim,borderRadius:99,padding:"1px 7px",fontWeight:700}}>💬 {e.retours.length}</span>}
-            {isUp(e.prochainRdv)&&<span style={{fontSize:10,color:C.amber,background:C.amberDim,borderRadius:99,padding:"1px 7px",fontWeight:700}}>📅 RDV</span>}
+            {futur(e.prochainRdv)&&<span style={{fontSize:10,color:C.amber,background:C.amberDim,borderRadius:99,padding:"1px 7px",fontWeight:700}}>📅 RDV</span>}
           </div>
-        </div>})}
+        </div>;})}
       </div>
       <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden"}}>
         <div style={{padding:"16px 24px 0",borderBottom:`1px solid ${C.border}`}}>
           <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:12,flexWrap:"wrap"}}>
-            <div style={{flex:1}}><div style={{color:C.text,fontWeight:800,fontSize:17}}>{esi.prenom}</div><div style={{color:C.muted,fontSize:13,fontStyle:"italic"}}>{esi.sujet}</div></div>
-            <div style={{display:"flex",alignItems:"center",gap:10}}><PBar pct={pct} c={C}/><span style={{color:pct===100?C.green:C.accent,fontWeight:800,fontSize:18,minWidth:48}}>{pct}%</span></div>
+            <div style={{flex:1}}><div style={{color:C.text,fontWeight:800,fontSize:17}}>{esi.prenom}</div><div style={{color:C.muted,fontSize:13,fontStyle:"italic",marginTop:2}}>{esi.sujet}</div></div>
+            <div style={{display:"flex",alignItems:"center",gap:10}}><Barre v={p} c={C}/><span style={{color:p===100?C.green:C.accent,fontWeight:800,fontSize:18,minWidth:48}}>{p}%</span></div>
           </div>
           <div style={{display:"flex",gap:10,marginBottom:12,flexWrap:"wrap"}}>
-            <div style={{display:"flex",alignItems:"center",gap:6}}><span style={{color:C.muted,fontSize:12}}>📅</span><input type="datetime-local" value={editRdv} onChange={e=>setEditRdv(e.target.value)} onBlur={saveInfo} style={{...inp(C),width:"auto",fontSize:12,padding:"4px 8px",colorScheme:"dark"}}/></div>
-            <div style={{display:"flex",alignItems:"center",gap:6}}><span style={{color:C.muted,fontSize:12}}>🎥</span><input value={editVisio} onChange={e=>setEditVisio(e.target.value)} onBlur={saveInfo} placeholder="Lien visio…" style={{...inp(C),width:200,fontSize:12,padding:"4px 8px"}}/>{esi.visio&&<a href={esi.visio} target="_blank" rel="noopener noreferrer" style={{color:C.green,fontSize:12,fontWeight:700,textDecoration:"none"}}>→ Rejoindre</a>}</div>
+            <div style={{display:"flex",alignItems:"center",gap:6}}><span style={{color:C.muted,fontSize:12}}>📅</span><input type="datetime-local" value={er} onChange={e=>setEr(e.target.value)} onBlur={si} style={{...inp(C),width:"auto",fontSize:12,padding:"4px 8px",colorScheme:"dark"}}/></div>
+            <div style={{display:"flex",alignItems:"center",gap:6}}><span style={{color:C.muted,fontSize:12}}>🎥</span><input value={ev} onChange={e=>setEv(e.target.value)} onBlur={si} placeholder="Lien visio…" style={{...inp(C),width:200,fontSize:12,padding:"4px 8px"}}/>{esi.visio&&<a href={esi.visio} target="_blank" rel="noopener noreferrer" style={{color:C.green,fontSize:12,fontWeight:700}}>→ Rejoindre</a>}</div>
           </div>
           <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
-            {tabs.map(t=><button key={t.id} onClick={()=>setTab(t.id)} style={{...btnS(tab===t.id?C.accent:"transparent",tab===t.id?"#fff":C.muted),borderRadius:"8px 8px 0 0",padding:"7px 14px",fontSize:12,borderBottom:tab===t.id?`2px solid ${C.accent}`:"2px solid transparent"}}>{t.l}</button>)}
+            {tabs.map(t=><button key={t.id} onClick={()=>setTab(t.id)} style={{...bs(tab===t.id?C.accent:"transparent",tab===t.id?"#fff":C.muted),borderRadius:"8px 8px 0 0",padding:"7px 14px",fontSize:12,borderBottom:tab===t.id?`2px solid ${C.accent}`:"2px solid transparent"}}>{t.l}</button>)}
           </div>
         </div>
         <div style={{flex:1,overflowY:"auto",padding:"20px 24px"}}>
           {tab==="suivi"&&<div style={{display:"flex",flexDirection:"column",gap:6}}>
             {ETAPES.map(et=>{const cur=esi.etapes[et.id]||"todo";return<div key={et.id} style={{display:"flex",alignItems:"center",gap:10,background:C.card,borderRadius:10,padding:"9px 14px",flexWrap:"wrap"}}>
-              <span style={{fontSize:16}}>{et.icon}</span><span style={{flex:1,color:C.text,fontSize:13,fontWeight:500,minWidth:110}}>{et.label}</span>
-              <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>{STATUTS.map(st=><button key={st.id} onClick={()=>setEtape(et.id,st.id)} style={{...btnS(cur===st.id?st.bg:"transparent",cur===st.id?st.color:C.subtle),border:`1px solid ${cur===st.id?st.color+"88":C.border}`,fontSize:11,padding:"3px 9px"}}>{st.label}</button>)}</div>
-            </div>})}
+              <span style={{fontSize:16}}>{et.icon}</span><span style={{flex:1,color:C.text,fontSize:13,fontWeight:500,minWidth:100}}>{et.label}</span>
+              <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>{STATUTS.map(st=><button key={st.id} onClick={()=>se(et.id,st.id)} style={{...bs(cur===st.id?st.bg:"transparent",cur===st.id?st.color:C.subtle),border:`1px solid ${cur===st.id?st.color+"88":C.border}`,fontSize:11,padding:"3px 9px"}}>{st.label}</button>)}</div>
+            </div>;})}
           </div>}
-          {tab==="analyse"&&<AnalyseIA esi={esi} onRetour={onRetour}/>}
+          {tab==="analyse"&&<AnalyseIA esi={esi} onRetour={onR}/>}
           {tab==="retours"&&<div>
-            {(esi.retours||[]).length===0?<div style={{color:C.subtle,fontSize:13,fontStyle:"italic"}}>Aucun retour. Va dans "Analyser".</div>
+            {(esi.retours||[]).length===0?<div style={{color:C.subtle,fontSize:13,fontStyle:"italic",padding:"20px 0"}}>Aucun retour. Va dans l'onglet "Analyser" pour générer une analyse.</div>
             :(esi.retours||[]).slice().reverse().map(r=><div key={r.id} style={{background:C.card,borderRadius:12,padding:16,marginBottom:12}}>
-              <div style={{display:"flex",justifyContent:"space-between",marginBottom:10}}><span style={{color:C.muted,fontSize:12}}>{dateFr(r.date)}</span><div style={{display:"flex",gap:8}}><span style={{color:C.accent,fontWeight:700,fontSize:12}}>{r.avancement}%</span><button onClick={()=>delRetour(r.id)} style={{background:"transparent",border:"none",color:C.subtle,cursor:"pointer"}}>✕</button></div></div>
+              <div style={{display:"flex",justifyContent:"space-between",marginBottom:10}}><span style={{color:C.muted,fontSize:12}}>{dfr(r.date)}</span><div style={{display:"flex",gap:8,alignItems:"center"}}><span style={{color:C.accent,fontWeight:700,fontSize:12}}>Avancement : {r.avancement}%</span><button onClick={()=>dr(r.id)} style={{background:"transparent",border:"none",color:C.subtle,cursor:"pointer"}}>✕</button></div></div>
               <div style={{color:C.text,fontSize:13,lineHeight:1.6,marginBottom:10}}><strong style={{color:C.muted}}>Structure : </strong>{r.structure}</div>
-              <div style={{display:"flex",gap:12,marginBottom:10,flexWrap:"wrap"}}>
-                <div style={{flex:1,minWidth:140}}><div style={{color:C.green,fontSize:11,fontWeight:700,marginBottom:4}}>✅ POINTS FORTS</div>{r.points_forts?.map((p,i)=><div key={i} style={{color:C.text,fontSize:12,marginBottom:3}}>• {p}</div>)}</div>
-                <div style={{flex:1,minWidth:140}}><div style={{color:C.amber,fontSize:11,fontWeight:700,marginBottom:4}}>⚠️ À AMÉLIORER</div>{r.axes_amelioration?.map((a,i)=><div key={i} style={{color:C.text,fontSize:12,marginBottom:3}}>• {a}</div>)}</div>
+              <div style={{display:"flex",gap:10,marginBottom:10,flexWrap:"wrap"}}>
+                <div style={{flex:1,minWidth:140,background:C.greenDim,borderRadius:8,padding:10}}><div style={{color:C.green,fontSize:11,fontWeight:700,marginBottom:6}}>✅ POINTS FORTS</div>{r.points_forts?.map((p,i)=><div key={i} style={{color:C.text,fontSize:12,marginBottom:3}}>• {p}</div>)}</div>
+                <div style={{flex:1,minWidth:140,background:C.amberDim,borderRadius:8,padding:10}}><div style={{color:C.amber,fontSize:11,fontWeight:700,marginBottom:6}}>⚠️ À AMÉLIORER</div>{r.axes_amelioration?.map((a,i)=><div key={i} style={{color:C.text,fontSize:12,marginBottom:3}}>• {a}</div>)}</div>
               </div>
-              <div style={{background:C.panel,borderRadius:8,padding:10,borderLeft:`3px solid ${C.accent}`}}><div style={{color:C.accent,fontSize:11,fontWeight:700,marginBottom:4}}>💬 COMMENTAIRE ENVOYÉ À L'ESI</div><div style={{color:C.text,fontSize:13,lineHeight:1.7,fontStyle:"italic"}}>{r.commentaire_esi}</div></div>
+              <div style={{background:C.panel,borderRadius:8,padding:12,borderLeft:`3px solid ${C.accent}`}}><div style={{color:C.accent,fontSize:11,fontWeight:700,marginBottom:6}}>💬 COMMENTAIRE ENVOYÉ À L'ESI</div><div style={{color:C.text,fontSize:13,lineHeight:1.7,fontStyle:"italic"}}>{r.commentaire_esi}</div></div>
             </div>)}
           </div>}
           {tab==="docs"&&<div>
-            <div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:10}}>
-              {(esi.documents||[]).length===0&&!showDoc&&<div style={{color:C.subtle,fontSize:13,fontStyle:"italic"}}>Aucun document partagé.</div>}
+            <div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:12}}>
+              {(esi.documents||[]).length===0&&!showDoc&&<div style={{color:C.subtle,fontSize:13,fontStyle:"italic",padding:"12px 0"}}>Aucun document partagé pour l'instant.</div>}
               {(esi.documents||[]).map(d=><div key={d.id} style={{background:C.card,borderRadius:8,padding:"10px 14px",display:"flex",alignItems:"center",gap:10}}>
-                <span>📄</span><div style={{flex:1}}><a href={d.url} target="_blank" rel="noopener noreferrer" style={{color:C.accent,fontWeight:600,fontSize:13,textDecoration:"none"}}>{d.label}</a><div style={{color:C.subtle,fontSize:11,marginTop:2}}>{dateFr(d.date)}</div></div>
-                <button onClick={()=>delDoc(d.id)} style={{background:"transparent",border:"none",color:C.subtle,cursor:"pointer"}}>✕</button>
+                <span style={{fontSize:18}}>📄</span><div style={{flex:1}}><a href={d.url} target="_blank" rel="noopener noreferrer" style={{color:C.accent,fontWeight:600,fontSize:13}}>{d.label}</a><div style={{color:C.subtle,fontSize:11,marginTop:2}}>{dfr(d.date)}</div></div>
+                <button onClick={()=>dd(d.id)} style={{background:"transparent",border:"none",color:C.subtle,cursor:"pointer",fontSize:14}}>✕</button>
               </div>)}
             </div>
             {showDoc?<div style={{background:C.card,borderRadius:10,padding:14,display:"flex",flexDirection:"column",gap:8}}>
-              <input value={newDocLabel} onChange={e=>setNewDocLabel(e.target.value)} placeholder="Nom du document" style={inp(C)}/>
-              <input value={newDocUrl} onChange={e=>setNewDocUrl(e.target.value)} placeholder="URL (https://…)" style={inp(C)}/>
-              <div style={{display:"flex",gap:8}}><button onClick={addDoc} style={btnS(C.accent,"#fff",{flex:1})}>Ajouter</button><button onClick={()=>setShowDoc(false)} style={btnS(C.card,C.muted,{border:`1px solid ${C.border}`})}>Annuler</button></div>
-            </div>:<button onClick={()=>setShowDoc(true)} style={{...btnS("transparent",C.accent),border:`1.5px dashed ${C.accent}44`,width:"100%",padding:"9px 0"}}>+ Partager un document</button>}
+              <input value={ndl} onChange={e=>setNdl(e.target.value)} placeholder="Nom du document" style={inp(C)}/>
+              <input value={ndu} onChange={e=>setNdu(e.target.value)} placeholder="URL (https://…)" style={inp(C)}/>
+              <div style={{display:"flex",gap:8}}><button onClick={ad} style={bs(C.accent,"#fff",{flex:1})}>Ajouter</button><button onClick={()=>setShowDoc(false)} style={bs(C.card,C.muted,{border:`1px solid ${C.border}`})}>Annuler</button></div>
+            </div>:<button onClick={()=>setShowDoc(true)} style={{...bs("transparent",C.accent),border:`1.5px dashed ${C.accent}44`,width:"100%",padding:"10px 0"}}>+ Partager un document ou lien</button>}
           </div>}
           {tab==="notes"&&<div>
-            <div style={{display:"flex",gap:8,marginBottom:12}}><input value={newComment} onChange={e=>setNewComment(e.target.value)} onKeyDown={e=>e.key==="Enter"&&addComment()} placeholder="Ajouter une note (Entrée)…" style={{...inp(C),flex:1}}/><button onClick={addComment} style={btnS(C.accent,"#fff",{padding:"7px 14px"})}>+</button></div>
+            <div style={{display:"flex",gap:8,marginBottom:14}}><input value={nc} onChange={e=>setNc(e.target.value)} onKeyDown={e=>e.key==="Enter"&&ac()} placeholder="Ajouter une note (Entrée)…" style={{...inp(C),flex:1}}/><button onClick={ac} style={bs(C.accent,"#fff",{padding:"7px 16px"})}>+</button></div>
             {(esi.commentaires||[]).length===0&&<div style={{color:C.subtle,fontSize:13,fontStyle:"italic"}}>Aucune note.</div>}
             {(esi.commentaires||[]).slice().reverse().map(c=><div key={c.id} style={{background:C.card,borderRadius:8,padding:"10px 12px",display:"flex",gap:10,marginBottom:8}}>
-              <div style={{flex:1}}><div style={{color:C.text,fontSize:13}}>{c.texte}</div><div style={{color:C.subtle,fontSize:11,marginTop:4}}>{dateFr(c.date)}</div></div>
-              <button onClick={()=>delComment(c.id)} style={{background:"transparent",border:"none",color:C.subtle,cursor:"pointer"}}>✕</button>
+              <div style={{flex:1}}><div style={{color:C.text,fontSize:13,lineHeight:1.5}}>{c.texte}</div><div style={{color:C.subtle,fontSize:11,marginTop:4}}>{dfr(c.date)}</div></div>
+              <button onClick={()=>dc(c.id)} style={{background:"transparent",border:"none",color:C.subtle,cursor:"pointer"}}>✕</button>
             </div>)}
           </div>}
         </div>
       </div>
     </div>
-  </div>
+  </div>;
 }
 
-// ── ESI ──
+// ── ESI APP ──
 function EsiApp({onBack,esis}){
   const [esiId,setEsiId]=React.useState(null);
   const [tab,setTab]=React.useState("accueil");
-  const [resOpen,setResOpen]=React.useState(null);
+  const [ro,setRo]=React.useState(null);
   const data=esis.find(e=>e.id===esiId);
-  if(!esiId)return<div style={{minHeight:"100vh",background:C2.bg,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",fontFamily:"Inter,system-ui,sans-serif",padding:24}}>
-    <button onClick={onBack} style={{...btnS(C2.panel,C2.muted,{border:`1px solid ${C2.border}`,marginBottom:24,alignSelf:"flex-start",position:"absolute",top:20,left:20})}>← Accueil</button>
+
+  if(!esiId)return<div style={{minHeight:"100vh",background:C2.bg,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:24}}>
+    <button onClick={onBack} style={{...bs(C2.panel,C2.muted,{border:`1px solid ${C2.border}`}),position:"absolute",top:20,left:20}}>← Accueil</button>
     <div style={{fontSize:52,marginBottom:16}}>🎓</div>
     <h1 style={{color:C2.text,fontSize:22,fontWeight:800,marginBottom:8,textAlign:"center"}}>Mon Espace Mémoire</h1>
-    <p style={{color:C2.muted,fontSize:14,marginBottom:32,textAlign:"center"}}>Directeur : <strong style={{color:C2.accent}}>Jain Loic</strong></p>
-    <div style={{display:"flex",flexDirection:"column",gap:10,width:"100%",maxWidth:340}}>
-      {ESI_LIST.map(e=><button key={e.id} onClick={()=>{setEsiId(e.id);setTab("accueil")}} style={{background:C2.panel,border:`1.5px solid ${C2.border}`,borderRadius:14,padding:"14px 20px",cursor:"pointer",color:C2.text,fontWeight:700,fontSize:15,textAlign:"left"}}
-        onMouseEnter={el=>{el.currentTarget.style.background=C2.card;el.currentTarget.style.borderColor=C2.accent}}
-        onMouseLeave={el=>{el.currentTarget.style.background=C2.panel;el.currentTarget.style.borderColor=C2.border}}>{e.prenom}</button>)}
+    <p style={{color:C2.muted,fontSize:14,marginBottom:32,textAlign:"center"}}>Directeur : <strong style={{color:C2.accent}}>Jain Loic</strong> · Promo 2024-27</p>
+    <div style={{display:"flex",flexDirection:"column",gap:10,width:"100%",maxWidth:360}}>
+      {ESI_DEFAUT.map(e=><button key={e.id} onClick={()=>{setEsiId(e.id);setTab("accueil");}} style={{background:C2.panel,border:`1.5px solid ${C2.border}`,borderRadius:14,padding:"15px 20px",cursor:"pointer",color:C2.text,fontWeight:700,fontSize:15,textAlign:"left",transition:"all .15s"}}
+        onMouseEnter={el=>{el.currentTarget.style.background=C2.card;el.currentTarget.style.borderColor=C2.accent;}}
+        onMouseLeave={el=>{el.currentTarget.style.background=C2.panel;el.currentTarget.style.borderColor=C2.border;}}>{e.prenom}</button>)}
     </div>
-  </div>
+  </div>;
+
   if(!data)return null;
-  const pct=progress(data.etapes);
-  const dernierRetour=(data.retours||[]).slice(-1)[0];
+  const p=pct(data.etapes);
+  const dr=(data.retours||[]).slice(-1)[0];
   const tabs=[{id:"accueil",l:"🏠 Accueil"},{id:"etapes",l:"📊 Avancement"},{id:"retours",l:`💬 Retours${(data.retours||[]).length>0?` (${data.retours.length})`:""}`},{id:"docs",l:`📎 Docs${(data.documents||[]).length>0?` (${data.documents.length})`:""}`},{id:"methodo",l:"📚 Méthodo"}];
-  return<div style={{background:C2.bg,minHeight:"100vh",display:"flex",flexDirection:"column",fontFamily:"Inter,system-ui,sans-serif",color:C2.text}}>
+
+  return<div style={{background:C2.bg,minHeight:"100vh",display:"flex",flexDirection:"column",color:C2.text}}>
     <div style={{background:C2.panel,borderBottom:`1px solid ${C2.border}`,padding:"12px 20px",display:"flex",alignItems:"center",gap:12,flexWrap:"wrap"}}>
-      <button onClick={onBack} style={btnS(C2.panel,C2.muted,{border:`1px solid ${C2.border}`})}>← Accueil</button>
-      <div style={{flex:1}}><div style={{fontWeight:800,fontSize:15}}>🎓 Mon Mémoire · <span style={{color:C2.accent}}>{data.prenom}</span></div><div style={{color:C2.muted,fontSize:12,fontStyle:"italic"}}>{data.sujet}</div></div>
-      <div style={{display:"flex",gap:10,alignItems:"center"}}><span style={{color:pct===100?C2.green:C2.accent,fontWeight:800,fontSize:18}}>{pct}%</span><button onClick={()=>setEsiId(null)} style={btnS(C2.panel,C2.muted,{border:`1px solid ${C2.border}`,fontSize:12})}>Changer</button></div>
+      <button onClick={onBack} style={bs(C2.panel,C2.muted,{border:`1px solid ${C2.border}`})}>← Accueil</button>
+      <div style={{flex:1}}><div style={{fontWeight:800,fontSize:15}}>🎓 Mon Mémoire · <span style={{color:C2.accent}}>{data.prenom}</span></div><div style={{color:C2.muted,fontSize:12,fontStyle:"italic",marginTop:2}}>{data.sujet}</div></div>
+      <div style={{display:"flex",gap:10,alignItems:"center"}}><span style={{color:p===100?C2.green:C2.accent,fontWeight:800,fontSize:18}}>{p}%</span><button onClick={()=>setEsiId(null)} style={bs(C2.panel,C2.muted,{border:`1px solid ${C2.border}`,fontSize:12})}>Changer</button></div>
     </div>
-    <div style={{background:C2.panel,borderBottom:`1px solid ${C2.border}`,padding:"0 16px",display:"flex",gap:2,overflowX:"auto"}}>
-      {tabs.map(t=><button key={t.id} onClick={()=>setTab(t.id)} style={{background:"transparent",border:"none",borderBottom:`2px solid ${tab===t.id?C2.accent:"transparent"}`,color:tab===t.id?C2.accent:C2.muted,padding:"10px 14px",cursor:"pointer",fontWeight:600,fontSize:12,whiteSpace:"nowrap"}}>{t.l}</button>)}
+    <div style={{background:C2.panel,borderBottom:`1px solid ${C2.border}`,display:"flex",overflowX:"auto"}}>
+      {tabs.map(t=><button key={t.id} onClick={()=>setTab(t.id)} style={{background:"transparent",border:"none",borderBottom:`2px solid ${tab===t.id?C2.accent:"transparent"}`,color:tab===t.id?C2.accent:C2.muted,padding:"10px 16px",cursor:"pointer",fontWeight:600,fontSize:12,whiteSpace:"nowrap"}}>{t.l}</button>)}
     </div>
-    <div style={{flex:1,overflowY:"auto",padding:"24px 20px",maxWidth:700,width:"100%",margin:"0 auto"}}>
+    <div style={{flex:1,overflowY:"auto",padding:"24px 20px",maxWidth:720,width:"100%",margin:"0 auto"}}>
       {tab==="accueil"&&<div>
         <div style={{background:C2.panel,borderRadius:16,padding:24,marginBottom:20}}>
           <div style={{fontSize:13,color:C2.muted,marginBottom:8}}>TON AVANCEMENT GLOBAL</div>
-          <PBar pct={pct} c={C2}/>
+          <Barre v={p} c={C2}/>
           <div style={{display:"flex",justifyContent:"space-between",marginTop:8,fontSize:13,color:C2.muted}}>
             <span>{ETAPES.filter(e=>data.etapes[e.id]==="fait").length}/{ETAPES.length} étapes validées</span>
-            <span style={{color:pct===100?C2.green:C2.accent,fontWeight:700}}>{pct}%</span>
+            <span style={{color:p===100?C2.green:C2.accent,fontWeight:700}}>{p}%</span>
           </div>
         </div>
-        {data.prochainRdv&&<div style={{background:isUp(data.prochainRdv)?C2.amberDim:C2.redDim,border:`1px solid ${isUp(data.prochainRdv)?C2.amber:C2.red}44`,borderRadius:12,padding:16,marginBottom:16}}>
-          <div style={{color:isUp(data.prochainRdv)?C2.amber:C2.red,fontWeight:700,fontSize:14,marginBottom:4}}>📅 {isUp(data.prochainRdv)?"Prochain RDV avec ton directeur":"RDV passé"}</div>
-          <div style={{color:C2.text,fontSize:15,fontWeight:600}}>{rdvFr(data.prochainRdv)}</div>
-          {data.visio&&<a href={data.visio} target="_blank" rel="noopener noreferrer" style={{display:"inline-block",marginTop:10,background:C2.green,color:"#fff",borderRadius:8,padding:"8px 16px",fontWeight:700,fontSize:13,textDecoration:"none"}}>🎥 Rejoindre la visio</a>}
+        {data.prochainRdv&&<div style={{background:futur(data.prochainRdv)?C2.amberDim:C2.redDim,border:`1px solid ${futur(data.prochainRdv)?C2.amber:C2.red}44`,borderRadius:12,padding:16,marginBottom:16}}>
+          <div style={{color:futur(data.prochainRdv)?C2.amber:C2.red,fontWeight:700,fontSize:14,marginBottom:6}}>📅 {futur(data.prochainRdv)?"Prochain RDV avec ton directeur":"RDV passé"}</div>
+          <div style={{color:C2.text,fontSize:15,fontWeight:600}}>{rfr(data.prochainRdv)}</div>
+          {data.visio&&<a href={data.visio} target="_blank" rel="noopener noreferrer" style={{display:"inline-block",marginTop:12,background:C2.green,color:"#fff",borderRadius:8,padding:"9px 18px",fontWeight:700,fontSize:13}}>🎥 Rejoindre la visio</a>}
         </div>}
-        {dernierRetour&&<div style={{background:C2.panel,borderRadius:12,padding:16,marginBottom:16,borderLeft:`3px solid ${C2.accent}`}}>
-          <div style={{color:C2.accent,fontWeight:700,fontSize:13,marginBottom:8}}>💬 Dernier retour — {dateFr(dernierRetour.date)}</div>
-          <div style={{color:C2.text,fontSize:13,lineHeight:1.7,fontStyle:"italic"}}>{dernierRetour.commentaire_esi}</div>
+        {dr&&<div style={{background:C2.panel,borderRadius:12,padding:16,marginBottom:16,borderLeft:`3px solid ${C2.accent}`}}>
+          <div style={{color:C2.accent,fontWeight:700,fontSize:13,marginBottom:8}}>💬 Dernier retour de ton directeur — {dfr(dr.date)}</div>
+          <div style={{color:C2.text,fontSize:13,lineHeight:1.8,fontStyle:"italic"}}>{dr.commentaire_esi}</div>
           <button onClick={()=>setTab("retours")} style={{marginTop:10,background:"transparent",border:`1px solid ${C2.accent}`,color:C2.accent,borderRadius:8,padding:"5px 12px",cursor:"pointer",fontSize:12,fontWeight:600}}>Voir tous les retours →</button>
         </div>}
-        {(()=>{const p=ETAPES.find(e=>!data.etapes[e.id]||data.etapes[e.id]==="todo"||data.etapes[e.id]==="encours");if(!p)return<div style={{background:C2.greenDim,borderRadius:12,padding:16,textAlign:"center",color:C2.green,fontWeight:700,fontSize:16}}>🎉 Toutes les étapes sont validées !</div>;return<div style={{background:C2.panel,borderRadius:12,padding:16}}><div style={{color:C2.muted,fontSize:12,fontWeight:700,marginBottom:8}}>{data.etapes[p.id]==="encours"?"⏳ EN COURS":"📍 PROCHAINE ÉTAPE"}</div><div style={{color:C2.text,fontWeight:700,fontSize:15,marginBottom:6}}>{p.icon} {p.label}</div><div style={{color:C2.muted,fontSize:13,lineHeight:1.6}}>{p.conseil}</div></div>})()}
+        {(()=>{const pe=ETAPES.find(e=>!data.etapes[e.id]||data.etapes[e.id]==="todo"||data.etapes[e.id]==="encours");if(!pe)return<div style={{background:C2.greenDim,borderRadius:12,padding:20,textAlign:"center",color:C2.green,fontWeight:700,fontSize:16}}>🎉 Toutes les étapes sont validées !</div>;return<div style={{background:C2.panel,borderRadius:12,padding:16}}><div style={{color:C2.muted,fontSize:11,fontWeight:700,marginBottom:8}}>{data.etapes[pe.id]==="encours"?"⏳ EN COURS":"📍 PROCHAINE ÉTAPE"}</div><div style={{color:C2.text,fontWeight:700,fontSize:15,marginBottom:8}}>{pe.icon} {pe.label}</div><div style={{color:C2.muted,fontSize:13,lineHeight:1.6}}>{pe.conseil}</div></div>;})()}
       </div>}
       {tab==="etapes"&&<div>
-        <div style={{marginBottom:20}}><PBar pct={pct} c={C2}/><div style={{textAlign:"right",color:C2.accent,fontWeight:700,fontSize:16,marginTop:6}}>{pct}%</div></div>
+        <div style={{marginBottom:20}}><Barre v={p} c={C2}/><div style={{textAlign:"right",color:C2.accent,fontWeight:700,fontSize:16,marginTop:6}}>{p}%</div></div>
         {ETAPES.map(et=>{const s=data.etapes[et.id]||"todo";const cols={fait:C2.green,encours:C2.amber,bloque:C2.red,todo:C2.subtle};const bgs={fait:C2.greenDim,encours:C2.amberDim,bloque:C2.redDim,todo:C2.card};const labs={fait:"✅ Validé",encours:"⏳ En cours",bloque:"🚫 Bloqué",todo:"○ À faire"};
           return<div key={et.id} style={{background:C2.panel,borderRadius:14,padding:16,marginBottom:10,border:`1px solid ${s==="fait"?C2.green+"44":s==="encours"?C2.amber+"44":C2.border}`}}>
             <div style={{display:"flex",alignItems:"center",gap:10}}><span style={{fontSize:20}}>{et.icon}</span><span style={{flex:1,color:C2.text,fontWeight:700,fontSize:14}}>{et.label}</span><span style={{fontSize:12,color:cols[s],background:bgs[s],borderRadius:99,padding:"3px 10px",fontWeight:700}}>{labs[s]}</span></div>
             {s!=="fait"&&<div style={{color:C2.muted,fontSize:13,lineHeight:1.6,paddingLeft:30,marginTop:8}}>{et.conseil}</div>}
-          </div>})}
+          </div>;})}
       </div>}
       {tab==="retours"&&<div>
         <h2 style={{color:C2.text,fontSize:16,fontWeight:800,marginBottom:20}}>Retours de ton directeur</h2>
-        {(data.retours||[]).length===0?<div style={{color:C2.subtle,fontSize:14,fontStyle:"italic",textAlign:"center",padding:"40px 0"}}>Aucun retour pour l'instant.</div>
+        {(data.retours||[]).length===0?<div style={{color:C2.subtle,fontSize:14,fontStyle:"italic",textAlign:"center",padding:"40px 0"}}>Aucun retour pour l'instant. Envoie ton travail à ton directeur !</div>
         :(data.retours||[]).slice().reverse().map(r=><div key={r.id} style={{background:C2.panel,borderRadius:14,padding:20,marginBottom:16}}>
-          <div style={{display:"flex",justifyContent:"space-between",marginBottom:12,flexWrap:"wrap",gap:8}}><span style={{color:C2.muted,fontSize:12}}>📅 {dateFr(r.date)}</span><span style={{color:C2.accent,fontWeight:700,fontSize:13}}>Avancement : {r.avancement}%</span></div>
+          <div style={{display:"flex",justifyContent:"space-between",marginBottom:12,flexWrap:"wrap",gap:8}}><span style={{color:C2.muted,fontSize:12}}>📅 {dfr(r.date)}</span><span style={{color:C2.accent,fontWeight:700,fontSize:13}}>Avancement : {r.avancement}%</span></div>
           <div style={{background:C2.card,borderRadius:10,padding:14,marginBottom:12,borderLeft:`3px solid ${C2.accent}`}}><div style={{color:C2.accent,fontSize:11,fontWeight:700,marginBottom:6}}>💬 MESSAGE DE TON DIRECTEUR</div><div style={{color:C2.text,fontSize:14,lineHeight:1.8,fontStyle:"italic"}}>{r.commentaire_esi}</div></div>
           <div style={{display:"flex",gap:12,flexWrap:"wrap"}}>
             <div style={{flex:1,minWidth:140,background:C2.greenDim,borderRadius:10,padding:12}}><div style={{color:C2.green,fontSize:11,fontWeight:700,marginBottom:6}}>✅ TES POINTS FORTS</div>{r.points_forts?.map((p,i)=><div key={i} style={{color:C2.text,fontSize:13,marginBottom:4}}>• {p}</div>)}</div>
@@ -308,41 +333,41 @@ function EsiApp({onBack,esis}){
         </div>)}
       </div>}
       {tab==="docs"&&<div>
-        <h2 style={{color:C2.text,fontSize:16,fontWeight:800,marginBottom:20}}>Documents partagés</h2>
+        <h2 style={{color:C2.text,fontSize:16,fontWeight:800,marginBottom:20}}>Documents partagés par ton directeur</h2>
         {(data.documents||[]).length===0?<div style={{color:C2.subtle,fontSize:14,fontStyle:"italic",textAlign:"center",padding:"40px 0"}}>Aucun document partagé pour l'instant.</div>
-        :(data.documents||[]).map(d=><a key={d.id} href={d.url} target="_blank" rel="noopener noreferrer" style={{display:"flex",alignItems:"center",gap:14,background:C2.panel,borderRadius:12,padding:"14px 18px",marginBottom:10,textDecoration:"none",border:`1px solid ${C2.border}`}}
+        :(data.documents||[]).map(d=><a key={d.id} href={d.url} target="_blank" rel="noopener noreferrer" style={{display:"flex",alignItems:"center",gap:14,background:C2.panel,borderRadius:12,padding:"14px 18px",marginBottom:10,border:`1px solid ${C2.border}`}}
           onMouseEnter={e=>e.currentTarget.style.borderColor=C2.accent} onMouseLeave={e=>e.currentTarget.style.borderColor=C2.border}>
-          <span style={{fontSize:24}}>📄</span><div><div style={{color:C2.accent,fontWeight:700,fontSize:14}}>{d.label}</div><div style={{color:C2.subtle,fontSize:12,marginTop:2}}>{dateFr(d.date)}</div></div><span style={{marginLeft:"auto",color:C2.accent,fontSize:18}}>→</span>
+          <span style={{fontSize:24}}>📄</span><div style={{flex:1}}><div style={{color:C2.accent,fontWeight:700,fontSize:14}}>{d.label}</div><div style={{color:C2.subtle,fontSize:12,marginTop:2}}>{dfr(d.date)}</div></div>
+          <span style={{color:C2.accent,fontSize:20}}>→</span>
         </a>)}
       </div>}
       {tab==="methodo"&&<div>
         <h2 style={{color:C2.text,fontSize:16,fontWeight:800,marginBottom:4}}>Guide méthodologique</h2>
         <p style={{color:C2.muted,fontSize:13,marginBottom:20}}>Tout ce qu'il faut pour réussir ton mémoire</p>
         {RESSOURCES.map(r=><div key={r.id} style={{background:C2.panel,borderRadius:14,marginBottom:12,overflow:"hidden"}}>
-          <button onClick={()=>setResOpen(resOpen===r.id?null:r.id)} style={{width:"100%",background:"transparent",border:"none",color:C2.text,padding:"16px 20px",cursor:"pointer",display:"flex",alignItems:"center",gap:12,textAlign:"left"}}>
+          <button onClick={()=>setRo(ro===r.id?null:r.id)} style={{width:"100%",background:"transparent",border:"none",color:C2.text,padding:"16px 20px",cursor:"pointer",display:"flex",alignItems:"center",gap:12,textAlign:"left"}}>
             <span style={{fontSize:22}}>{r.icon}</span><span style={{flex:1,fontWeight:700,fontSize:14}}>{r.label}</span>
-            <span style={{color:C2.muted,fontSize:18,transform:resOpen===r.id?"rotate(90deg)":"none",transition:"transform .2s"}}>›</span>
+            <span style={{color:C2.muted,fontSize:20,transform:ro===r.id?"rotate(90deg)":"none",transition:"transform .2s",display:"inline-block"}}>›</span>
           </button>
-          {resOpen===r.id&&<div style={{padding:"0 20px 20px",color:C2.muted,fontSize:13,lineHeight:1.9,whiteSpace:"pre-line",borderTop:`1px solid ${C2.border}`,paddingTop:16}}>{r.contenu}</div>}
+          {ro===r.id&&<div style={{padding:"0 20px 20px",color:C2.muted,fontSize:13,lineHeight:1.9,whiteSpace:"pre-line",borderTop:`1px solid ${C2.border}`,paddingTop:16}}>{r.contenu}</div>}
         </div>)}
       </div>}
     </div>
-  </div>
+  </div>;
 }
 
 // ── MAIN ──
 function Main(){
   const [mode,setMode]=React.useState(null);
-  const [esis,setEsis]=React.useState(load);
-  // Sync esis quand on revient au mode ESI
-  React.useEffect(()=>{if(!mode)setEsis(load())},[mode]);
+  const [esis,setEsis]=React.useState(()=>charger());
+  React.useEffect(()=>{if(!mode)setEsis(charger());},[mode]);
   if(mode==="dir")return<Directeur onBack={()=>setMode(null)} esis={esis} setEsis={setEsis}/>;
   if(mode==="esi")return<EsiApp onBack={()=>setMode(null)} esis={esis}/>;
   return<Accueil onDir={()=>setMode("dir")} onEsi={()=>setMode("esi")}/>;
 }
 
 const root=ReactDOM.createRoot(document.getElementById("root"));
-root.render(<Main/>);
+root.render(React.createElement(Main));
 </script>
 </body>
 </html>
