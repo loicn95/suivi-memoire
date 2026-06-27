@@ -160,104 +160,208 @@ function Barre(props){
 }
 
 function Planning(props){
-  var mode=props.mode; // "dir" ou "esi"
+  var mode=props.mode;
   var esiPrenom=props.esiPrenom||"";
-  var _s1=useState({}),creneaux=_s1[0],setCreneaux=_s1[1];
-  var _s2=useState(""),newDate=_s2[0],setNewDate=_s2[1];
-  var _s3=useState(""),newHeure=_s3[0],setNewHeure=_s3[1];
-  var _s4=useState(""),newDuree=_s4[0],setNewDuree=_s4[1];
-  var _s5=useState(null),msg=_s5[0],setMsg=_s5[1];
   var C=props.c;
+  var _s1=useState({}),jours=_s1[0],setJours=_s1[1];
+  var _s2=useState(null),selJour=_s2[0],setSelJour=_s2[1];
+  var _s3=useState(null),msg=_s3[0],setMsg=_s3[1];
+  var _s4=useState(null),detail=_s4[0],setDetail=_s4[1];
+  var now=new Date();
+  var _s5=useState(now.getFullYear()===2026&&now.getMonth()>=8?now.getMonth():(now.getFullYear()===2027&&now.getMonth()<=5?now.getMonth():8)),mois=_s5[0],setMois=_s5[1];
+  var _s6=useState(now.getFullYear()===2026&&now.getMonth()>=8?2026:(now.getFullYear()===2027&&now.getMonth()<=5?2027:2026)),annee=_s6[0],setAnnee=_s6[1];
+  var _s7=useState(""),heure=_s7[0],setHeure=_s7[1];
+  var _s8=useState("30"),duree=_s8[0],setDuree=_s8[1];
+  var _s9=useState("dispo"),typeDir=_s9[0],setTypeDir=_s9[1];
 
   useEffect(function(){
-    fbLire("creneaux",function(data){setCreneaux(data||{});});
+    fbLire("creneaux",function(data){setJours(data||{});});
   },[]);
 
-  function showMsg(txt,ok){
-    setMsg({txt:txt,ok:ok});
-    setTimeout(function(){setMsg(null);},3000);
+  function showMsg(txt,ok){setMsg({txt:txt,ok:ok===undefined?true:ok});setTimeout(function(){setMsg(null);},3500);}
+
+  function jourKey(y,m,d){return y+"-"+(m<9?"0":"")+(m+1)+"-"+(d<10?"0":"")+d;}
+
+  function crenJour(key){
+    return Object.values(jours).filter(function(c){return c.jour===key;}).sort(function(a,b){return a.heure>b.heure?1:-1;});
   }
 
-  function ajouterCreneau(){
-    if(!newDate||!newHeure)return;
-    var duree=newDuree||"30";
-    var dt=newDate+"T"+newHeure;
-    var id=uid();
-    fbEcrire("creneaux/"+id,{id:id,datetime:dt,duree:duree,reserve:false,esiPrenom:"",esiId:"",createdAt:new Date().toISOString()});
-    setNewDate("");setNewHeure("");setNewDuree("");
-    showMsg("Créneau ajouté !",true);
+  function couleurEtat(etat){
+    if(etat==="indispo")return C.red;
+    if(etat==="demande")return C.amber;
+    if(etat==="confirme")return C.green;
+    return C.accent;
+  }
+  function bgEtat(etat){
+    if(etat==="indispo")return C.redDim;
+    if(etat==="demande")return C.amberDim;
+    if(etat==="confirme")return C.greenDim;
+    return C.accentDim;
+  }
+  function labelEtat(etat){
+    if(etat==="indispo")return"🔴 Pas dispo";
+    if(etat==="demande")return"🟡 Demande";
+    if(etat==="confirme")return"🟠 Confirmé";
+    return"🟢 Dispo";
   }
 
-  function supprimerCreneau(id){
+  function ajouterCreneau(key){
+    if(mode==="dir"){
+      if(typeDir==="indispo"){
+        var id=uid();
+        fbEcrire("creneaux/"+id,{id:id,jour:key,heure:"",duree:"",etat:"indispo",esiPrenom:"",createdAt:new Date().toISOString()});
+        showMsg("Jour marqué indisponible.");
+        setSelJour(null);
+        return;
+      }
+      if(!heure){showMsg("Choisis une heure !",false);return;}
+      var id2=uid();
+      fbEcrire("creneaux/"+id2,{id:id2,jour:key,heure:heure,duree:duree,etat:"dispo",esiPrenom:"",createdAt:new Date().toISOString()});
+      showMsg("Créneau ajouté !");
+      setHeure("");setSelJour(null);
+    } else {
+      if(!heure){showMsg("Choisis une heure souhaitée !",false);return;}
+      var id3=uid();
+      fbEcrire("creneaux/"+id3,{id:id3,jour:key,heure:heure,duree:duree,etat:"demande",esiPrenom:esiPrenom,createdAt:new Date().toISOString()});
+      envoyerNotification(esiPrenom,0,"Demande RDV guidance - "+key+" à "+heure);
+      showMsg("Demande envoyée ! Ton directeur va confirmer.");
+      setHeure("");setSelJour(null);
+    }
+  }
+
+  function accepter(id){
+    fbEcrire("creneaux/"+id+"/etat","confirme");
+    showMsg("RDV confirmé !");
+    setDetail(null);
+  }
+  function refuser(id,esiP){
     fbSuppr("creneaux/"+id);
+    showMsg("Demande refusée.",false);
+    setDetail(null);
+  }
+  function supprimer(id){
+    fbSuppr("creneaux/"+id);
+    setDetail(null);
+  }
+  function annuler(id){
+    fbSuppr("creneaux/"+id);
+    showMsg("Demande annulée.");
+    setDetail(null);
   }
 
-  function reserverCreneau(id){
-    if(!esiPrenom)return;
-    fbEcrire("creneaux/"+id+"/reserve",true);
-    fbEcrire("creneaux/"+id+"/esiPrenom",esiPrenom);
-    envoyerNotification(esiPrenom, 0, "Réservation RDV guidance");
-    showMsg("RDV réservé ! Ton directeur a été notifié.",true);
+  var MOIS_NOMS=["Janvier","Février","Mars","Avril","Mai","Juin","Juillet","Août","Septembre","Octobre","Novembre","Décembre"];
+  var JOURS_NOMS=["L","M","M","J","V","S","D"];
+
+  function navMois(delta){
+    var nm=mois+delta,na=annee;
+    if(nm>11){nm=0;na++;}
+    if(nm<0){nm=11;na--;}
+    if(na<2026||(na===2026&&nm<8))return;
+    if(na>2027||(na===2027&&nm>5))return;
+    setMois(nm);setAnnee(na);setSelJour(null);setDetail(null);
   }
 
-  function annulerReservation(id){
-    fbEcrire("creneaux/"+id+"/reserve",false);
-    fbEcrire("creneaux/"+id+"/esiPrenom","");
-    showMsg("Réservation annulée.",false);
-  }
+  var premier=new Date(annee,mois,1);
+  var dernierJour=new Date(annee,mois+1,0).getDate();
+  var debutSemaine=(premier.getDay()+6)%7;
+  var cells=[];
+  for(var i=0;i<debutSemaine;i++)cells.push(null);
+  for(var d=1;d<=dernierJour;d++)cells.push(d);
+  while(cells.length%7!==0)cells.push(null);
 
-  var liste=Object.values(creneaux).sort(function(a,b){return new Date(a.datetime)-new Date(b.datetime);});
-  var futurs=liste.filter(function(c){return new Date(c.datetime)>new Date();});
-  var passes=liste.filter(function(c){return new Date(c.datetime)<=new Date();});
-
-  function fmtDt(dt){
-    return new Date(dt).toLocaleDateString("fr-FR",{weekday:"long",day:"numeric",month:"long",hour:"2-digit",minute:"2-digit"});
-  }
+  var peutNav={prev:!(annee===2026&&mois===8),next:!(annee===2027&&mois===5)};
+  var auj=new Date();
+  var aujKey=jourKey(auj.getFullYear(),auj.getMonth(),auj.getDate());
 
   return h("div",null,
-    msg&&h("div",{style:{background:msg.ok?C.greenDim:C.amberDim,border:"1px solid "+(msg.ok?C.green:C.amber)+"44",borderRadius:10,padding:"10px 14px",marginBottom:14,color:msg.ok?C.green:C.amber,fontWeight:700,fontSize:13}},msg.txt),
-    mode==="dir"&&h("div",{style:{background:C.panel,borderRadius:14,padding:16,marginBottom:20,border:"1px solid "+C.accent+"33"}},
-      h("div",{style:{color:C.accent,fontWeight:700,fontSize:13,marginBottom:12}},"➕ Proposer un créneau"),
-      h("div",{style:{display:"flex",gap:8,flexWrap:"wrap",alignItems:"flex-end"}},
-        h("div",{style:{flex:1,minWidth:140}},
-          h("div",{style:{color:C.muted,fontSize:11,marginBottom:4}},"DATE"),
-          h("input",{type:"date",value:newDate,onChange:function(e){setNewDate(e.target.value);},style:Object.assign({},inp(C),{colorScheme:"dark"})})),
-        h("div",{style:{flex:1,minWidth:100}},
-          h("div",{style:{color:C.muted,fontSize:11,marginBottom:4}},"HEURE"),
-          h("input",{type:"time",value:newHeure,onChange:function(e){setNewHeure(e.target.value);},style:Object.assign({},inp(C),{colorScheme:"dark"})})),
-        h("div",{style:{flex:1,minWidth:100}},
-          h("div",{style:{color:C.muted,fontSize:11,marginBottom:4}},"DURÉE (min)"),
-          h("select",{value:newDuree,onChange:function(e){setNewDuree(e.target.value);},style:Object.assign({},inp(C))},
-            h("option",{value:"30"},"30 min"),
-            h("option",{value:"45"},"45 min"),
-            h("option",{value:"60"},"1h"),
-            h("option",{value:"90"},"1h30"))),
-        h("button",{onClick:ajouterCreneau,style:bs(C.accent,"#fff",{alignSelf:"flex-end",whiteSpace:"nowrap"})},"Ajouter"))),
-    futurs.length===0&&h("div",{style:{color:C.subtle,fontSize:14,fontStyle:"italic",textAlign:"center",padding:"30px 0"}},"Aucun créneau disponible."),
-    futurs.length>0&&h("div",{style:{marginBottom:24}},
-      h("div",{style:{color:C.muted,fontSize:11,fontWeight:700,marginBottom:10}},"CRÉNEAUX À VENIR"),
-      futurs.map(function(cr){
-        var estMoi=cr.esiPrenom===esiPrenom;
-        return h("div",{key:cr.id,style:{background:C.panel,borderRadius:12,padding:"14px 16px",marginBottom:10,border:"1px solid "+(cr.reserve?C.amber+"44":C.accent+"44"),display:"flex",alignItems:"center",gap:12,flexWrap:"wrap"}},
+    msg&&h("div",{style:{background:msg.ok?C.greenDim:C.amberDim,border:"1px solid "+(msg.ok?C.green:C.amber)+"44",borderRadius:10,padding:"10px 14px",marginBottom:12,color:msg.ok?C.green:C.amber,fontWeight:700,fontSize:13}},msg.txt),
+    h("div",{style:{background:C.panel,borderRadius:16,padding:16,marginBottom:16}},
+      h("div",{style:{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16}},
+        h("button",{onClick:function(){navMois(-1);},disabled:!peutNav.prev,style:bs(peutNav.prev?C.card:"transparent",peutNav.prev?C.text:C.subtle,{fontSize:18,padding:"4px 12px",opacity:peutNav.prev?1:0.3})},"‹"),
+        h("div",{style:{color:C.text,fontWeight:800,fontSize:16}},MOIS_NOMS[mois]+" "+annee),
+        h("button",{onClick:function(){navMois(1);},disabled:!peutNav.next,style:bs(peutNav.next?C.card:"transparent",peutNav.next?C.text:C.subtle,{fontSize:18,padding:"4px 12px",opacity:peutNav.next?1:0.3})},"›")),
+      h("div",{style:{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:2,marginBottom:4}},
+        JOURS_NOMS.map(function(j,i){return h("div",{key:i,style:{textAlign:"center",color:C.subtle,fontSize:11,fontWeight:700,padding:"4px 0"}},j);})),
+      h("div",{style:{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:2}},
+        cells.map(function(d,i){
+          if(!d)return h("div",{key:"e"+i,style:{minHeight:52}});
+          var key=jourKey(annee,mois,d);
+          var crens=crenJour(key);
+          var estAuj=key===aujKey;
+          var passe=new Date(annee,mois,d)<new Date(auj.getFullYear(),auj.getMonth(),auj.getDate());
+          var indispo=crens.some(function(c){return c.etat==="indispo";});
+          var aDemandesEnAttente=crens.some(function(c){return c.etat==="demande";});
+          var aConfirmes=crens.some(function(c){return c.etat==="confirme";});
+          var aDispos=crens.some(function(c){return c.etat==="dispo";});
+          var bgJ=selJour===key?C.accentDim:indispo?C.redDim:aDemandesEnAttente?C.amberDim:aConfirmes?C.greenDim:C.card;
+          var bord=estAuj?"2px solid "+C.accent:"1px solid "+(selJour===key?C.accent:C.border);
+          return h("div",{key:key,onClick:function(){if(!passe){setSelJour(selJour===key?null:key);setDetail(null);}},
+            style:{minHeight:52,background:bgJ,border:bord,borderRadius:8,padding:"4px 4px 2px",cursor:passe?"default":"pointer",opacity:passe?0.4:1,transition:"background .15s"}},
+            h("div",{style:{textAlign:"center",color:estAuj?C.accent:C.text,fontWeight:estAuj?800:500,fontSize:12,marginBottom:2}},d),
+            h("div",{style:{display:"flex",flexDirection:"column",gap:1}},
+              crens.slice(0,2).map(function(c){
+                return h("div",{key:c.id,onClick:function(e){e.stopPropagation();setDetail(c);setSelJour(null);},
+                  style:{background:couleurEtat(c.etat),borderRadius:3,padding:"1px 3px",fontSize:9,color:"#fff",fontWeight:700,cursor:"pointer",overflow:"hidden",whiteSpace:"nowrap",textOverflow:"ellipsis"}},
+                  c.etat==="indispo"?"Indispo":(c.heure||""));}),
+              crens.length>2&&h("div",{style:{fontSize:9,color:C.muted,textAlign:"center"}},"+"+(crens.length-2))));
+        }))),
+    selJour&&h("div",{style:{background:C.panel,borderRadius:14,padding:16,marginBottom:16,border:"1px solid "+C.accent+"44"}},
+      h("div",{style:{color:C.accent,fontWeight:700,fontSize:14,marginBottom:12}},"📅 "+(new Date(selJour+"T12:00").toLocaleDateString("fr-FR",{weekday:"long",day:"numeric",month:"long",year:"numeric"}))),
+      mode==="dir"&&h("div",null,
+        h("div",{style:{display:"flex",gap:8,marginBottom:12,flexWrap:"wrap"}},
+          ["dispo","indispo"].map(function(t){return h("button",{key:t,onClick:function(){setTypeDir(t);},style:bs(typeDir===t?(t==="indispo"?C.redDim:C.accentDim):"transparent",typeDir===t?(t==="indispo"?C.red:C.accent):C.muted,{border:"1px solid "+(typeDir===t?(t==="indispo"?C.red:C.accent):C.border),fontSize:12})},t==="dispo"?"🟢 Créneau dispo":"🔴 Pas dispo");})),
+        typeDir==="dispo"&&h("div",{style:{display:"flex",gap:8,flexWrap:"wrap",marginBottom:12}},
+          h("div",{style:{flex:1,minWidth:100}},
+            h("div",{style:{color:C.muted,fontSize:11,marginBottom:4}},"HEURE"),
+            h("input",{type:"time",value:heure,onChange:function(e){setHeure(e.target.value);},style:Object.assign({},inp(C),{colorScheme:"dark"})})),
+          h("div",{style:{flex:1,minWidth:100}},
+            h("div",{style:{color:C.muted,fontSize:11,marginBottom:4}},"DURÉE"),
+            h("select",{value:duree,onChange:function(e){setDuree(e.target.value);},style:inp(C)},
+              h("option",{value:"30"},"30 min"),
+              h("option",{value:"45"},"45 min"),
+              h("option",{value:"60"},"1h"),
+              h("option",{value:"90"},"1h30")))),
+        h("button",{onClick:function(){ajouterCreneau(selJour);},style:bs(C.accent,"#fff",{width:"100%"})},typeDir==="indispo"?"Marquer indisponible":"Ajouter le créneau")),
+      mode==="esi"&&h("div",null,
+        h("div",{style:{color:C.muted,fontSize:13,marginBottom:12}},"Choisis l'heure souhaitée pour ta demande de RDV :"),
+        h("div",{style:{display:"flex",gap:8,marginBottom:12}},
           h("div",{style:{flex:1}},
-            h("div",{style:{color:C.text,fontWeight:700,fontSize:14}},fmtDt(cr.datetime)),
-            h("div",{style:{color:C.muted,fontSize:12,marginTop:2}},"Durée : "+cr.duree+" min"),
-            cr.reserve&&h("div",{style:{color:C.amber,fontSize:12,fontWeight:700,marginTop:4}},"📅 Réservé par "+cr.esiPrenom)),
-          mode==="dir"&&h("div",{style:{display:"flex",gap:6}},
-            h("button",{onClick:function(){supprimerCreneau(cr.id);},style:bs(C.redDim,C.red,{border:"1px solid "+C.red+"44",fontSize:12})},"Supprimer")),
-          mode==="esi"&&!cr.reserve&&h("button",{onClick:function(){reserverCreneau(cr.id);},style:bs(C.accent,"#fff",{fontSize:13,whiteSpace:"nowrap"})},"📅 Réserver"),
-          mode==="esi"&&cr.reserve&&estMoi&&h("button",{onClick:function(){annulerReservation(cr.id);},style:bs(C.amberDim,C.amber,{border:"1px solid "+C.amber+"44",fontSize:12})},"Annuler"),
-          mode==="esi"&&cr.reserve&&!estMoi&&h("span",{style:{color:C.subtle,fontSize:12,fontStyle:"italic"}},"Non disponible"));
-      })),
-    passes.length>0&&mode==="dir"&&h("div",null,
-      h("div",{style:{color:C.subtle,fontSize:11,fontWeight:700,marginBottom:8}},"CRÉNEAUX PASSÉS"),
-      passes.map(function(cr){
-        return h("div",{key:cr.id,style:{background:C.card,borderRadius:12,padding:"12px 16px",marginBottom:8,opacity:0.6,display:"flex",alignItems:"center",gap:12}},
+            h("div",{style:{color:C.muted,fontSize:11,marginBottom:4}},"HEURE SOUHAITÉE"),
+            h("input",{type:"time",value:heure,onChange:function(e){setHeure(e.target.value);},style:Object.assign({},inp(C),{colorScheme:"dark"})})),
           h("div",{style:{flex:1}},
-            h("div",{style:{color:C.muted,fontSize:13}},fmtDt(cr.datetime)),
-            cr.reserve&&h("div",{style:{color:C.muted,fontSize:12}},"✓ "+cr.esiPrenom)),
-          h("button",{onClick:function(){supprimerCreneau(cr.id);},style:bs("transparent",C.subtle,{fontSize:11,border:"1px solid "+C.border})},"Suppr."));})));
+            h("div",{style:{color:C.muted,fontSize:11,marginBottom:4}},"DURÉE"),
+            h("select",{value:duree,onChange:function(e){setDuree(e.target.value);},style:inp(C)},
+              h("option",{value:"30"},"30 min"),
+              h("option",{value:"45"},"45 min"),
+              h("option",{value:"60"},"1h"),
+              h("option",{value:"90"},"1h30")))),
+        h("button",{onClick:function(){ajouterCreneau(selJour);},style:bs(C.accent,"#fff",{width:"100%"})},"📨 Envoyer la demande de RDV"))),
+    detail&&h("div",{style:{background:C.panel,borderRadius:14,padding:16,border:"1px solid "+couleurEtat(detail.etat)+"44"}},
+      h("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}},
+        h("div",{style:{color:couleurEtat(detail.etat),fontWeight:800,fontSize:14}},labelEtat(detail.etat)),
+        h("button",{onClick:function(){setDetail(null);},style:bs("transparent",C.subtle,{fontSize:18,padding:"0 6px"})},"×")),
+      h("div",{style:{color:C.text,fontWeight:700,fontSize:14,marginBottom:4}},new Date(detail.jour+"T12:00").toLocaleDateString("fr-FR",{weekday:"long",day:"numeric",month:"long",year:"numeric"})),
+      detail.heure&&h("div",{style:{color:C.muted,fontSize:13,marginBottom:4}},"⏰ "+detail.heure+(detail.duree?" · "+detail.duree+" min":"")),
+      detail.esiPrenom&&h("div",{style:{color:C.muted,fontSize:13,marginBottom:12}},"👩‍🎓 "+detail.esiPrenom),
+      mode==="dir"&&detail.etat==="demande"&&h("div",{style:{display:"flex",gap:8,marginTop:12}},
+        h("button",{onClick:function(){accepter(detail.id);},style:bs(C.greenDim,C.green,{flex:1,border:"1px solid "+C.green+"44"})},"✅ Accepter"),
+        h("button",{onClick:function(){refuser(detail.id,detail.esiPrenom);},style:bs(C.redDim,C.red,{flex:1,border:"1px solid "+C.red+"44"})},"❌ Refuser")),
+      mode==="dir"&&detail.etat!=="demande"&&h("button",{onClick:function(){supprimer(detail.id);},style:bs(C.redDim,C.red,{border:"1px solid "+C.red+"44",width:"100%",marginTop:8})},"🗑 Supprimer"),
+      mode==="esi"&&detail.etat==="demande"&&detail.esiPrenom===esiPrenom&&h("button",{onClick:function(){annuler(detail.id);},style:bs(C.amberDim,C.amber,{border:"1px solid "+C.amber+"44",width:"100%",marginTop:8})},"Annuler ma demande"),
+      mode==="esi"&&detail.etat==="dispo"&&h("button",{onClick:function(){
+        fbEcrire("creneaux/"+detail.id+"/etat","demande");
+        fbEcrire("creneaux/"+detail.id+"/esiPrenom",esiPrenom);
+        envoyerNotification(esiPrenom,0,"Demande RDV - "+detail.jour+" à "+detail.heure);
+        showMsg("Demande envoyée !");setDetail(null);
+      },style:bs(C.accent,"#fff",{width:"100%",marginTop:8})},"📨 Demander ce créneau"),
+      mode==="esi"&&detail.etat==="confirme"&&detail.esiPrenom===esiPrenom&&h("div",{style:{color:C.green,fontWeight:700,fontSize:13,marginTop:8,textAlign:"center"}},"✅ RDV confirmé par ton directeur !")),
+    h("div",{style:{display:"flex",gap:16,flexWrap:"wrap",marginTop:8}},
+      [{etat:"dispo",l:"🟢 Dispo"},{etat:"demande",l:"🟡 En attente"},{etat:"confirme",l:"🟠 Confirmé"},{etat:"indispo",l:"🔴 Pas dispo"}].map(function(s){
+        return h("div",{key:s.etat,style:{display:"flex",alignItems:"center",gap:6}},
+          h("div",{style:{width:12,height:12,borderRadius:3,background:couleurEtat(s.etat)}}),
+          h("span",{style:{color:C.muted,fontSize:11}},s.l));})));
 }
+
 
 function Accueil(props){
   return h("div",{style:{minHeight:"100vh",background:C.bg,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:24}},
