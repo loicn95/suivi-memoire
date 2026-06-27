@@ -49,12 +49,12 @@ const STATUTS=[
   {id:"bloque",label:"Bloqué",color:"#F85149",bg:"#3A1A1A"}
 ];
 const ESI_DEFAUT=[
-  {id:"e1",prenom:"BRUCTER Naïma",sujet:"Refus de soins / manque d'asepsie",pwd:"22323033"},
-  {id:"e2",prenom:"IOJE Paula",sujet:"Levée de sédation patient intubé ventilé",pwd:"22422307"},
-  {id:"e3",prenom:"JEAN Lisa",sujet:"Soins palliatifs / fin de vie",pwd:"22420869"},
-  {id:"e4",prenom:"LECHOPIER-SIKORSKI Chloé",sujet:"Gestion des urgences / barrière linguistique",pwd:"22413962"},
-  {id:"e5",prenom:"PECOUD Émilie",sujet:"Douleur du patient amputé",pwd:"22418729"},
-  {id:"e6",prenom:"RYST Lucie",sujet:"Communication patient / extubation",pwd:"71613697"}
+  {id:"e1",prenom:"BRUCTER Naïma",sujet:"Refus de soins / manque d'asepsie",pwd:"22323033",email:"bructernaima.esi@gmail.com"},
+  {id:"e2",prenom:"IOJE Paula",sujet:"Levée de sédation patient intubé ventilé",pwd:"22422307",email:"ioje.paula@gmail.com"},
+  {id:"e3",prenom:"JEAN Lisa",sujet:"Soins palliatifs / fin de vie",pwd:"22420869",email:"jeanlisa972@gmail.com"},
+  {id:"e4",prenom:"LECHOPIER-SIKORSKI Chloé",sujet:"Gestion des urgences / barrière linguistique",pwd:"22413962",email:"Chloe.lechopier.sikorski@gmail.com"},
+  {id:"e5",prenom:"PECOUD Émilie",sujet:"Douleur du patient amputé",pwd:"22418729",email:"emilie.pecoud24@orange.fr"},
+  {id:"e6",prenom:"RYST Lucie",sujet:"Communication patient / extubation",pwd:"71613697",email:"ryst.lucie@gmail.com"}
 ];
 const RESSOURCES=[
   {id:"r1",label:"Formuler une problématique",icon:"🎯",contenu:"La problématique est une question centrale.\n\n• Découler d'une situation clinique réelle\n• Formulée sous forme de question ouverte\n• Ni trop large, ni trop précise\n\nExemple : En quoi la relation soignant-soigné influence-t-elle la prise en charge de la douleur ?"},
@@ -158,19 +158,37 @@ RÈGLES DE LA SOUTENANCE (à rappeler aux ESI) :
 
 // EmailJS configuration
 const EJS_SERVICE="service_kaqyuwv";
-const EJS_TEMPLATE="template_qlyy59l";
+const EJS_TEMPLATE="template_qlyy59l";   // template directeur (to: loicn95@gmail.com)
+const EJS_TEMPLATE_ESI="template_8o7nnbx"; // template ESI (to: {{to_email}})
 const EJS_KEY="3-vR92lSwgE2qExz4";
 
 function envoyerNotification(esiPrenom, avancement, docName){
+  // Email au directeur
   try{
     emailjs.init(EJS_KEY);
     emailjs.send(EJS_SERVICE, EJS_TEMPLATE, {
-    student_name: esiPrenom,
-    document_name: docName||"Analyse IA",
-    date: new Date().toLocaleDateString("fr-FR", {day:"numeric",month:"long",year:"numeric",hour:"2-digit",minute:"2-digit"}),
-    avancement: avancement+"%",
-    name: "Suivi Mémoires"
-  }).catch(function(){});
+      student_name: esiPrenom,
+      document_name: docName||"Analyse",
+      date: new Date().toLocaleDateString("fr-FR", {day:"numeric",month:"long",year:"numeric",hour:"2-digit",minute:"2-digit"}),
+      avancement: avancement+"%",
+      name: "Suivi Mémoires"
+    }).catch(function(){});
+  }catch(e){}
+}
+
+function envoyerEmailESI(esiId, sujet, message){
+  try{
+    var esi=ESI_DEFAUT.find(function(e){return e.id===esiId;});
+    if(!esi||!esi.email)return;
+    emailjs.init(EJS_KEY);
+    emailjs.send(EJS_SERVICE, EJS_TEMPLATE_ESI, {
+      student_name: esi.prenom,
+      document_name: sujet,
+      date: new Date().toLocaleDateString("fr-FR", {day:"numeric",month:"long",year:"numeric",hour:"2-digit",minute:"2-digit"}),
+      avancement: message,
+      name: "Jain Loic — Directeur de mémoire",
+      to_email: esi.email
+    }).catch(function(){});
   }catch(e){}
 }
 
@@ -862,6 +880,10 @@ txt+"\n\n"+
     if(!res)return;
     onRetour(Object.assign({id:uid(),date:new Date().toISOString()},res));
     envoyerNotification(esi.prenom, res.avancement);
+    envoyerEmailESI(esi.id,
+      "Nouveau retour sur ton mémoire — "+res.avancement+"% d'avancement",
+      "Ton directeur Jain Loic vient de déposer un retour sur ton travail. Connecte-toi sur suivi-memoire.vercel.app pour le consulter dans l'onglet Retours."
+    );
     setRes(null);setTxt("");
   }
 
@@ -1021,6 +1043,10 @@ function Directeur(props){
     if(!ndl.trim()||!ndu.trim()||!esi)return;
     up(Object.assign({},esi,{documents:(esi.documents||[]).concat([{id:uid(),label:ndl.trim(),url:ndu.trim(),date:new Date().toISOString()}]),derniereMAJ:new Date().toISOString()}));
     log(esi.id,"doc","📎 Document partagé : "+ndl.trim());
+    envoyerEmailESI(esi.id,
+      "Nouveau document partagé par ton directeur",
+      "Jain Loic vient de partager un document : \""+ndl.trim()+"\". Connecte-toi sur suivi-memoire.vercel.app pour le consulter dans l'onglet Docs."
+    );
     setNdl("");setNdu("");setShowDoc(false);
   }
   function dd(id){if(!esi)return;up(Object.assign({},esi,{documents:(esi.documents||[]).filter(function(d){return d.id!==id;})}));}
