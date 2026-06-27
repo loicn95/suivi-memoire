@@ -87,16 +87,18 @@ const GUIDE_ARS=[
 const EJS_SERVICE="service_kaqyuwv";
 const EJS_TEMPLATE="template_qlyy59l";
 const EJS_KEY="3-vR92lSwgE2qExz4";
-emailjs.init(EJS_KEY);
 
 function envoyerNotification(esiPrenom, avancement){
-  emailjs.send(EJS_SERVICE, EJS_TEMPLATE, {
+  try{
+    emailjs.init(EJS_KEY);
+    emailjs.send(EJS_SERVICE, EJS_TEMPLATE, {
     student_name: esiPrenom,
     document_name: "Analyse IA",
     date: new Date().toLocaleDateString("fr-FR", {day:"numeric",month:"long",year:"numeric",hour:"2-digit",minute:"2-digit"}),
     avancement: avancement+"%",
     name: "Suivi Mémoires"
   }).catch(function(){});
+  }catch(e){}
 }
 
 const SK="jain-loic-v2";
@@ -125,7 +127,7 @@ function Accueil(props){
   return h("div",{style:{minHeight:"100vh",background:C.bg,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:24}},
     h("div",{style:{fontSize:56,marginBottom:16}},"🎓"),
     h("h1",{style:{color:C.text,fontSize:24,fontWeight:800,marginBottom:8,textAlign:"center"}},"Suivi Mémoires Infirmiers"),
-    h("p",{style:{color:C.muted,fontSize:15,marginBottom:40,textAlign:"center"}},"Directeur : ",h("strong",{style:{color:C.accent}},"Jain Loic")," · IFSI Bichat-Beaujon · Promo 2024-27"),
+    h("p",{style:{color:C.muted,fontSize:15,marginBottom:40,textAlign:"center"}},"Directeur : ",h("strong",{style:{color:C.accent}},"Jain Loic")," · IFSI Beaujon · Promo 2024-27"),
     h("div",{style:{display:"flex",gap:20,flexWrap:"wrap",justifyContent:"center"}},
       h("button",{onClick:props.onDir,style:{background:C.accent,color:"#fff",border:"none",borderRadius:16,padding:"22px 40px",cursor:"pointer",fontSize:17,fontWeight:700}},"👨‍🏫 Espace Directeur"),
       h("button",{onClick:props.onEsi,style:{background:C.panel,color:C.text,border:"2px solid "+C.border,borderRadius:16,padding:"22px 40px",cursor:"pointer",fontSize:17,fontWeight:700}},"👩‍🎓 Espace ESI")));
@@ -421,8 +423,6 @@ function EsiApp(props){
             h("span",{style:{flex:1,fontWeight:700,fontSize:14}},r.label||r.titre),
             h("span",{style:{color:C2.muted,fontSize:20,transform:ro===r.id?"rotate(90deg)":"none",transition:"transform .2s",display:"inline-block"}},"›")),
           (ro===r.id||ro===r.titre)&&h("div",{style:{padding:"0 20px 20px",color:C2.muted,fontSize:13,lineHeight:1.9,whiteSpace:"pre-line",borderTop:"1px solid "+C2.border,paddingTop:16}},r.contenu||""));}))
-    ));
-}
       ,tab==="grilles"&&h("div",null,
         h("h2",{style:{color:C2.text,fontSize:16,fontWeight:800,marginBottom:4}},"Grilles d'evaluation"),
         h("p",{style:{color:C2.muted,fontSize:13,marginBottom:20}},"Criteres officiels IFSI Beaujon - ARS Ile-de-France"),
@@ -454,10 +454,9 @@ function EsiApp(props){
           h("div",{style:{fontSize:48,marginBottom:16}},"🎥"),
           h("div",{style:{color:C2.text,fontWeight:700,fontSize:16,marginBottom:8}},"Zoom - Jain Loic"),
           h("div",{style:{color:C2.muted,fontSize:13,marginBottom:6}},"Code secret : ",h("strong",{style:{color:C2.amber}},ZOOM_CODE)),
-          h("a",{href:ZOOM_LINK,target:"_blank",rel:"noopener noreferrer",style:{display:"inline-block",marginTop:16,background:C2.accent,color:"#fff",borderRadius:12,padding:"14px 32px",fontWeight:700,fontSize:16,textDecoration:"none"}},"🎥 Rejoindre la visio Zoom"),
-          h("div",{style:{color:C2.subtle,fontSize:12,marginTop:16}},"Clique sur le bouton pour rejoindre. Code secret : "+ZOOM_CODE)),
-        h("div",{style:{background:C2.amberDim,border:"1px solid "+C2.amber+"44",borderRadius:12,padding:16,fontSize:13,color:C2.amber}},
-          "💡 Assure-toi d'etre dans un endroit calme et d'avoir ton travail sous la main avant la visio."))
+          h("a",{href:ZOOM_LINK,target:"_blank",rel:"noopener noreferrer",style:{display:"inline-block",marginTop:16,background:C2.accent,color:"#fff",borderRadius:12,padding:"14px 32px",fontWeight:700,fontSize:16,textDecoration:"none"}},"🎥 Rejoindre la visio Zoom"))
+    ));
+}
 
 function Main(){
   var _s1=useState(null),mode=_s1[0],setMode=_s1[1];
