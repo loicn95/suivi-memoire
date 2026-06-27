@@ -459,7 +459,7 @@ function EsiApp(props){
               h("div",{style:{color:C2.accent,fontWeight:700,fontSize:14}},d.label),
               h("div",{style:{color:C2.subtle,fontSize:12,marginTop:2}},dfr(d.date))),
             h("span",{style:{color:C2.accent,fontSize:20}},"→"));})),
-        (data.documents||[]).length===0&&(data.documentsEsi||[]).length===0&&!showDepot&&h("div",{style:{color:C2.subtle,fontSize:14,fontStyle:"italic",textAlign:"center",padding:"20px 0"}},"Aucun document pour l'instant."),
+        (data.documents||[]).length===0&&(data.documentsEsi||[]).length===0&&!showDepot&&h("div",{style:{color:C2.subtle,fontSize:14,fontStyle:"italic",textAlign:"center",padding:"20px 0"}},"Aucun document pour l'instant.")),
       tab==="methodo"&&h("div",null,
         h("h2",{style:{color:C2.text,fontSize:16,fontWeight:800,marginBottom:4}},"Guide méthodologique"),
         h("p",{style:{color:C2.muted,fontSize:13,marginBottom:20}},"Tout ce qu'il faut pour réussir ton mémoire"),
@@ -501,7 +501,7 @@ function EsiApp(props){
           h("div",{style:{color:C2.text,fontWeight:700,fontSize:16,marginBottom:8}},"Zoom - Jain Loic"),
           h("div",{style:{color:C2.muted,fontSize:13,marginBottom:6}},"Code secret : ",h("strong",{style:{color:C2.amber}},ZOOM_CODE)),
           h("a",{href:ZOOM_LINK,target:"_blank",rel:"noopener noreferrer",style:{display:"inline-block",marginTop:16,background:C2.accent,color:"#fff",borderRadius:12,padding:"14px 32px",fontWeight:700,fontSize:16,textDecoration:"none"}},"🎥 Rejoindre la visio Zoom"))
-    ))));
+    )));
 }
 
 function Main(){
