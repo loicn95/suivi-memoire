@@ -210,6 +210,7 @@ function sauver(d){try{localStorage.setItem(SK,JSON.stringify(d));}catch(e){}}
 function fbSauverESI(esi){
   var data={
     etapes:esi.etapes||{},
+    etapesEsi:esi.etapesEsi||{},
     commentaires:esi.commentaires||[],
     documents:esi.documents||[],
     documentsEsi:esi.documentsEsi||[],
@@ -234,6 +235,7 @@ function fbChargerToutesESI(cb){
       var fb=data&&data[base.id]||{};
       return Object.assign({},base,{
         etapes:fb.etapes||{},
+        etapesEsi:fb.etapesEsi||{},
         commentaires:fb.commentaires||[],
         documents:fb.documents||[],
         documentsEsi:fb.documentsEsi||[],
@@ -890,7 +892,7 @@ txt+"\n\n"+
 function Directeur(props){
   var onBack=props.onBack;
   var _s1=useState(ESI_DEFAUT[0]&&ESI_DEFAUT[0].id),sel=_s1[0],setSel=_s1[1];
-  var _s2=useState("suivi"),tab=_s2[0],setTab=_s2[1];
+  var _s2=useState("dashboard"),tab=_s2[0],setTab=_s2[1];
   var _s3=useState(""),nc=_s3[0],setNc=_s3[1];
   var _s4=useState(""),ndl=_s4[0],setNdl=_s4[1];
   var _s5=useState(""),ndu=_s5[0],setNdu=_s5[1];
@@ -948,7 +950,7 @@ function Directeur(props){
   if(fbLoad)return h("div",{style:{minHeight:"100vh",background:C.bg,display:"flex",alignItems:"center",justifyContent:"center",color:C.muted,fontSize:15}},"⏳ Chargement des données...");
   if(!esi)return null;
   var p=pct(esi.etapes);
-  var tabs=[{id:"suivi",l:"📊 Suivi"},{id:"analyse",l:"🔍 Analyser"},{id:"retours",l:"💬 Retours"+(esi.retours&&esi.retours.length>0?" ("+esi.retours.length+")":"")},{id:"messages",l:"✉️ Messages"},{id:"docs",l:"📎 Docs"+(esi.documents&&esi.documents.length>0?" ("+esi.documents.length+")":"")},{id:"planning",l:"📅 Planning"},{id:"notesvisio",l:"📋 Comptes rendus"},{id:"deadlines",l:"⚠️ Deadlines"},{id:"refs",l:"📚 Références"},{id:"notes",l:"🗒 Notes perso"}];
+  var tabs=[{id:"dashboard",l:"🏠 Vue globale"},{id:"suivi",l:"📊 Suivi"+(Object.values(esi.etapesEsi||{}).filter(function(v){return v==="demande";}).length>0?" ✋":"")},{id:"analyse",l:"🔍 Analyser"},{id:"retours",l:"💬 Retours"+(esi.retours&&esi.retours.length>0?" ("+esi.retours.length+")":"")},{id:"messages",l:"✉️ Messages"},{id:"docs",l:"📎 Docs"+(esi.documents&&esi.documents.length>0?" ("+esi.documents.length+")":"")},{id:"planning",l:"📅 Planning"},{id:"notesvisio",l:"📋 Comptes rendus"},{id:"deadlines",l:"⚠️ Deadlines"},{id:"refs",l:"📚 Références"},{id:"notes",l:"🗒 Notes perso"}];
 
   return h("div",{style:{background:C.bg,minHeight:"100vh",display:"flex",flexDirection:"column",color:C.text}},
     h("div",{style:{background:C.panel,borderBottom:"1px solid "+C.border,padding:"12px 20px",display:"flex",alignItems:"center",gap:12,flexWrap:"wrap"}},
@@ -968,7 +970,8 @@ function Directeur(props){
               h("div",{style:{width:pp+"%",height:"100%",background:pp===100?C.green:C.accent,borderRadius:99}})),
             h("div",{style:{display:"flex",gap:4,marginTop:6,flexWrap:"wrap"}},
               e.retours&&e.retours.length>0&&h("span",{style:{fontSize:10,color:C.accent,background:C.accentDim,borderRadius:99,padding:"1px 7px",fontWeight:700}},"💬 "+e.retours.length),
-              futur(e.prochainRdv)&&h("span",{style:{fontSize:10,color:C.amber,background:C.amberDim,borderRadius:99,padding:"1px 7px",fontWeight:700}},"📅 RDV")));
+              futur(e.prochainRdv)&&h("span",{style:{fontSize:10,color:C.amber,background:C.amberDim,borderRadius:99,padding:"1px 7px",fontWeight:700}},"📅 RDV"),
+              (Object.values(e.etapesEsi||{}).filter(function(v){return v==="demande";}).length>0)&&h("span",{style:{fontSize:10,color:C.amber,background:C.amberDim,borderRadius:99,padding:"1px 7px",fontWeight:700}},"✋ À valider")));
         })),
       h("div",{style:{flex:1,display:"flex",flexDirection:"column",overflow:"hidden"}},
         h("div",{style:{padding:"16px 24px 0",borderBottom:"1px solid "+C.border}},
@@ -990,7 +993,108 @@ function Directeur(props){
           h("div",{style:{display:"flex",gap:4,flexWrap:"wrap"}},
             tabs.map(function(t){return h("button",{key:t.id,onClick:function(){setTab(t.id);},style:Object.assign({},bs(tab===t.id?C.accent:"transparent",tab===t.id?"#fff":C.muted),{borderRadius:"8px 8px 0 0",padding:"7px 14px",fontSize:12,borderBottom:tab===t.id?"2px solid "+C.accent:"2px solid transparent"})},t.l);}))),
         h("div",{style:{flex:1,overflowY:"auto",padding:"20px 24px"}},
+          tab==="dashboard"&&h("div",null,
+            h("div",{style:{marginBottom:20}},
+              h("div",{style:{color:C.text,fontWeight:800,fontSize:18,marginBottom:4}},"Vue globale — Promo 2024-27"),
+              h("div",{style:{color:C.muted,fontSize:13}},"Avancement de tes 6 ESI en un coup d'œil")),
+            // Stats globales
+            h("div",{style:{display:"flex",gap:12,marginBottom:24,flexWrap:"wrap"}},
+              (function(){
+                var total=esis.length;
+                var moyG=Math.round(esis.reduce(function(a,e){return a+pct(e.etapes);},0)/total);
+                var enRetard=esis.filter(function(e){return pct(e.etapes)<30;}).length;
+                var bienAvances=esis.filter(function(e){return pct(e.etapes)>=70;}).length;
+                var demandesVal=esis.reduce(function(a,e){return a+(e.etapesEsi&&Object.values(e.etapesEsi).filter(function(v){return v==="demande";}).length||0);},0);
+                return [
+                  h("div",{key:"moy",style:{flex:1,minWidth:120,background:C.card,borderRadius:14,padding:"14px 18px",textAlign:"center"}},
+                    h("div",{style:{fontSize:32,fontWeight:800,color:C.accent}},moyG+"%"),
+                    h("div",{style:{color:C.muted,fontSize:12,marginTop:4}},"Avancement moyen")),
+                  h("div",{key:"bien",style:{flex:1,minWidth:120,background:C.greenDim,borderRadius:14,padding:"14px 18px",textAlign:"center",border:"1px solid "+C.green+"44"}},
+                    h("div",{style:{fontSize:32,fontWeight:800,color:C.green}},bienAvances),
+                    h("div",{style:{color:C.green,fontSize:12,marginTop:4,fontWeight:600}},"Bien avancées (≥70%)")),
+                  h("div",{key:"ret",style:{flex:1,minWidth:120,background:enRetard>0?C.redDim:C.card,borderRadius:14,padding:"14px 18px",textAlign:"center",border:"1px solid "+(enRetard>0?C.red+"44":C.border)}},
+                    h("div",{style:{fontSize:32,fontWeight:800,color:enRetard>0?C.red:C.muted}},enRetard),
+                    h("div",{style:{color:enRetard>0?C.red:C.muted,fontSize:12,marginTop:4,fontWeight:600}},"En retard (<30%)")),
+                  demandesVal>0&&h("div",{key:"val",style:{flex:1,minWidth:120,background:C.amberDim,borderRadius:14,padding:"14px 18px",textAlign:"center",border:"1px solid "+C.amber+"44"}},
+                    h("div",{style:{fontSize:32,fontWeight:800,color:C.amber}},demandesVal),
+                    h("div",{style:{color:C.amber,fontSize:12,marginTop:4,fontWeight:600}},"Étapes à valider"))
+                ];
+              })()),
+            // Grille des 6 ESI
+            h("div",{style:{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(320px,1fr))",gap:14}},
+              esis.map(function(e){
+                var pp=pct(e.etapes);
+                var nr=pctNR(e.etapes);
+                var mfe=pctMFE(e.etapes);
+                var dernierRetour=(e.retours||[]).slice(-1)[0];
+                var demandesEsi=e.etapesEsi?Object.entries(e.etapesEsi).filter(function(kv){return kv[1]==="demande";}).map(function(kv){return kv[0];}):[];
+                var couleur=pp>=70?C.green:pp>=40?C.accent:pp>=20?C.amber:C.red;
+                return h("div",{key:e.id,style:{background:C.card,borderRadius:16,padding:18,border:"1px solid "+(sel===e.id?C.accent:C.border),cursor:"pointer",transition:"border-color .2s"},
+                  onClick:function(){setSel(e.id);setTab("suivi");}},
+                  // En-tête ESI
+                  h("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:12}},
+                    h("div",null,
+                      h("div",{style:{color:C.text,fontWeight:800,fontSize:14}},e.prenom),
+                      h("div",{style:{color:C.muted,fontSize:11,fontStyle:"italic",marginTop:2,lineHeight:1.4}},e.sujet)),
+                    h("div",{style:{textAlign:"right",flexShrink:0,marginLeft:8}},
+                      h("div",{style:{fontSize:22,fontWeight:800,color:couleur}},pp+"%"),
+                      h("div",{style:{fontSize:10,color:C.muted}},"global"))),
+                  // Barres NR + MFE
+                  h("div",{style:{marginBottom:12}},
+                    h("div",{style:{display:"flex",alignItems:"center",gap:8,marginBottom:5}},
+                      h("span",{style:{color:C.muted,fontSize:10,width:32,flexShrink:0}},"NR"),
+                      h(Barre,{v:nr,c:C}),
+                      h("span",{style:{color:C.accent,fontSize:11,fontWeight:700,width:32,textAlign:"right"}},nr+"%")),
+                    h("div",{style:{display:"flex",alignItems:"center",gap:8}},
+                      h("span",{style:{color:C.muted,fontSize:10,width:32,flexShrink:0}},"MFE"),
+                      h(Barre,{v:mfe,c:C}),
+                      h("span",{style:{color:C.green,fontSize:11,fontWeight:700,width:32,textAlign:"right"}},mfe+"%"))),
+                  // Infos clés
+                  h("div",{style:{display:"flex",flexDirection:"column",gap:5}},
+                    dernierRetour&&h("div",{style:{display:"flex",gap:6,alignItems:"flex-start"}},
+                      h("span",{style:{fontSize:11,color:C.accent,flexShrink:0}},"💬"),
+                      h("div",{style:{color:C.muted,fontSize:11,lineHeight:1.4}},
+                        h("span",{style:{color:C.subtle,fontSize:10}},dfr(dernierRetour.date)+" · "),
+                        dernierRetour.commentaire_esi&&dernierRetour.commentaire_esi.substring(0,80)+"…")),
+                    futur(e.prochainRdv)&&h("div",{style:{display:"flex",gap:6,alignItems:"center"}},
+                      h("span",{style:{fontSize:11,color:C.amber}},"📅"),
+                      h("span",{style:{color:C.amber,fontSize:11,fontWeight:600}},rfr(e.prochainRdv))),
+                    demandesEsi.length>0&&h("div",{style:{background:C.amberDim,borderRadius:8,padding:"5px 10px",display:"flex",gap:6,alignItems:"center"}},
+                      h("span",{style:{fontSize:11}},"✋"),
+                      h("span",{style:{color:C.amber,fontSize:11,fontWeight:700}},demandesEsi.length+" étape(s) à valider")),
+                    (e.retours||[]).length===0&&!futur(e.prochainRdv)&&h("div",{style:{color:C.subtle,fontSize:11,fontStyle:"italic"}},"Aucun retour ni RDV planifié")),
+                  // Bouton accès rapide
+                  h("div",{style:{display:"flex",gap:6,marginTop:12,flexWrap:"wrap"}},
+                    h("button",{onClick:function(ev){ev.stopPropagation();setSel(e.id);setTab("suivi");},style:bs(C.accentDim,C.accent,{fontSize:11,padding:"4px 10px",border:"1px solid "+C.accent+"44"})},"📊 Suivi"),
+                    h("button",{onClick:function(ev){ev.stopPropagation();setSel(e.id);setTab("analyse");},style:bs(C.card,C.muted,{fontSize:11,padding:"4px 10px",border:"1px solid "+C.border})},"🔍 Analyser"),
+                    h("button",{onClick:function(ev){ev.stopPropagation();setSel(e.id);setTab("messages");},style:bs(C.card,C.muted,{fontSize:11,padding:"4px 10px",border:"1px solid "+C.border})},"✉️ Message")));
+              }))),
           tab==="suivi"&&h("div",null,
+            // Demandes de validation ESI
+            (function(){
+              var demandes=Object.entries(esi.etapesEsi||{}).filter(function(kv){return kv[1]==="demande"&&esi.etapes[kv[0]]!=="fait";});
+              if(demandes.length===0)return null;
+              return h("div",{style:{background:C.amberDim,border:"1px solid "+C.amber+"44",borderRadius:12,padding:16,marginBottom:16}},
+                h("div",{style:{color:C.amber,fontWeight:800,fontSize:13,marginBottom:10}},"✋ "+esi.prenom.split(" ")[1]+" a signalé "+demandes.length+" avancée(s) — en attente de ta validation"),
+                demandes.map(function(kv){
+                  var et=ETAPES.find(function(e){return e.id===kv[0];});
+                  if(!et)return null;
+                  return h("div",{key:kv[0],style:{display:"flex",alignItems:"center",gap:10,background:C.panel,borderRadius:10,padding:"10px 14px",marginBottom:8}},
+                    h("span",{style:{fontSize:16}},et.icon),
+                    h("span",{style:{flex:1,color:C.text,fontSize:13,fontWeight:600}},et.label),
+                    h("button",{onClick:function(){
+                      var ne=Object.assign({},esi.etapes,{[kv[0]]:"fait"});
+                      var nEsi=Object.assign({},esi.etapesEsi||{});
+                      delete nEsi[kv[0]];
+                      up(Object.assign({},esi,{etapes:ne,etapesEsi:nEsi,derniereMAJ:new Date().toISOString()}));
+                    },style:bs(C.green,"#fff",{fontSize:11,padding:"5px 12px"})},"✅ Valider"),
+                    h("button",{onClick:function(){
+                      var nEsi=Object.assign({},esi.etapesEsi||{});
+                      delete nEsi[kv[0]];
+                      up(Object.assign({},esi,{etapesEsi:nEsi}));
+                    },style:bs(C.card,C.muted,{fontSize:11,padding:"5px 10px",border:"1px solid "+C.border})},"Refuser"));
+                }));
+            })(),
             h("div",{style:{display:"flex",gap:16,marginBottom:20,flexWrap:"wrap"}},
               h("div",{style:{flex:1,minWidth:200,background:C.card,borderRadius:12,padding:"12px 16px"}},
                 h("div",{style:{color:C.muted,fontSize:11,fontWeight:700,marginBottom:6}},"UE 3.4.S6 — NOTE DE RECHERCHE"),
@@ -1214,6 +1318,8 @@ function EsiApp(props){
             h("div",{style:{color:C2.muted,fontSize:13,lineHeight:1.6}},pe.conseil));
         })()),
       tab==="etapes"&&h("div",null,
+        h("div",{style:{background:C2.amberDim,border:"1px solid "+C2.amber+"44",borderRadius:10,padding:"12px 16px",marginBottom:16,fontSize:13,color:C2.amber,lineHeight:1.6}},
+          "✋ Tu peux signaler tes avancées ici. Ton directeur valide ensuite chaque étape depuis son espace. Les étapes validées apparaissent en vert."),
         h("div",{style:{display:"flex",gap:12,marginBottom:20,flexWrap:"wrap"}},
           h("div",{style:{flex:1,minWidth:180,background:C2.panel,borderRadius:12,padding:"12px 16px"}},
             h("div",{style:{color:C2.muted,fontSize:11,fontWeight:700,marginBottom:6}},"UE 3.4.S6 — NOTE DE RECHERCHE"),
@@ -1226,28 +1332,62 @@ function EsiApp(props){
         h("div",{style:{color:C2.accent,fontSize:12,fontWeight:700,marginBottom:8}},"📝 UE 3.4.S6 — Note de recherche"),
         h("div",{style:{marginBottom:20}},
           ETAPES_NR.map(function(et){
-            var s=data.etapes[et.id]||"todo";
-            var cols={fait:C2.green,encours:C2.amber,bloque:C2.red,todo:C2.subtle};
-            var bgs={fait:C2.greenDim,encours:C2.amberDim,bloque:C2.redDim,todo:C2.card};
-            var labs={fait:"✅ Validé",encours:"⏳ En cours",bloque:"🚫 Bloqué",todo:"○ À faire"};
-            return h("div",{key:et.id,style:{background:C2.panel,borderRadius:14,padding:16,marginBottom:10,border:"1px solid "+(s==="fait"?C2.green+"44":s==="encours"?C2.amber+"44":C2.border)}},
-              h("div",{style:{display:"flex",alignItems:"center",gap:10}},
-                h("span",{style:{fontSize:20}},et.icon),
-                h("span",{style:{flex:1,color:C2.text,fontWeight:700,fontSize:14}},et.label),
-                h("span",{style:{fontSize:12,color:cols[s],background:bgs[s],borderRadius:99,padding:"3px 10px",fontWeight:700}},labs[s])),
-              s!=="fait"&&h("div",{style:{color:C2.muted,fontSize:13,lineHeight:1.6,paddingLeft:30,marginTop:8}},et.conseil));})),
+            var sDir=data.etapes[et.id]||"todo";
+            var sEsi=(data.etapesEsi||{})[et.id]||"";
+            var valide=sDir==="fait";
+            var enDemande=sEsi==="demande"&&!valide;
+            function signaler(){
+              var updated=Object.assign({},data,{etapesEsi:Object.assign({},data.etapesEsi||{},{[et.id]:"demande"})});
+              setData(updated);fbSauverESI(updated);
+              envoyerNotification(data.prenom,0,"Demande validation étape : "+et.label);
+            }
+            function annulerDemande(){
+              var upd=Object.assign({},data.etapesEsi||{});
+              delete upd[et.id];
+              var updated=Object.assign({},data,{etapesEsi:upd});
+              setData(updated);fbSauverESI(updated);
+            }
+            return h("div",{key:et.id,style:{background:valide?C2.greenDim:enDemande?C2.amberDim:C2.panel,borderRadius:14,padding:16,marginBottom:10,border:"1px solid "+(valide?C2.green+"44":enDemande?C2.amber+"44":C2.border)}},
+              h("div",{style:{display:"flex",alignItems:"center",gap:10,flexWrap:"wrap"}},
+                h("span",{style:{fontSize:20}},valide?"✅":enDemande?"🕐":et.icon),
+                h("div",{style:{flex:1,minWidth:120}},
+                  h("div",{style:{color:C2.text,fontWeight:700,fontSize:14}},et.label),
+                  valide&&h("div",{style:{color:C2.green,fontSize:11,fontWeight:700,marginTop:2}},"✅ Validé par ton directeur"),
+                  enDemande&&h("div",{style:{color:C2.amber,fontSize:11,fontWeight:700,marginTop:2}},"⏳ En attente de validation"),
+                  !valide&&!enDemande&&sDir==="encours"&&h("div",{style:{color:C2.amber,fontSize:11,marginTop:2}},"En cours selon ton directeur"),
+                  !valide&&!enDemande&&sDir==="bloque"&&h("div",{style:{color:C2.red,fontSize:11,marginTop:2}},"Bloqué selon ton directeur")),
+                !valide&&!enDemande&&h("button",{onClick:signaler,style:bs(C2.accentDim,C2.accent,{fontSize:11,padding:"5px 12px",border:"1px solid "+C2.accent+"44"})},"✋ Signaler avancée"),
+                enDemande&&h("button",{onClick:annulerDemande,style:bs("transparent",C2.subtle,{fontSize:11,padding:"5px 10px",border:"1px solid "+C2.border})},"Annuler")),
+              !valide&&h("div",{style:{color:C2.muted,fontSize:12,lineHeight:1.6,paddingLeft:30,marginTop:8}},et.conseil));})),
         h("div",{style:{color:C2.accent,fontSize:12,fontWeight:700,marginBottom:8}},"🎓 UE 5.6.S6 — Mémoire de fin d'études"),
         ETAPES_MFE.map(function(et){
-          var s=data.etapes[et.id]||"todo";
-          var cols={fait:C2.green,encours:C2.amber,bloque:C2.red,todo:C2.subtle};
-          var bgs={fait:C2.greenDim,encours:C2.amberDim,bloque:C2.redDim,todo:C2.card};
-          var labs={fait:"✅ Validé",encours:"⏳ En cours",bloque:"🚫 Bloqué",todo:"○ À faire"};
-          return h("div",{key:et.id,style:{background:C2.panel,borderRadius:14,padding:16,marginBottom:10,border:"1px solid "+(s==="fait"?C2.green+"44":s==="encours"?C2.amber+"44":C2.border)}},
-            h("div",{style:{display:"flex",alignItems:"center",gap:10}},
-              h("span",{style:{fontSize:20}},et.icon),
-              h("span",{style:{flex:1,color:C2.text,fontWeight:700,fontSize:14}},et.label),
-              h("span",{style:{fontSize:12,color:cols[s],background:bgs[s],borderRadius:99,padding:"3px 10px",fontWeight:700}},labs[s])),
-            s!=="fait"&&h("div",{style:{color:C2.muted,fontSize:13,lineHeight:1.6,paddingLeft:30,marginTop:8}},et.conseil));})),
+          var sDir=data.etapes[et.id]||"todo";
+          var sEsi=(data.etapesEsi||{})[et.id]||"";
+          var valide=sDir==="fait";
+          var enDemande=sEsi==="demande"&&!valide;
+          function signaler(){
+            var updated=Object.assign({},data,{etapesEsi:Object.assign({},data.etapesEsi||{},{[et.id]:"demande"})});
+            setData(updated);fbSauverESI(updated);
+            envoyerNotification(data.prenom,0,"Demande validation étape : "+et.label);
+          }
+          function annulerDemande(){
+            var upd=Object.assign({},data.etapesEsi||{});
+            delete upd[et.id];
+            var updated=Object.assign({},data,{etapesEsi:upd});
+            setData(updated);fbSauverESI(updated);
+          }
+          return h("div",{key:et.id,style:{background:valide?C2.greenDim:enDemande?C2.amberDim:C2.panel,borderRadius:14,padding:16,marginBottom:10,border:"1px solid "+(valide?C2.green+"44":enDemande?C2.amber+"44":C2.border)}},
+            h("div",{style:{display:"flex",alignItems:"center",gap:10,flexWrap:"wrap"}},
+              h("span",{style:{fontSize:20}},valide?"✅":enDemande?"🕐":et.icon),
+              h("div",{style:{flex:1,minWidth:120}},
+                h("div",{style:{color:C2.text,fontWeight:700,fontSize:14}},et.label),
+                valide&&h("div",{style:{color:C2.green,fontSize:11,fontWeight:700,marginTop:2}},"✅ Validé par ton directeur"),
+                enDemande&&h("div",{style:{color:C2.amber,fontSize:11,fontWeight:700,marginTop:2}},"⏳ En attente de validation"),
+                !valide&&!enDemande&&sDir==="encours"&&h("div",{style:{color:C2.amber,fontSize:11,marginTop:2}},"En cours selon ton directeur"),
+                !valide&&!enDemande&&sDir==="bloque"&&h("div",{style:{color:C2.red,fontSize:11,marginTop:2}},"Bloqué selon ton directeur")),
+              !valide&&!enDemande&&h("button",{onClick:signaler,style:bs(C2.accentDim,C2.accent,{fontSize:11,padding:"5px 12px",border:"1px solid "+C2.accent+"44"})},"✋ Signaler avancée"),
+              enDemande&&h("button",{onClick:annulerDemande,style:bs("transparent",C2.subtle,{fontSize:11,padding:"5px 10px",border:"1px solid "+C2.border})},"Annuler")),
+            !valide&&h("div",{style:{color:C2.muted,fontSize:12,lineHeight:1.6,paddingLeft:30,marginTop:8}},et.conseil));})),
       tab==="retours"&&h("div",null,
         h("h2",{style:{color:C2.text,fontSize:16,fontWeight:800,marginBottom:20}},"Retours de ton directeur"),
         (data.retours||[]).length===0?h("div",{style:{color:C2.subtle,fontSize:14,fontStyle:"italic",textAlign:"center",padding:"40px 0"}},"Aucun retour pour l'instant.")
