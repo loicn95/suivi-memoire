@@ -1,1 +1,391 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Suivi Mémoires — Jain Loic</title>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Inter,system-ui,sans-serif;background:#0D1117}
+input,textarea,button{font-family:inherit}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script>
+const {useState,useEffect,useCallback}=React;
+
+const C={bg:"#0D1117",panel:"#161B22",card:"#21262D",cardHover:"#2D333B",border:"#30363D",accent:"#58A6FF",accentDim:"#1F3A5F",green:"#3FB950",greenDim:"#1A3A2A",amber:"#D29922",amberDim:"#3A2A0A",red:"#F85149",redDim:"#3A1A1A",text:"#E6EDF3",muted:"#8B949E",subtle:"#484F58"};
+const C2={bg:"#0F172A",panel:"#1E293B",card:"#273449",border:"#334155",accent:"#6366F1",accentDim:"#1e1b4b",green:"#22C55E",greenDim:"#14532d",amber:"#F59E0B",amberDim:"#451a03",red:"#EF4444",redDim:"#450a0a",text:"#F1F5F9",muted:"#94A3B8",subtle:"#475569"};
+
+const ETAPES=[
+  {id:"sujet",label:"Sujet validé",icon:"📌",conseil:"Le sujet doit être précis, ancré dans une situation clinique vécue en stage."},
+  {id:"plan",label:"Plan approuvé",icon:"📋",conseil:"Ton plan doit comporter une introduction, un cadre théorique, une partie pratique et une conclusion."},
+  {id:"biblio",label:"Bibliographie",icon:"📚",conseil:"Minimum 10 références récentes (moins de 10 ans)."},
+  {id:"chap1",label:"Chapitre 1",icon:"✏️",conseil:"Présente ta situation de départ et la question de départ."},
+  {id:"chap2",label:"Chapitre 2",icon:"✏️",conseil:"Développe le cadre conceptuel : définis tes concepts clés."},
+  {id:"chap3",label:"Chapitre 3",icon:"✏️",conseil:"Confronte tes concepts à la réalité, formule ta problématique."},
+  {id:"relecture",label:"Relecture",icon:"🔍",conseil:"Relis en entier, vérifie la cohérence. Fais relire par un tiers."},
+  {id:"soutenance",label:"Soutenance",icon:"🎓",conseil:"Prépare un exposé de 10-15 min. Anticipe les questions du jury."}
+];
+const STATUTS=[
+  {id:"todo",label:"À faire",color:"#484F58",bg:"#21262D"},
+  {id:"encours",label:"En cours",color:"#D29922",bg:"#3A2A0A"},
+  {id:"fait",label:"Fait",color:"#3FB950",bg:"#1A3A2A"},
+  {id:"bloque",label:"Bloqué",color:"#F85149",bg:"#3A1A1A"}
+];
+const ESI_DEFAUT=[
+  {id:"e1",prenom:"BRUCTER Naïma",sujet:"Refus de soins / manque d'asepsie"},
+  {id:"e2",prenom:"IOJE Paula",sujet:"Levée de sédation patient intubé ventilé"},
+  {id:"e3",prenom:"JEAN Lisa",sujet:"Soins palliatifs / fin de vie"},
+  {id:"e4",prenom:"LECHOPIER-SIKORSKI Chloé",sujet:"Gestion des urgences / barrière linguistique"},
+  {id:"e5",prenom:"PECOUD Émilie",sujet:"Douleur du patient amputé"},
+  {id:"e6",prenom:"RYST Lucie",sujet:"Communication patient / extubation"}
+];
+const RESSOURCES=[
+  {id:"r1",label:"Formuler une problématique",icon:"🎯",contenu:"La problématique est une question centrale.\n\n• Découler d'une situation clinique réelle\n• Formulée sous forme de question ouverte\n• Ni trop large, ni trop précise\n\nExemple : En quoi la relation soignant-soigné influence-t-elle la prise en charge de la douleur ?"},
+  {id:"r2",label:"Construire un plan",icon:"📋",contenu:"1. Introduction\n   - Situation d'appel\n   - Question de départ\n\n2. Cadre conceptuel\n   - Définitions des concepts\n   - Appui littérature\n\n3. Partie terrain\n   - Confrontation théorie/pratique\n   - Problématique + hypothèses\n\n4. Conclusion"},
+  {id:"r3",label:"Faire une bibliographie",icon:"📚",contenu:"Norme APA :\n\nLivre : Auteur, A. (Année). Titre. Éditeur.\nArticle : Auteur, A. (Année). Titre. Revue, vol(n), pages.\nSite : Auteur. (Année). Titre. Consulté le JJ/MM/AAAA sur https://...\n\nMinimum 10 références."},
+  {id:"r4",label:"Préparer la soutenance",icon:"🎓",contenu:"• Durée : 10 à 15 minutes\n• Structure : sujet - cheminement - résultats - apports\n• Questions fréquentes : Pourquoi ce sujet ? Comment as-tu choisi tes concepts ?\n• Entraîne-toi à voix haute plusieurs fois"}
+];
+
+const SK="jain-loic-v2";
+function initESI(){return ESI_DEFAUT.map(function(e){return Object.assign({},e,{etapes:{},commentaires:[],documents:[],retours:[],visio:"",prochainRdv:"",derniereMAJ:null});});}
+function charger(){try{var d=localStorage.getItem(SK);return d?JSON.parse(d):initESI();}catch(e){return initESI();}}
+function sauver(d){try{localStorage.setItem(SK,JSON.stringify(d));}catch(e){}}
+function uid(){return Math.random().toString(36).slice(2,9);}
+function pct(etapes){return Math.round(ETAPES.filter(function(e){return etapes[e.id]==="fait";}).length/ETAPES.length*100);}
+function dfr(iso){if(!iso)return"—";return new Date(iso).toLocaleDateString("fr-FR",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"});}
+function rfr(s){if(!s)return null;return new Date(s).toLocaleDateString("fr-FR",{weekday:"long",day:"numeric",month:"long",hour:"2-digit",minute:"2-digit"});}
+function futur(s){return s&&new Date(s)>new Date();}
+
+function h(tag,props){for(var _len=arguments.length,children=new Array(_len>2?_len-2:0),_key=2;_key<_len;_key++){children[_key-2]=arguments[_key];}return React.createElement.apply(React,[tag,props].concat(children));}
+
+function inp(c){return{background:c.card,border:"1px solid "+c.border,borderRadius:8,color:c.text,fontSize:13,padding:"7px 10px",outline:"none",width:"100%",boxSizing:"border-box"};}
+function bs(bg,color,x){return Object.assign({background:bg,color:color,border:"none",borderRadius:8,padding:"7px 14px",cursor:"pointer",fontWeight:600,fontSize:13},x||{});}
+
+function Barre(props){
+  var v=props.v,c=props.c;
+  var col=v===100?c.green:v>=50?c.accent:c.amber;
+  return h("div",{style:{background:c.border,borderRadius:99,height:6,overflow:"hidden",flex:1}},
+    h("div",{style:{width:v+"%",height:"100%",background:col,borderRadius:99,transition:"width .4s"}}));
+}
+
+function Accueil(props){
+  return h("div",{style:{minHeight:"100vh",background:C.bg,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:24}},
+    h("div",{style:{fontSize:56,marginBottom:16}},"🎓"),
+    h("h1",{style:{color:C.text,fontSize:24,fontWeight:800,marginBottom:8,textAlign:"center"}},"Suivi Mémoires Infirmiers"),
+    h("p",{style:{color:C.muted,fontSize:15,marginBottom:40,textAlign:"center"}},"Directeur : ",h("strong",{style:{color:C.accent}},"Jain Loic")," · IFSI Bichat-Beaujon · Promo 2024-27"),
+    h("div",{style:{display:"flex",gap:20,flexWrap:"wrap",justifyContent:"center"}},
+      h("button",{onClick:props.onDir,style:{background:C.accent,color:"#fff",border:"none",borderRadius:16,padding:"22px 40px",cursor:"pointer",fontSize:17,fontWeight:700}},"👨‍🏫 Espace Directeur"),
+      h("button",{onClick:props.onEsi,style:{background:C.panel,color:C.text,border:"2px solid "+C.border,borderRadius:16,padding:"22px 40px",cursor:"pointer",fontSize:17,fontWeight:700}},"👩‍🎓 Espace ESI")));
+}
+
+function AnalyseIA(props){
+  var esi=props.esi,onRetour=props.onRetour;
+  var _useState=useState(""),txt=_useState[0],setTxt=_useState[1];
+  var _useState2=useState(false),load=_useState2[0],setLoad=_useState2[1];
+  var _useState3=useState(null),res=_useState3[0],setRes=_useState3[1];
+  var _useState4=useState(""),err=_useState4[0],setErr=_useState4[1];
+
+  function analyser(){
+    if(!txt.trim()){setErr("Colle d'abord le contenu du document.");return;}
+    setLoad(true);setErr("");setRes(null);
+    fetch("https://api.anthropic.com/v1/messages",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({model:"claude-sonnet-4-6",max_tokens:1000,messages:[{role:"user",content:"Tu es formateur IFSI expert en mémoires infirmiers.\nESI: "+esi.prenom+"\nSujet: "+esi.sujet+"\n\nDocument:\n"+txt+"\n\nRéponds UNIQUEMENT en JSON valide sans markdown:\n{\"structure\":\"...\",\"points_forts\":[\"...\"],\"axes_amelioration\":[\"...\"],\"commentaire_esi\":\"...\",\"avancement\":0}"}]})
+    }).then(function(r){return r.json();}).then(function(data){
+      var t=(data.content||[]).filter(function(b){return b.type==="text";}).map(function(b){return b.text;}).join("");
+      setRes(JSON.parse(t.replace(/```json|```/g,"").trim()));
+      setLoad(false);
+    }).catch(function(){setErr("Erreur d'analyse. Réessaie.");setLoad(false);});
+  }
+
+  function sauvegarder(){
+    if(!res)return;
+    onRetour(Object.assign({id:uid(),date:new Date().toISOString()},res));
+    setRes(null);setTxt("");
+  }
+
+  return h("div",null,
+    h("div",{style:{background:C.amberDim,border:"1px solid "+C.amber+"44",borderRadius:10,padding:"12px 16px",marginBottom:14,fontSize:13,color:C.amber,lineHeight:1.6}},
+      "💡 Colle le texte du document de l'ESI. L'IA va analyser la structure, identifier les points forts et générer un commentaire à transmettre à l'étudiant."),
+    h("textarea",{value:txt,onChange:function(e){setTxt(e.target.value);},placeholder:"Colle ici le contenu du document…",rows:8,style:Object.assign({},inp(C),{resize:"vertical",lineHeight:1.6,marginBottom:8})}),
+    err&&h("div",{style:{color:C.red,fontSize:12,marginBottom:8}},err),
+    h("button",{onClick:analyser,disabled:load,style:bs(load?C.subtle:C.accent,"#fff",{width:"100%",padding:"11px 0",opacity:load?0.7:1,fontSize:14})},load?"⏳ Analyse en cours…":"🔍 Analyser avec l'IA"),
+    res&&h("div",{style:{marginTop:18,background:C.card,borderRadius:12,padding:18}},
+      h("div",{style:{color:C.green,fontWeight:700,fontSize:14,marginBottom:14}},"✅ Analyse — Avancement estimé : "+res.avancement+"%"),
+      h("div",{style:{marginBottom:14}},
+        h("div",{style:{color:C.muted,fontSize:11,fontWeight:700,marginBottom:6}},"STRUCTURE"),
+        h("div",{style:{color:C.text,fontSize:13,lineHeight:1.7}},res.structure)),
+      h("div",{style:{display:"flex",gap:12,marginBottom:14,flexWrap:"wrap"}},
+        h("div",{style:{flex:1,minWidth:160,background:C.greenDim,borderRadius:10,padding:12}},
+          h("div",{style:{color:C.green,fontSize:11,fontWeight:700,marginBottom:8}},"✅ POINTS FORTS"),
+          (res.points_forts||[]).map(function(p,i){return h("div",{key:i,style:{color:C.text,fontSize:13,marginBottom:5}},"• "+p);})),
+        h("div",{style:{flex:1,minWidth:160,background:C.amberDim,borderRadius:10,padding:12}},
+          h("div",{style:{color:C.amber,fontSize:11,fontWeight:700,marginBottom:8}},"⚠️ À AMÉLIORER"),
+          (res.axes_amelioration||[]).map(function(a,i){return h("div",{key:i,style:{color:C.text,fontSize:13,marginBottom:5}},"• "+a);}))),
+      h("div",{style:{background:C.panel,borderRadius:10,padding:14,marginBottom:14,borderLeft:"3px solid "+C.accent}},
+        h("div",{style:{color:C.accent,fontSize:11,fontWeight:700,marginBottom:8}},"💬 COMMENTAIRE POUR L'ESI"),
+        h("div",{style:{color:C.text,fontSize:13,lineHeight:1.8,fontStyle:"italic"}},res.commentaire_esi)),
+      h("button",{onClick:sauvegarder,style:bs(C.green,"#fff",{width:"100%",padding:"10px 0",fontSize:14})},"💾 Sauvegarder et envoyer à l'ESI")));
+}
+
+function Directeur(props){
+  var onBack=props.onBack,esis=props.esis,setEsis=props.setEsis;
+  var _s1=useState(esis[0]&&esis[0].id),sel=_s1[0],setSel=_s1[1];
+  var _s2=useState("suivi"),tab=_s2[0],setTab=_s2[1];
+  var _s3=useState(""),nc=_s3[0],setNc=_s3[1];
+  var _s4=useState(""),ndl=_s4[0],setNdl=_s4[1];
+  var _s5=useState(""),ndu=_s5[0],setNdu=_s5[1];
+  var _s6=useState(false),showDoc=_s6[0],setShowDoc=_s6[1];
+  var _s7=useState(""),ev=_s7[0],setEv=_s7[1];
+  var _s8=useState(""),er=_s8[0],setEr=_s8[1];
+
+  var esi=esis.find(function(e){return e.id===sel;});
+  useEffect(function(){if(esi){setEv(esi.visio||"");setEr(esi.prochainRdv||"");};},[sel]);
+
+  function up(u){var n=esis.map(function(e){return e.id===u.id?u:e;});setEsis(n);sauver(n);}
+  function se(id,s){up(Object.assign({},esi,{etapes:Object.assign({},esi.etapes,{[id]:s}),derniereMAJ:new Date().toISOString()}));}
+  function si(){up(Object.assign({},esi,{visio:ev,prochainRdv:er,derniereMAJ:new Date().toISOString()}));}
+  function ac(){if(!nc.trim())return;up(Object.assign({},esi,{commentaires:(esi.commentaires||[]).concat([{id:uid(),texte:nc.trim(),date:new Date().toISOString()}]),derniereMAJ:new Date().toISOString()}));setNc("");}
+  function dc(id){up(Object.assign({},esi,{commentaires:esi.commentaires.filter(function(c){return c.id!==id;})}));}
+  function ad(){if(!ndl.trim()||!ndu.trim())return;up(Object.assign({},esi,{documents:(esi.documents||[]).concat([{id:uid(),label:ndl.trim(),url:ndu.trim(),date:new Date().toISOString()}]),derniereMAJ:new Date().toISOString()}));setNdl("");setNdu("");setShowDoc(false);}
+  function dd(id){up(Object.assign({},esi,{documents:(esi.documents||[]).filter(function(d){return d.id!==id;})}));}
+  function dr(id){up(Object.assign({},esi,{retours:(esi.retours||[]).filter(function(r){return r.id!==id;})}));}
+  function onR(retour){
+    var av=retour.avancement,ne=Object.assign({},esi.etapes);
+    if(av>=10)ne.sujet="fait";if(av>=25)ne.plan="fait";if(av>=35)ne.biblio="fait";
+    if(av>=50)ne.chap1="fait";if(av>=65)ne.chap2="fait";if(av>=80)ne.chap3="fait";
+    if(av>=90)ne.relecture="fait";if(av>=100)ne.soutenance="fait";
+    up(Object.assign({},esi,{retours:(esi.retours||[]).concat([retour]),etapes:ne,derniereMAJ:new Date().toISOString()}));
+    setTab("retours");
+  }
+
+  if(!esi)return null;
+  var p=pct(esi.etapes);
+  var tabs=[{id:"suivi",l:"📊 Suivi"},{id:"analyse",l:"🔍 Analyser"},{id:"retours",l:"💬 Retours"+(esi.retours&&esi.retours.length>0?" ("+esi.retours.length+")":"")},{id:"docs",l:"📎 Docs"+(esi.documents&&esi.documents.length>0?" ("+esi.documents.length+")":"")},{id:"notes",l:"📝 Notes"}];
+
+  return h("div",{style:{background:C.bg,minHeight:"100vh",display:"flex",flexDirection:"column",color:C.text}},
+    h("div",{style:{background:C.panel,borderBottom:"1px solid "+C.border,padding:"12px 20px",display:"flex",alignItems:"center",gap:12,flexWrap:"wrap"}},
+      h("button",{onClick:onBack,style:bs(C.card,C.muted,{border:"1px solid "+C.border})},"← Accueil"),
+      h("div",null,
+        h("div",{style:{fontWeight:800,fontSize:15}},"👨‍🏫 Espace Directeur · ",h("span",{style:{color:C.accent}},"Jain Loic")),
+        h("div",{style:{color:C.muted,fontSize:12}},esis.length+" ESI · Promo 2024-27"))),
+    h("div",{style:{display:"flex",flex:1,minHeight:0}},
+      h("div",{style:{width:250,minWidth:250,background:C.panel,borderRight:"1px solid "+C.border,overflowY:"auto",padding:"12px 8px"}},
+        esis.map(function(e){
+          var pp=pct(e.etapes);
+          return h("div",{key:e.id,onClick:function(){setSel(e.id);setTab("suivi");},style:{background:e.id===sel?C.accentDim:C.card,border:"1.5px solid "+(e.id===sel?C.accent:C.border),borderRadius:12,padding:"12px 14px",cursor:"pointer",marginBottom:8}},
+            h("div",{style:{display:"flex",justifyContent:"space-between",marginBottom:6}},
+              h("span",{style:{color:C.text,fontWeight:700,fontSize:13}},e.prenom),
+              h("span",{style:{color:pp===100?C.green:C.accent,fontWeight:800,fontSize:13}},pp+"%")),
+            h("div",{style:{background:C.border,borderRadius:99,height:4,overflow:"hidden"}},
+              h("div",{style:{width:pp+"%",height:"100%",background:pp===100?C.green:C.accent,borderRadius:99}})),
+            h("div",{style:{display:"flex",gap:4,marginTop:6,flexWrap:"wrap"}},
+              e.retours&&e.retours.length>0&&h("span",{style:{fontSize:10,color:C.accent,background:C.accentDim,borderRadius:99,padding:"1px 7px",fontWeight:700}},"💬 "+e.retours.length),
+              futur(e.prochainRdv)&&h("span",{style:{fontSize:10,color:C.amber,background:C.amberDim,borderRadius:99,padding:"1px 7px",fontWeight:700}},"📅 RDV")));
+        })),
+      h("div",{style:{flex:1,display:"flex",flexDirection:"column",overflow:"hidden"}},
+        h("div",{style:{padding:"16px 24px 0",borderBottom:"1px solid "+C.border}},
+          h("div",{style:{display:"flex",alignItems:"center",gap:12,marginBottom:12,flexWrap:"wrap"}},
+            h("div",{style:{flex:1}},
+              h("div",{style:{color:C.text,fontWeight:800,fontSize:17}},esi.prenom),
+              h("div",{style:{color:C.muted,fontSize:13,fontStyle:"italic",marginTop:2}},esi.sujet)),
+            h("div",{style:{display:"flex",alignItems:"center",gap:10}},
+              h(Barre,{v:p,c:C}),
+              h("span",{style:{color:p===100?C.green:C.accent,fontWeight:800,fontSize:18,minWidth:48}},p+"%"))),
+          h("div",{style:{display:"flex",gap:10,marginBottom:12,flexWrap:"wrap"}},
+            h("div",{style:{display:"flex",alignItems:"center",gap:6}},
+              h("span",{style:{color:C.muted,fontSize:12}},"📅"),
+              h("input",{type:"datetime-local",value:er,onChange:function(e){setEr(e.target.value);},onBlur:si,style:Object.assign({},inp(C),{width:"auto",fontSize:12,padding:"4px 8px",colorScheme:"dark"})})),
+            h("div",{style:{display:"flex",alignItems:"center",gap:6}},
+              h("span",{style:{color:C.muted,fontSize:12}},"🎥"),
+              h("input",{value:ev,onChange:function(e){setEv(e.target.value);},onBlur:si,placeholder:"Lien visio…",style:Object.assign({},inp(C),{width:200,fontSize:12,padding:"4px 8px"})}),
+              esi.visio&&h("a",{href:esi.visio,target:"_blank",rel:"noopener noreferrer",style:{color:C.green,fontSize:12,fontWeight:700,textDecoration:"none"}},"→ Rejoindre"))),
+          h("div",{style:{display:"flex",gap:4,flexWrap:"wrap"}},
+            tabs.map(function(t){return h("button",{key:t.id,onClick:function(){setTab(t.id);},style:Object.assign({},bs(tab===t.id?C.accent:"transparent",tab===t.id?"#fff":C.muted),{borderRadius:"8px 8px 0 0",padding:"7px 14px",fontSize:12,borderBottom:tab===t.id?"2px solid "+C.accent:"2px solid transparent"})},t.l);}))),
+        h("div",{style:{flex:1,overflowY:"auto",padding:"20px 24px"}},
+          tab==="suivi"&&h("div",{style:{display:"flex",flexDirection:"column",gap:6}},
+            ETAPES.map(function(et){
+              var cur=esi.etapes[et.id]||"todo";
+              return h("div",{key:et.id,style:{display:"flex",alignItems:"center",gap:10,background:C.card,borderRadius:10,padding:"9px 14px",flexWrap:"wrap"}},
+                h("span",{style:{fontSize:16}},et.icon),
+                h("span",{style:{flex:1,color:C.text,fontSize:13,fontWeight:500,minWidth:100}},et.label),
+                h("div",{style:{display:"flex",gap:4,flexWrap:"wrap"}},
+                  STATUTS.map(function(st){return h("button",{key:st.id,onClick:function(){se(et.id,st.id);},style:Object.assign({},bs(cur===st.id?st.bg:"transparent",cur===st.id?st.color:C.subtle),{border:"1px solid "+(cur===st.id?st.color+"88":C.border),fontSize:11,padding:"3px 9px"})},st.label);})));
+            })),
+          tab==="analyse"&&h(AnalyseIA,{esi:esi,onRetour:onR}),
+          tab==="retours"&&h("div",null,
+            (esi.retours||[]).length===0?h("div",{style:{color:C.subtle,fontSize:13,fontStyle:"italic",padding:"20px 0"}},'Aucun retour. Va dans "Analyser" pour générer une analyse.')
+            :(esi.retours||[]).slice().reverse().map(function(r){return h("div",{key:r.id,style:{background:C.card,borderRadius:12,padding:16,marginBottom:12}},
+              h("div",{style:{display:"flex",justifyContent:"space-between",marginBottom:10}},
+                h("span",{style:{color:C.muted,fontSize:12}},dfr(r.date)),
+                h("div",{style:{display:"flex",gap:8,alignItems:"center"}},
+                  h("span",{style:{color:C.accent,fontWeight:700,fontSize:12}},"Avancement : "+r.avancement+"%"),
+                  h("button",{onClick:function(){dr(r.id);},style:{background:"transparent",border:"none",color:C.subtle,cursor:"pointer"}},"✕"))),
+              h("div",{style:{color:C.text,fontSize:13,lineHeight:1.6,marginBottom:10}},h("strong",{style:{color:C.muted}},"Structure : "),r.structure),
+              h("div",{style:{display:"flex",gap:10,marginBottom:10,flexWrap:"wrap"}},
+                h("div",{style:{flex:1,minWidth:140,background:C.greenDim,borderRadius:8,padding:10}},
+                  h("div",{style:{color:C.green,fontSize:11,fontWeight:700,marginBottom:6}},"✅ POINTS FORTS"),
+                  (r.points_forts||[]).map(function(p,i){return h("div",{key:i,style:{color:C.text,fontSize:12,marginBottom:3}},"• "+p);})),
+                h("div",{style:{flex:1,minWidth:140,background:C.amberDim,borderRadius:8,padding:10}},
+                  h("div",{style:{color:C.amber,fontSize:11,fontWeight:700,marginBottom:6}},"⚠️ À AMÉLIORER"),
+                  (r.axes_amelioration||[]).map(function(a,i){return h("div",{key:i,style:{color:C.text,fontSize:12,marginBottom:3}},"• "+a);}))),
+              h("div",{style:{background:C.panel,borderRadius:8,padding:12,borderLeft:"3px solid "+C.accent}},
+                h("div",{style:{color:C.accent,fontSize:11,fontWeight:700,marginBottom:6}},"💬 COMMENTAIRE ENVOYÉ À L'ESI"),
+                h("div",{style:{color:C.text,fontSize:13,lineHeight:1.7,fontStyle:"italic"}},r.commentaire_esi)));
+            })),
+          tab==="docs"&&h("div",null,
+            h("div",{style:{display:"flex",flexDirection:"column",gap:8,marginBottom:12}},
+              (esi.documents||[]).length===0&&!showDoc&&h("div",{style:{color:C.subtle,fontSize:13,fontStyle:"italic",padding:"12px 0"}},"Aucun document partagé."),
+              (esi.documents||[]).map(function(d){return h("div",{key:d.id,style:{background:C.card,borderRadius:8,padding:"10px 14px",display:"flex",alignItems:"center",gap:10}},
+                h("span",{style:{fontSize:18}},"📄"),
+                h("div",{style:{flex:1}},
+                  h("a",{href:d.url,target:"_blank",rel:"noopener noreferrer",style:{color:C.accent,fontWeight:600,fontSize:13,textDecoration:"none"}},d.label),
+                  h("div",{style:{color:C.subtle,fontSize:11,marginTop:2}},dfr(d.date))),
+                h("button",{onClick:function(){dd(d.id);},style:{background:"transparent",border:"none",color:C.subtle,cursor:"pointer",fontSize:14}},"✕"));})),
+            showDoc?h("div",{style:{background:C.card,borderRadius:10,padding:14,display:"flex",flexDirection:"column",gap:8}},
+              h("input",{value:ndl,onChange:function(e){setNdl(e.target.value);},placeholder:"Nom du document",style:inp(C)}),
+              h("input",{value:ndu,onChange:function(e){setNdu(e.target.value);},placeholder:"URL (https://…)",style:inp(C)}),
+              h("div",{style:{display:"flex",gap:8}},
+                h("button",{onClick:ad,style:bs(C.accent,"#fff",{flex:1})},"Ajouter"),
+                h("button",{onClick:function(){setShowDoc(false);},style:bs(C.card,C.muted,{border:"1px solid "+C.border})},"Annuler")))
+            :h("button",{onClick:function(){setShowDoc(true);},style:Object.assign({},bs("transparent",C.accent),{border:"1.5px dashed "+C.accent+"44",width:"100%",padding:"10px 0"})},"+ Partager un document ou lien")),
+          tab==="notes"&&h("div",null,
+            h("div",{style:{display:"flex",gap:8,marginBottom:14}},
+              h("input",{value:nc,onChange:function(e){setNc(e.target.value);},onKeyDown:function(e){if(e.key==="Enter")ac();},placeholder:"Ajouter une note (Entrée)…",style:Object.assign({},inp(C),{flex:1})}),
+              h("button",{onClick:ac,style:bs(C.accent,"#fff",{padding:"7px 16px"})},"+")
+            ),
+            (esi.commentaires||[]).length===0&&h("div",{style:{color:C.subtle,fontSize:13,fontStyle:"italic"}},"Aucune note."),
+            (esi.commentaires||[]).slice().reverse().map(function(c){return h("div",{key:c.id,style:{background:C.card,borderRadius:8,padding:"10px 12px",display:"flex",gap:10,marginBottom:8}},
+              h("div",{style:{flex:1}},
+                h("div",{style:{color:C.text,fontSize:13,lineHeight:1.5}},c.texte),
+                h("div",{style:{color:C.subtle,fontSize:11,marginTop:4}},dfr(c.date))),
+              h("button",{onClick:function(){dc(c.id);},style:{background:"transparent",border:"none",color:C.subtle,cursor:"pointer"}},"✕"));}))))));
+}
+
+function EsiApp(props){
+  var onBack=props.onBack,esis=props.esis;
+  var _s1=useState(null),esiId=_s1[0],setEsiId=_s1[1];
+  var _s2=useState("accueil"),tab=_s2[0],setTab=_s2[1];
+  var _s3=useState(null),ro=_s3[0],setRo=_s3[1];
+  var data=esis.find(function(e){return e.id===esiId;});
+
+  if(!esiId)return h("div",{style:{minHeight:"100vh",background:C2.bg,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:24}},
+    h("button",{onClick:onBack,style:Object.assign({},bs(C2.panel,C2.muted,{border:"1px solid "+C2.border}),{position:"absolute",top:20,left:20})},"← Accueil"),
+    h("div",{style:{fontSize:52,marginBottom:16}},"🎓"),
+    h("h1",{style:{color:C2.text,fontSize:22,fontWeight:800,marginBottom:8,textAlign:"center"}},"Mon Espace Mémoire"),
+    h("p",{style:{color:C2.muted,fontSize:14,marginBottom:32,textAlign:"center"}},"Directeur : ",h("strong",{style:{color:C2.accent}},"Jain Loic")," · Promo 2024-27"),
+    h("div",{style:{display:"flex",flexDirection:"column",gap:10,width:"100%",maxWidth:360}},
+      ESI_DEFAUT.map(function(e){return h("button",{key:e.id,onClick:function(){setEsiId(e.id);setTab("accueil");},style:{background:C2.panel,border:"1.5px solid "+C2.border,borderRadius:14,padding:"15px 20px",cursor:"pointer",color:C2.text,fontWeight:700,fontSize:15,textAlign:"left"}},e.prenom);})));
+
+  if(!data)return null;
+  var p=pct(data.etapes);
+  var dr=(data.retours||[]).slice(-1)[0];
+  var tabs=[{id:"accueil",l:"🏠 Accueil"},{id:"etapes",l:"📊 Avancement"},{id:"retours",l:"💬 Retours"+((data.retours||[]).length>0?" ("+(data.retours||[]).length+")":"")},{id:"docs",l:"📎 Docs"+((data.documents||[]).length>0?" ("+(data.documents||[]).length+")":"")},{id:"methodo",l:"📚 Méthodo"}];
+
+  return h("div",{style:{background:C2.bg,minHeight:"100vh",display:"flex",flexDirection:"column",color:C2.text}},
+    h("div",{style:{background:C2.panel,borderBottom:"1px solid "+C2.border,padding:"12px 20px",display:"flex",alignItems:"center",gap:12,flexWrap:"wrap"}},
+      h("button",{onClick:onBack,style:bs(C2.panel,C2.muted,{border:"1px solid "+C2.border})},"← Accueil"),
+      h("div",{style:{flex:1}},
+        h("div",{style:{fontWeight:800,fontSize:15}},"🎓 Mon Mémoire · ",h("span",{style:{color:C2.accent}},data.prenom)),
+        h("div",{style:{color:C2.muted,fontSize:12,fontStyle:"italic",marginTop:2}},data.sujet)),
+      h("div",{style:{display:"flex",gap:10,alignItems:"center"}},
+        h("span",{style:{color:p===100?C2.green:C2.accent,fontWeight:800,fontSize:18}},p+"%"),
+        h("button",{onClick:function(){setEsiId(null);},style:bs(C2.panel,C2.muted,{border:"1px solid "+C2.border,fontSize:12})},"Changer"))),
+    h("div",{style:{background:C2.panel,borderBottom:"1px solid "+C2.border,display:"flex",overflowX:"auto"}},
+      tabs.map(function(t){return h("button",{key:t.id,onClick:function(){setTab(t.id);},style:{background:"transparent",border:"none",borderBottom:"2px solid "+(tab===t.id?C2.accent:"transparent"),color:tab===t.id?C2.accent:C2.muted,padding:"10px 16px",cursor:"pointer",fontWeight:600,fontSize:12,whiteSpace:"nowrap"}},t.l);})),
+    h("div",{style:{flex:1,overflowY:"auto",padding:"24px 20px",maxWidth:720,width:"100%",margin:"0 auto"}},
+      tab==="accueil"&&h("div",null,
+        h("div",{style:{background:C2.panel,borderRadius:16,padding:24,marginBottom:20}},
+          h("div",{style:{fontSize:13,color:C2.muted,marginBottom:8}},"TON AVANCEMENT GLOBAL"),
+          h(Barre,{v:p,c:C2}),
+          h("div",{style:{display:"flex",justifyContent:"space-between",marginTop:8,fontSize:13,color:C2.muted}},
+            h("span",null,ETAPES.filter(function(e){return data.etapes[e.id]==="fait";}).length+"/"+ETAPES.length+" étapes validées"),
+            h("span",{style:{color:p===100?C2.green:C2.accent,fontWeight:700}},p+"%"))),
+        data.prochainRdv&&h("div",{style:{background:futur(data.prochainRdv)?C2.amberDim:C2.redDim,border:"1px solid "+(futur(data.prochainRdv)?C2.amber:C2.red)+"44",borderRadius:12,padding:16,marginBottom:16}},
+          h("div",{style:{color:futur(data.prochainRdv)?C2.amber:C2.red,fontWeight:700,fontSize:14,marginBottom:6}},"📅 "+(futur(data.prochainRdv)?"Prochain RDV avec ton directeur":"RDV passé")),
+          h("div",{style:{color:C2.text,fontSize:15,fontWeight:600}},rfr(data.prochainRdv)),
+          data.visio&&h("a",{href:data.visio,target:"_blank",rel:"noopener noreferrer",style:{display:"inline-block",marginTop:12,background:C2.green,color:"#fff",borderRadius:8,padding:"9px 18px",fontWeight:700,fontSize:13,textDecoration:"none"}},"🎥 Rejoindre la visio")),
+        dr&&h("div",{style:{background:C2.panel,borderRadius:12,padding:16,marginBottom:16,borderLeft:"3px solid "+C2.accent}},
+          h("div",{style:{color:C2.accent,fontWeight:700,fontSize:13,marginBottom:8}},"💬 Dernier retour — "+dfr(dr.date)),
+          h("div",{style:{color:C2.text,fontSize:13,lineHeight:1.8,fontStyle:"italic"}},dr.commentaire_esi),
+          h("button",{onClick:function(){setTab("retours");},style:{marginTop:10,background:"transparent",border:"1px solid "+C2.accent,color:C2.accent,borderRadius:8,padding:"5px 12px",cursor:"pointer",fontSize:12,fontWeight:600}},"Voir tous les retours →")),
+        (function(){
+          var pe=ETAPES.find(function(e){return !data.etapes[e.id]||data.etapes[e.id]==="todo"||data.etapes[e.id]==="encours";});
+          if(!pe)return h("div",{style:{background:C2.greenDim,borderRadius:12,padding:20,textAlign:"center",color:C2.green,fontWeight:700,fontSize:16}},"🎉 Toutes les étapes sont validées !");
+          return h("div",{style:{background:C2.panel,borderRadius:12,padding:16}},
+            h("div",{style:{color:C2.muted,fontSize:11,fontWeight:700,marginBottom:8}},data.etapes[pe.id]==="encours"?"⏳ EN COURS":"📍 PROCHAINE ÉTAPE"),
+            h("div",{style:{color:C2.text,fontWeight:700,fontSize:15,marginBottom:8}},pe.icon+" "+pe.label),
+            h("div",{style:{color:C2.muted,fontSize:13,lineHeight:1.6}},pe.conseil));
+        })()),
+      tab==="etapes"&&h("div",null,
+        h("div",{style:{marginBottom:20}},h(Barre,{v:p,c:C2}),h("div",{style:{textAlign:"right",color:C2.accent,fontWeight:700,fontSize:16,marginTop:6}},p+"%")),
+        ETAPES.map(function(et){
+          var s=data.etapes[et.id]||"todo";
+          var cols={fait:C2.green,encours:C2.amber,bloque:C2.red,todo:C2.subtle};
+          var bgs={fait:C2.greenDim,encours:C2.amberDim,bloque:C2.redDim,todo:C2.card};
+          var labs={fait:"✅ Validé",encours:"⏳ En cours",bloque:"🚫 Bloqué",todo:"○ À faire"};
+          return h("div",{key:et.id,style:{background:C2.panel,borderRadius:14,padding:16,marginBottom:10,border:"1px solid "+(s==="fait"?C2.green+"44":s==="encours"?C2.amber+"44":C2.border)}},
+            h("div",{style:{display:"flex",alignItems:"center",gap:10}},
+              h("span",{style:{fontSize:20}},et.icon),
+              h("span",{style:{flex:1,color:C2.text,fontWeight:700,fontSize:14}},et.label),
+              h("span",{style:{fontSize:12,color:cols[s],background:bgs[s],borderRadius:99,padding:"3px 10px",fontWeight:700}},labs[s])),
+            s!=="fait"&&h("div",{style:{color:C2.muted,fontSize:13,lineHeight:1.6,paddingLeft:30,marginTop:8}},et.conseil));
+        })),
+      tab==="retours"&&h("div",null,
+        h("h2",{style:{color:C2.text,fontSize:16,fontWeight:800,marginBottom:20}},"Retours de ton directeur"),
+        (data.retours||[]).length===0?h("div",{style:{color:C2.subtle,fontSize:14,fontStyle:"italic",textAlign:"center",padding:"40px 0"}},"Aucun retour pour l'instant.")
+        :(data.retours||[]).slice().reverse().map(function(r){return h("div",{key:r.id,style:{background:C2.panel,borderRadius:14,padding:20,marginBottom:16}},
+          h("div",{style:{display:"flex",justifyContent:"space-between",marginBottom:12,flexWrap:"wrap",gap:8}},
+            h("span",{style:{color:C2.muted,fontSize:12}},"📅 "+dfr(r.date)),
+            h("span",{style:{color:C2.accent,fontWeight:700,fontSize:13}},"Avancement : "+r.avancement+"%")),
+          h("div",{style:{background:C2.card,borderRadius:10,padding:14,marginBottom:12,borderLeft:"3px solid "+C2.accent}},
+            h("div",{style:{color:C2.accent,fontSize:11,fontWeight:700,marginBottom:6}},"💬 MESSAGE DE TON DIRECTEUR"),
+            h("div",{style:{color:C2.text,fontSize:14,lineHeight:1.8,fontStyle:"italic"}},r.commentaire_esi)),
+          h("div",{style:{display:"flex",gap:12,flexWrap:"wrap"}},
+            h("div",{style:{flex:1,minWidth:140,background:C2.greenDim,borderRadius:10,padding:12}},
+              h("div",{style:{color:C2.green,fontSize:11,fontWeight:700,marginBottom:6}},"✅ TES POINTS FORTS"),
+              (r.points_forts||[]).map(function(p,i){return h("div",{key:i,style:{color:C2.text,fontSize:13,marginBottom:4}},"• "+p);})),
+            h("div",{style:{flex:1,minWidth:140,background:C2.amberDim,borderRadius:10,padding:12}},
+              h("div",{style:{color:C2.amber,fontSize:11,fontWeight:700,marginBottom:6}},"⚠️ À AMÉLIORER"),
+              (r.axes_amelioration||[]).map(function(a,i){return h("div",{key:i,style:{color:C2.text,fontSize:13,marginBottom:4}},"• "+a);}))));})),
+      tab==="docs"&&h("div",null,
+        h("h2",{style:{color:C2.text,fontSize:16,fontWeight:800,marginBottom:20}},"Documents partagés par ton directeur"),
+        (data.documents||[]).length===0?h("div",{style:{color:C2.subtle,fontSize:14,fontStyle:"italic",textAlign:"center",padding:"40px 0"}},"Aucun document partagé pour l'instant.")
+        :(data.documents||[]).map(function(d){return h("a",{key:d.id,href:d.url,target:"_blank",rel:"noopener noreferrer",style:{display:"flex",alignItems:"center",gap:14,background:C2.panel,borderRadius:12,padding:"14px 18px",marginBottom:10,textDecoration:"none",border:"1px solid "+C2.border}},
+          h("span",{style:{fontSize:24}},"📄"),
+          h("div",{style:{flex:1}},
+            h("div",{style:{color:C2.accent,fontWeight:700,fontSize:14}},d.label),
+            h("div",{style:{color:C2.subtle,fontSize:12,marginTop:2}},dfr(d.date))),
+          h("span",{style:{color:C2.accent,fontSize:20}},"→"));})),
+      tab==="methodo"&&h("div",null,
+        h("h2",{style:{color:C2.text,fontSize:16,fontWeight:800,marginBottom:4}},"Guide méthodologique"),
+        h("p",{style:{color:C2.muted,fontSize:13,marginBottom:20}},"Tout ce qu'il faut pour réussir ton mémoire"),
+        RESSOURCES.map(function(r){return h("div",{key:r.id,style:{background:C2.panel,borderRadius:14,marginBottom:12,overflow:"hidden"}},
+          h("button",{onClick:function(){setRo(ro===r.id?null:r.id);},style:{width:"100%",background:"transparent",border:"none",color:C2.text,padding:"16px 20px",cursor:"pointer",display:"flex",alignItems:"center",gap:12,textAlign:"left"}},
+            h("span",{style:{fontSize:22}},r.icon),
+            h("span",{style:{flex:1,fontWeight:700,fontSize:14}},r.label),
+            h("span",{style:{color:C2.muted,fontSize:20,transform:ro===r.id?"rotate(90deg)":"none",transition:"transform .2s",display:"inline-block"}},"›")),
+          ro===r.id&&h("div",{style:{padding:"0 20px 20px",color:C2.muted,fontSize:13,lineHeight:1.9,whiteSpace:"pre-line",borderTop:"1px solid "+C2.border,paddingTop:16}},r.contenu));}))
+    ));
+}
+
+function Main(){
+  var _s1=useState(null),mode=_s1[0],setMode=_s1[1];
+  var _s2=useState(function(){return charger();}),esis=_s2[0],setEsis=_s2[1];
+  useEffect(function(){if(!mode)setEsis(charger());},[mode]);
+  if(mode==="dir")return h(Directeur,{onBack:function(){setMode(null);},esis:esis,setEsis:setEsis});
+  if(mode==="esi")return h(EsiApp,{onBack:function(){setMode(null);},esis:esis});
+  return h(Accueil,{onDir:function(){setMode("dir");},onEsi:function(){setMode("esi");}});
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(h(Main,null));
+</script>
+</body>
+</html>
 
