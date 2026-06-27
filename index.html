@@ -889,6 +889,84 @@ txt+"\n\n"+
       h("button",{onClick:sauvegarder,style:bs(C.green,"#fff",{width:"100%",padding:"10px 0",fontSize:14})},"💾 Sauvegarder et envoyer à l'ESI")));
 }
 
+// ---- JOURNAL DE BORD ----
+var ICONES_TYPE={etape:"✅",retour:"💬",doc:"📎",depot:"📤",rdv:"📅",validation:"✋",default:"📝"};
+
+function JournalESI(props){
+  var esiId=props.esiId,esiPrenom=props.esiPrenom,C=props.c;
+  var _s1=useState([]),entries=_s1[0],setEntries=_s1[1];
+  var _s2=useState("tout"),filtre=_s2[0],setFiltre=_s2[1];
+  useEffect(function(){
+    fbLire("journal/"+esiId,function(data){
+      if(!data){setEntries([]);return;}
+      var arr=Object.values(data).sort(function(a,b){return b.date>a.date?1:-1;});
+      setEntries(arr);
+    });
+  },[esiId]);
+  var filtres=[{id:"tout",l:"Tout"},{id:"etape",l:"✅ Étapes"},{id:"retour",l:"💬 Retours"},{id:"doc",l:"📎 Docs"},{id:"depot",l:"📤 Dépôts"},{id:"rdv",l:"📅 RDV"}];
+  var affich=filtre==="tout"?entries:entries.filter(function(e){return e.type===filtre;});
+  return h("div",null,
+    h("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16,flexWrap:"wrap",gap:8}},
+      h("div",null,
+        h("div",{style:{color:C.text,fontWeight:800,fontSize:16}},"📒 Journal de bord — "+esiPrenom),
+        h("div",{style:{color:C.muted,fontSize:13,marginTop:2}},entries.length+" événements enregistrés")),
+      h("div",{style:{display:"flex",gap:6,flexWrap:"wrap"}},
+        filtres.map(function(f){return h("button",{key:f.id,onClick:function(){setFiltre(f.id);},style:bs(filtre===f.id?C.accent:"transparent",filtre===f.id?"#fff":C.muted,{fontSize:11,padding:"4px 10px",border:"1px solid "+(filtre===f.id?C.accent:C.border)})},f.l);}))),
+    affich.length===0
+      ? h("div",{style:{color:C.subtle,fontSize:13,fontStyle:"italic",textAlign:"center",padding:"40px 0"}},"Aucun événement"+(filtre!=="tout"?" dans cette catégorie":"")+" pour l'instant.")
+      : h("div",null,
+          affich.map(function(e,i){
+            var icone=ICONES_TYPE[e.type]||ICONES_TYPE.default;
+            var couleur=e.type==="etape"?C.green:e.type==="retour"?C.accent:e.type==="rdv"?C.amber:e.type==="depot"?C.green:C.muted;
+            var bg=e.type==="etape"?C.greenDim:e.type==="retour"?C.accentDim:e.type==="rdv"?C.amberDim:C.card;
+            return h("div",{key:e.id||i,style:{display:"flex",gap:12,marginBottom:8,alignItems:"flex-start"}},
+              h("div",{style:{display:"flex",flexDirection:"column",alignItems:"center",gap:0}},
+                h("div",{style:{width:32,height:32,borderRadius:"50%",background:bg,border:"2px solid "+couleur+"44",display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,flexShrink:0}},icone),
+                i<affich.length-1&&h("div",{style:{width:2,height:16,background:C.border,margin:"2px auto"}})),
+              h("div",{style:{flex:1,background:C.panel,borderRadius:10,padding:"10px 14px",marginBottom:0}},
+                h("div",{style:{color:C.text,fontSize:13,lineHeight:1.5}},e.msg),
+                h("div",{style:{color:C.subtle,fontSize:11,marginTop:4}},dfr(e.date))));
+          })));
+}
+
+function JournalGlobal(props){
+  var esis=props.esis,C=props.c;
+  var _s1=useState([]),allEntries=_s1[0],setAllEntries=_s1[1];
+  useEffect(function(){
+    // Charger le journal de chaque ESI
+    var entries=[];
+    var done=0;
+    if(!esis||esis.length===0){setAllEntries([]);return;}
+    esis.forEach(function(e){
+      fbLire("journal/"+e.id,function(data){
+        if(data){
+          Object.values(data).forEach(function(entry){
+            entries.push(Object.assign({},entry,{esiId:e.id,esiPrenom:e.prenom}));
+          });
+        }
+        done++;
+        if(done===esis.length){
+          entries.sort(function(a,b){return b.date>a.date?1:-1;});
+          setAllEntries(entries.slice(0,30));
+        }
+      });
+    });
+  },[]);
+  if(allEntries.length===0)return h("div",{style:{color:C.subtle,fontSize:13,fontStyle:"italic",textAlign:"center",padding:"20px 0"}},"Aucune activité enregistrée pour l'instant.");
+  return h("div",null,
+    allEntries.map(function(e,i){
+      var icone=ICONES_TYPE[e.type]||ICONES_TYPE.default;
+      var couleur=e.type==="etape"?C.green:e.type==="retour"?C.accent:e.type==="rdv"?C.amber:e.type==="depot"?C.green:C.muted;
+      return h("div",{key:e.id||i,style:{display:"flex",gap:10,marginBottom:8,alignItems:"flex-start"}},
+        h("div",{style:{width:28,height:28,borderRadius:"50%",background:C.card,border:"1.5px solid "+couleur+"44",display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,flexShrink:0}},icone),
+        h("div",{style:{flex:1,background:C.panel,borderRadius:8,padding:"8px 12px"}},
+          h("div",{style:{display:"flex",gap:8,alignItems:"center",marginBottom:3}},
+            h("span",{style:{color:C.accent,fontSize:11,fontWeight:700}},e.esiPrenom),
+            h("span",{style:{color:C.subtle,fontSize:10}},dfr(e.date))),
+          h("div",{style:{color:C.text,fontSize:12,lineHeight:1.5}},e.msg)));
+    }));
+}
+
 function Directeur(props){
   var onBack=props.onBack;
   var _s1=useState(ESI_DEFAUT[0]&&ESI_DEFAUT[0].id),sel=_s1[0],setSel=_s1[1];
@@ -919,11 +997,32 @@ function Directeur(props){
     setEsis(function(prev){return prev.map(function(e){return e.id===u.id?u:e;});});
     fbSauverESI(u);
   }
-  function se(id,s){if(!esi)return;up(Object.assign({},esi,{etapes:Object.assign({},esi.etapes,{[id]:s}),derniereMAJ:new Date().toISOString()}));}
-  function si(){if(!esi)return;up(Object.assign({},esi,{visio:ev,prochainRdv:er,derniereMAJ:new Date().toISOString()}));}
+  function log(esiId,type,msg){
+    var entry={id:uid(),date:new Date().toISOString(),type:type,msg:msg};
+    fbEcrire("journal/"+esiId+"/"+entry.id,entry);
+  }
+  function se(id,s){
+    if(!esi)return;
+    var et=ETAPES.find(function(e){return e.id===id;});
+    var label=et?et.label:id;
+    up(Object.assign({},esi,{etapes:Object.assign({},esi.etapes,{[id]:s}),derniereMAJ:new Date().toISOString()}));
+    if(s==="fait")log(esi.id,"etape","✅ Étape validée : "+label);
+    else if(s==="encours")log(esi.id,"etape","⏳ Étape en cours : "+label);
+    else if(s==="bloque")log(esi.id,"etape","🚫 Étape bloquée : "+label);
+  }
+  function si(){
+    if(!esi)return;
+    up(Object.assign({},esi,{visio:ev,prochainRdv:er,derniereMAJ:new Date().toISOString()}));
+    if(er)log(esi.id,"rdv","📅 RDV planifié : "+rfr(er));
+  }
   function ac(){if(!nc.trim()||!esi)return;up(Object.assign({},esi,{commentaires:(esi.commentaires||[]).concat([{id:uid(),texte:nc.trim(),date:new Date().toISOString()}]),derniereMAJ:new Date().toISOString()}));setNc("");}
   function dc(id){if(!esi)return;up(Object.assign({},esi,{commentaires:(esi.commentaires||[]).filter(function(c){return c.id!==id;})}));}
-  function ad(){if(!ndl.trim()||!ndu.trim()||!esi)return;up(Object.assign({},esi,{documents:(esi.documents||[]).concat([{id:uid(),label:ndl.trim(),url:ndu.trim(),date:new Date().toISOString()}]),derniereMAJ:new Date().toISOString()}));setNdl("");setNdu("");setShowDoc(false);}
+  function ad(){
+    if(!ndl.trim()||!ndu.trim()||!esi)return;
+    up(Object.assign({},esi,{documents:(esi.documents||[]).concat([{id:uid(),label:ndl.trim(),url:ndu.trim(),date:new Date().toISOString()}]),derniereMAJ:new Date().toISOString()}));
+    log(esi.id,"doc","📎 Document partagé : "+ndl.trim());
+    setNdl("");setNdu("");setShowDoc(false);
+  }
   function dd(id){if(!esi)return;up(Object.assign({},esi,{documents:(esi.documents||[]).filter(function(d){return d.id!==id;})}));}
   function dr(id){if(!esi)return;up(Object.assign({},esi,{retours:(esi.retours||[]).filter(function(r){return r.id!==id;})}));}
   function onR(retour){
@@ -944,13 +1043,14 @@ function Directeur(props){
     if(av>=98)ne.mfe_relecture="fait";
     if(av>=100)ne.mfe_soutenance="fait";
     up(Object.assign({},esi,{retours:(esi.retours||[]).concat([retour]),etapes:ne,derniereMAJ:new Date().toISOString()}));
+    log(esi.id,"retour","💬 Retour formateur envoyé — avancement estimé : "+retour.avancement+"%");
     setTab("retours");
   }
 
   if(fbLoad)return h("div",{style:{minHeight:"100vh",background:C.bg,display:"flex",alignItems:"center",justifyContent:"center",color:C.muted,fontSize:15}},"⏳ Chargement des données...");
   if(!esi)return null;
   var p=pct(esi.etapes);
-  var tabs=[{id:"dashboard",l:"🏠 Vue globale"},{id:"suivi",l:"📊 Suivi"+(Object.values(esi.etapesEsi||{}).filter(function(v){return v==="demande";}).length>0?" ✋":"")},{id:"analyse",l:"🔍 Analyser"},{id:"retours",l:"💬 Retours"+(esi.retours&&esi.retours.length>0?" ("+esi.retours.length+")":"")},{id:"messages",l:"✉️ Messages"},{id:"docs",l:"📎 Docs"+(esi.documents&&esi.documents.length>0?" ("+esi.documents.length+")":"")},{id:"planning",l:"📅 Planning"},{id:"notesvisio",l:"📋 Comptes rendus"},{id:"deadlines",l:"⚠️ Deadlines"},{id:"refs",l:"📚 Références"},{id:"notes",l:"🗒 Notes perso"}];
+  var tabs=[{id:"dashboard",l:"🏠 Vue globale"},{id:"suivi",l:"📊 Suivi"+(Object.values(esi.etapesEsi||{}).filter(function(v){return v==="demande";}).length>0?" ✋":"")},{id:"analyse",l:"🔍 Analyser"},{id:"retours",l:"💬 Retours"+(esi.retours&&esi.retours.length>0?" ("+esi.retours.length+")":"")},{id:"messages",l:"✉️ Messages"},{id:"docs",l:"📎 Docs"+(esi.documents&&esi.documents.length>0?" ("+esi.documents.length+")":"")},{id:"planning",l:"📅 Planning"},{id:"notesvisio",l:"📋 Comptes rendus"},{id:"deadlines",l:"⚠️ Deadlines"},{id:"refs",l:"📚 Références"},{id:"journal",l:"📒 Journal"},{id:"notes",l:"🗒 Notes perso"}];
 
   return h("div",{style:{background:C.bg,minHeight:"100vh",display:"flex",flexDirection:"column",color:C.text}},
     h("div",{style:{background:C.panel,borderBottom:"1px solid "+C.border,padding:"12px 20px",display:"flex",alignItems:"center",gap:12,flexWrap:"wrap"}},
@@ -1031,7 +1131,11 @@ function Directeur(props){
                   h("button",{onClick:function(ev){ev.stopPropagation();setSel(e.id);setTab("suivi");},style:bs(C.accentDim,C.accent,{fontSize:11,padding:"4px 10px",border:"1px solid "+C.accent+"44"})},"📊 Suivi"),
                   h("button",{onClick:function(ev){ev.stopPropagation();setSel(e.id);setTab("analyse");},style:bs(C.card,C.muted,{fontSize:11,padding:"4px 10px",border:"1px solid "+C.border})},"🔍 Analyser"),
                   h("button",{onClick:function(ev){ev.stopPropagation();setSel(e.id);setTab("messages");},style:bs(C.card,C.muted,{fontSize:11,padding:"4px 10px",border:"1px solid "+C.border})},"✉️ Message")));
-            })))
+            })),
+          h("div",{style:{marginTop:28}},
+            h("div",{style:{color:C.text,fontWeight:800,fontSize:16,marginBottom:4}},"📒 Activité récente"),
+            h("div",{style:{color:C.muted,fontSize:13,marginBottom:16}},"Les 30 dernières actions sur toutes les ESI"),
+            h(JournalGlobal,{esis:esis,c:C})))
 
       : h("div",{style:{display:"flex",flex:1,minHeight:0}},
           h("div",{style:{width:250,minWidth:250,background:C.panel,borderRight:"1px solid "+C.border,overflowY:"auto",padding:"12px 8px"}},
@@ -1237,6 +1341,7 @@ function Directeur(props){
                   h("div",{style:{color:C.muted,fontSize:12,marginTop:2}},"Exemple de diaporama anonymisé · IFSI Beaujon"))),
               h("div",{style:{color:C.muted,fontSize:12,fontWeight:700,marginBottom:8,textTransform:"uppercase",letterSpacing:1}},"Structure de référence"),
               ["Titre + sommaire bien structuré","Situation clinique résumée visuellement","Question de départ mise en valeur","Schéma des concepts et leurs liens","Résultats clés sous forme de citations choisies","Synthèse comparative théorie-terrain","Ouverture / question de recherche finale","10 minutes d'exposé — s'entraîner à voix haute"].map(function(p,i){return h("div",{key:i,style:{display:"flex",gap:8,marginBottom:5}},h("span",{style:{color:C.accent,marginTop:1,flexShrink:0}},"→"),h("span",{style:{color:C.text,fontSize:13,lineHeight:1.5}},p));}))),
+          tab==="journal"&&h(JournalESI,{esiId:esi.id,esiPrenom:esi.prenom,c:C}),
           tab==="notes"&&h("div",null,
             h("div",{style:{display:"flex",gap:8,marginBottom:14}},
               h("input",{value:nc,onChange:function(e){setNc(e.target.value);},onKeyDown:function(e){if(e.key==="Enter")ac();},placeholder:"Ajouter une note (Entrée)…",style:Object.assign({},inp(C),{flex:1})}),
@@ -1295,6 +1400,7 @@ function EsiApp(props){
     var updated=Object.assign({},data,{documentsEsi:(data.documentsEsi||[]).concat([doc]),derniereMAJ:new Date().toISOString()});
     setData(updated);
     fbSauverESI(updated);
+    fbEcrire("journal/"+esiId+"/"+uid(),{id:uid(),date:new Date().toISOString(),type:"depot",msg:"📤 Document déposé par l'ESI : "+depotLabel.trim()});
     setDepotLabel("");setDepotUrl("");setShowDepot(false);
     setDepotOk("Document déposé !");
     setTimeout(function(){setDepotOk("");},3000);
