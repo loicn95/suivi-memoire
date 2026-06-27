@@ -49,12 +49,12 @@ const STATUTS=[
   {id:"bloque",label:"Bloqué",color:"#F85149",bg:"#3A1A1A"}
 ];
 const ESI_DEFAUT=[
-  {id:"e1",prenom:"BRUCTER Naïma",sujet:"Refus de soins / manque d'asepsie"},
-  {id:"e2",prenom:"IOJE Paula",sujet:"Levée de sédation patient intubé ventilé"},
-  {id:"e3",prenom:"JEAN Lisa",sujet:"Soins palliatifs / fin de vie"},
-  {id:"e4",prenom:"LECHOPIER-SIKORSKI Chloé",sujet:"Gestion des urgences / barrière linguistique"},
-  {id:"e5",prenom:"PECOUD Émilie",sujet:"Douleur du patient amputé"},
-  {id:"e6",prenom:"RYST Lucie",sujet:"Communication patient / extubation"}
+  {id:"e1",prenom:"BRUCTER Naïma",sujet:"Refus de soins / manque d'asepsie",pwd:"22323033"},
+  {id:"e2",prenom:"IOJE Paula",sujet:"Levée de sédation patient intubé ventilé",pwd:"22422307"},
+  {id:"e3",prenom:"JEAN Lisa",sujet:"Soins palliatifs / fin de vie",pwd:"22420869"},
+  {id:"e4",prenom:"LECHOPIER-SIKORSKI Chloé",sujet:"Gestion des urgences / barrière linguistique",pwd:"22413962"},
+  {id:"e5",prenom:"PECOUD Émilie",sujet:"Douleur du patient amputé",pwd:"22418729"},
+  {id:"e6",prenom:"RYST Lucie",sujet:"Communication patient / extubation",pwd:"71613697"}
 ];
 const RESSOURCES=[
   {id:"r1",label:"Formuler une problématique",icon:"🎯",contenu:"La problématique est une question centrale.\n\n• Découler d'une situation clinique réelle\n• Formulée sous forme de question ouverte\n• Ni trop large, ni trop précise\n\nExemple : En quoi la relation soignant-soigné influence-t-elle la prise en charge de la douleur ?"},
@@ -65,6 +65,12 @@ const RESSOURCES=[
 
 const ZOOM_LINK="https://u-paris.zoom.us/j/8813251138?pwd=WFpwcHJQZlVJSkpnQXNHVmp3TkxHUT09";
 const ZOOM_CODE="123456";
+const DEADLINES=[
+  {id:"dl1",label:"Remise Note de Recherche",date:"2027-01-15",icon:"📝",ue:"NR"},
+  {id:"dl2",label:"Remise Mémoire (1er jet)",date:"2027-03-15",icon:"📖",ue:"MFE"},
+  {id:"dl3",label:"Remise Mémoire final",date:"2027-05-01",icon:"🎓",ue:"MFE"},
+  {id:"dl4",label:"Soutenance",date:"2027-06-15",icon:"🎤",ue:"MFE"}
+];
 
 const GRILLE_NR=[
   {capacite:"Présenter la/les situation(s) d'appel",criteres:["La situation est décrite de façon pertinente, précise, objective","Le choix est argumenté en regard de l'intérêt professionnel","Une question de départ est formulée"],points:5},
@@ -93,6 +99,62 @@ const GUIDE_ARS=[
   {titre:"Consignes de présentation",contenu:"• Format A4, recto uniquement\n• Marges : 3 cm haut/bas/gauche, 2 cm droite\n• Police : Times New Roman ou Arial, taille 12\n• Interligne 1,5, alignement justifié\n• Paginé en chiffres arabes (25-30 pages)\n• Citations en italique entre guillemets\n• Résumé (abstract) en français et anglais en 4e de couverture\n• 5 mots clés maximum"},
   {titre:"Bibliographie - Norme ISO 690",contenu:"Livre :\nAUTEUR (MAJUSCULE), Prénom. Titre en italique. Ville : Editeur, année.\n\nArticle :\nAUTEUR, Prénom. Titre article. Titre revue. Année, vol., n°, pages.\n\nSite internet :\nAUTEUR. Titre [en ligne]. [Consulté le JJ/MM/AAAA]. Disponible : URL\n\nMinimum 10 références, de préférence moins de 10 ans."},
 ];
+
+// ---- DOCUMENTS DE RÉFÉRENCE ----
+// Mémoire exemple : "Les émotions des soignants face à la pratique professionnelle" (ALVES RODRIGUES Ingrid, Promo 2019-2022, IFSI Beaujon)
+const DOC_REF_MEMOIRE=`DOCUMENT DE RÉFÉRENCE — EXEMPLE DE MÉMOIRE DE FIN D'ÉTUDES (IFSI Beaujon, Promo 2019-2022)
+Titre : "Les émotions des soignants face à la pratique professionnelle"
+Auteure : ALVES RODRIGUES Ingrid | Directeur : JAIN Loïc
+
+STRUCTURE GÉNÉRALE (à utiliser comme modèle) :
+1. Introduction — Ancrage personnel dans la formation, justification du sujet, annonce du plan
+2. Situation de départ (I) — Description clinique précise, analyse multi-angles (émotions, mécanismes de défense, relation soignant-soigné, communication, prendre soin), question de départ formulée clairement en majuscules
+3. Exploration empirique (II) — Intérêt de l'enquête, outil (entretiens semi-directifs), population choisie (5 IDE de services variés), présentation en tableau, limites et difficultés honnêtement exposées
+4. Cadre de référence (III) — 4 concepts développés : L'infirmier / Les émotions / La juste distance / La relation soignant-soigné. Chaque concept : histoire/définition, types, lien avec la pratique, références théoriques multiples citées avec notes de bas de page
+5. Discussion et hypothèse de recherche (IV) — Confrontation théorie/terrain, réponse partielle à la question de départ, ouverture vers une nouvelle question de recherche
+6. Conclusion — Retour sur l'apport personnel et professionnel du travail
+7. Bibliographie — Classée par catégories (Ouvrages, Revues, Articles, Textes officiels, Sites web), norme ISO 690
+8. Annexes — Guide d'entretien + 5 retranscriptions intégrales anonymisées
+
+POINTS FORTS À RETENIR COMME MODÈLE :
+- Situation de départ précise, concrète, vécue en stage (mort périnatale aux urgences gynéco)
+- Analyse multidimensionnelle de la situation (émotions, mécanismes de défense, relation, communication)
+- Question de départ claire, découlant directement de la situation
+- Cadre de référence solide avec auteurs variés (Phaneuf, Hesbeen, Ekman, Lelord/André, Prayez, Mercadier...)
+- Allers-retours constants entre théorie et données terrain (entretiens cités directement dans le texte)
+- Hypothèse de recherche reformulée en fin de travail ouvrant vers la recherche ultérieure
+- Bibliographie complète, normalisée ISO 690, catégorisée
+- Abstract bilingue (français/anglais) avec mots-clés en 4e de couverture
+- 81 pages au total dont 33 de corps + annexes
+
+EXEMPLES DE BONNES PRATIQUES RÉDACTIONNELLES :
+- Les citations d'auteurs sont intégrées dans le texte et renvoyées en note de bas de page numérotée
+- Les entretiens sont présentés par un tableau (genre, prénom anonymisé, service, années d'expérience, motivation)
+- La question de départ est formulée en majuscules et centrée sur une page
+- Les concepts sont définis rigoureusement avant d'être mis en lien avec les données de terrain
+- Les limites méthodologiques sont exposées franchement (difficultés d'accès aux professionnels, retards, synthèse des entretiens)`;
+
+const DOC_REF_SOUTENANCE=`DOCUMENT DE RÉFÉRENCE — EXEMPLE DE PRÉSENTATION DE SOUTENANCE (IFSI Beaujon)
+Type : Présentation diaporama pour soutenance de mémoire de fin d'études
+Sujet : "Les émotions des soignants face à la pratique professionnelle"
+
+STRUCTURE D'UNE BONNE PRÉSENTATION DE SOUTENANCE :
+- Diapositive de titre : Titre du mémoire, nom de l'auteure, IFSI, promotion, date, directeur de mémoire
+- Sommaire : 4-5 grandes parties annoncées
+- Situation de départ : résumé visuel de la situation clinique (schéma ou texte structuré)
+- Question de départ : mise en avant visuelle
+- Cadre de référence : schéma ou mindmap des concepts et leurs liens
+- Enquête : présentation des résultats clés sous forme de tableaux ou citations choisies
+- Discussion / hypothèse : synthèse comparative théorie-terrain
+- Ouverture / question de recherche : perspective finale
+- Bibliographie sélective et remerciements
+
+RÈGLES DE LA SOUTENANCE (à rappeler aux ESI) :
+- Exposé de 10 minutes maximum — s'entraîner à voix haute
+- Pas de lecture du diaporama — parler avec ses propres mots
+- Anticiper les questions du jury : pourquoi ce sujet ? comment ont été choisis les concepts ? que changerait-on a posteriori ?
+- Le jury comprend le directeur de mémoire + une personne qualifiée extérieure
+- La soutenance peut être publique`;
 
 // EmailJS configuration
 const EJS_SERVICE="service_kaqyuwv";
@@ -136,9 +198,54 @@ function fbLire(path,cb){var r=fbRef(path);if(r)r.on("value",function(snap){cb(s
 function fbEcrire(path,data){var r=fbRef(path);if(r)r.set(data);}
 function fbPush(path,data){var r=fbRef(path);if(r)r.push(data);}
 function fbSuppr(path){var r=fbRef(path);if(r)r.remove();}
-function initESI(){return ESI_DEFAUT.map(function(e){return Object.assign({},e,{etapes:{},commentaires:[],documents:[],retours:[],visio:"",prochainRdv:"",derniereMAJ:null});});}
+function fbUpdate(path,data){var r=fbRef(path);if(r)r.update(data);}
+function marquerVu(esiId){fbEcrire("lastSeen/"+esiId,new Date().toISOString());}
+function initESI(){return ESI_DEFAUT.map(function(e){return Object.assign({},e,{etapes:{},commentaires:[],documents:[],documentsEsi:[],retours:[],visio:"",prochainRdv:"",derniereMAJ:null});});}
+// localStorage gardé comme fallback initial seulement
 function charger(){try{var d=localStorage.getItem(SK);return d?JSON.parse(d):initESI();}catch(e){return initESI();}}
 function sauver(d){try{localStorage.setItem(SK,JSON.stringify(d));}catch(e){}}
+
+// ---- FIREBASE DATA LAYER ----
+// Sauvegarde complète d'une ESI dans Firebase
+function fbSauverESI(esi){
+  var data={
+    etapes:esi.etapes||{},
+    commentaires:esi.commentaires||[],
+    documents:esi.documents||[],
+    documentsEsi:esi.documentsEsi||[],
+    retours:esi.retours||[],
+    visio:esi.visio||"",
+    prochainRdv:esi.prochainRdv||"",
+    derniereMAJ:new Date().toISOString()
+  };
+  fbEcrire("esis/"+esi.id,data);
+}
+// Charge les données d'une ESI depuis Firebase et fusionne avec les données de base
+function fbChargerESI(esiId,cb){
+  fbLire("esis/"+esiId,function(data){
+    var base=ESI_DEFAUT.find(function(e){return e.id===esiId;})||{};
+    cb(Object.assign({},base,data||{}));
+  });
+}
+// Charge toutes les ESI depuis Firebase
+function fbChargerToutesESI(cb){
+  fbLire("esis",function(data){
+    var result=ESI_DEFAUT.map(function(base){
+      var fb=data&&data[base.id]||{};
+      return Object.assign({},base,{
+        etapes:fb.etapes||{},
+        commentaires:fb.commentaires||[],
+        documents:fb.documents||[],
+        documentsEsi:fb.documentsEsi||[],
+        retours:fb.retours||[],
+        visio:fb.visio||"",
+        prochainRdv:fb.prochainRdv||"",
+        derniereMAJ:fb.derniereMAJ||null
+      });
+    });
+    cb(result);
+  });
+}
 function uid(){return Math.random().toString(36).slice(2,9);}
 function pctNR(etapes){return Math.round(ETAPES_NR.filter(function(e){return etapes[e.id]==="fait";}).length/ETAPES_NR.length*100);}
 function pctMFE(etapes){return Math.round(ETAPES_MFE.filter(function(e){return etapes[e.id]==="fait";}).length/ETAPES_MFE.length*100);}
@@ -157,6 +264,330 @@ function Barre(props){
   var col=v===100?c.green:v>=50?c.accent:c.amber;
   return h("div",{style:{background:c.border,borderRadius:99,height:6,overflow:"hidden",flex:1}},
     h("div",{style:{width:v+"%",height:"100%",background:col,borderRadius:99,transition:"width .4s"}}));
+}
+
+
+// ---- MESSAGERIE ----
+function Messagerie(props){
+  var esiId=props.esiId,esiPrenom=props.esiPrenom,mode=props.mode,C=props.c;
+  var _s1=useState([]),msgs=_s1[0],setMsgs=_s1[1];
+  var _s2=useState(""),txt=_s2[0],setTxt=_s2[1];
+  useEffect(function(){
+    fbLire("messages/"+esiId,function(data){
+      if(!data)return setMsgs([]);
+      setMsgs(Object.values(data).sort(function(a,b){return a.date>b.date?1:-1;}));
+    });
+  },[esiId]);
+  function envoyer(){
+    if(!txt.trim())return;
+    var id=uid();
+    fbEcrire("messages/"+esiId+"/"+id,{id:id,texte:txt.trim(),auteur:mode,date:new Date().toISOString(),lu:false});
+    if(mode==="esi") envoyerNotification(esiPrenom,0,"Message: "+txt.trim().substring(0,50));
+    setTxt("");
+  }
+  return h("div",{style:{display:"flex",flexDirection:"column",height:420}},
+    h("div",{style:{flex:1,overflowY:"auto",display:"flex",flexDirection:"column",gap:8,paddingBottom:12}},
+      msgs.length===0&&h("div",{style:{color:C.subtle,fontSize:13,fontStyle:"italic",textAlign:"center",padding:"40px 0"}},"Aucun message pour l'instant."),
+      msgs.map(function(m){
+        var estMoi=(mode==="dir"&&m.auteur==="dir")||(mode==="esi"&&m.auteur==="esi");
+        return h("div",{key:m.id,style:{display:"flex",justifyContent:estMoi?"flex-end":"flex-start"}},
+          h("div",{style:{maxWidth:"80%",background:estMoi?C.accentDim:C.panel,border:"1px solid "+(estMoi?C.accent:C.border)+"44",borderRadius:estMoi?"14px 14px 4px 14px":"14px 14px 14px 4px",padding:"10px 14px"}},
+            h("div",{style:{color:estMoi?C.accent:C.muted,fontSize:10,fontWeight:700,marginBottom:4}},estMoi?"Moi":(mode==="dir"?esiPrenom:"Directeur")+" · "+dfr(m.date)),
+            h("div",{style:{color:C.text,fontSize:13,lineHeight:1.6}},m.texte)));
+      })),
+    h("div",{style:{display:"flex",gap:8,borderTop:"1px solid "+C.border,paddingTop:12}},
+      h("input",{value:txt,onChange:function(e){setTxt(e.target.value);},onKeyDown:function(e){if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();envoyer();}},placeholder:"Votre message...",style:Object.assign({},inp(C),{flex:1})}),
+      h("button",{onClick:envoyer,style:bs(C.accent,"#fff")},"Envoyer")));
+}
+
+// ---- POSITIONNEMENT ANONYME ----
+function Positionnement(props){
+  var esiId=props.esiId,data=props.data,C=props.c;
+  var _sp=useState(null),toutesEsis=_sp[0],setToutesEsis=_sp[1];
+  useEffect(function(){
+    fbChargerToutesESI(function(all){setToutesEsis(all);});
+  },[]);
+  if(!data||!toutesEsis)return h("div",{style:{color:C.muted,fontSize:13,textAlign:"center",padding:"40px 0"}},"⏳ Calcul en cours...");
+  var monPct=pct(data.etapes);
+  var tousP=toutesEsis.map(function(e){return pct(e.etapes);});
+  var moy=Math.round(tousP.reduce(function(a,b){return a+b;},0)/tousP.length);
+  var min=Math.min.apply(null,tousP);
+  var max=Math.max.apply(null,tousP);
+  var monNR=pctNR(data.etapes),monMFE=pctMFE(data.etapes);
+  var moyNR=Math.round(toutesEsis.map(function(e){return pctNR(e.etapes);}).reduce(function(a,b){return a+b;},0)/toutesEsis.length);
+  var moyMFE=Math.round(toutesEsis.map(function(e){return pctMFE(e.etapes);}).reduce(function(a,b){return a+b;},0)/toutesEsis.length);
+  function jaugeComp(label,moi2,moy2,couleur){
+    return h("div",{style:{background:C.panel,borderRadius:12,padding:16,marginBottom:12}},
+      h("div",{style:{color:C.muted,fontSize:11,fontWeight:700,marginBottom:10}},label),
+      h("div",{style:{marginBottom:8}},
+        h("div",{style:{display:"flex",justifyContent:"space-between",fontSize:12,color:C.muted,marginBottom:4}},
+          h("span",null,"Toi"),h("span",{style:{color:couleur,fontWeight:700}},moi2+"%")),
+        h("div",{style:{background:C.border,borderRadius:99,height:8,overflow:"hidden"}},
+          h("div",{style:{width:moi2+"%",height:"100%",background:couleur,borderRadius:99,transition:"width .4s"}}))),
+      h("div",null,
+        h("div",{style:{display:"flex",justifyContent:"space-between",fontSize:12,color:C.muted,marginBottom:4}},
+          h("span",null,"Moyenne groupe"),h("span",null,moy2+"%")),
+        h("div",{style:{background:C.border,borderRadius:99,height:4,overflow:"hidden"}},
+          h("div",{style:{width:moy2+"%",height:"100%",background:C.subtle,borderRadius:99}}))),
+      h("div",{style:{marginTop:10,fontSize:12,color:moi2>=moy2?C.green:C.amber,fontWeight:700}},
+        moi2>moy2?"✨ Tu es au-dessus de la moyenne !":moi2===moy2?"👍 Tu es dans la moyenne.":"💪 Encore un effort pour rejoindre la moyenne !"));
+  }
+  return h("div",null,
+    h("div",{style:{background:C.panel,borderRadius:14,padding:16,marginBottom:16,textAlign:"center"}},
+      h("div",{style:{color:C.muted,fontSize:11,fontWeight:700,marginBottom:8}},"TON AVANCEMENT GLOBAL VS GROUPE"),
+      h("div",{style:{fontSize:32,fontWeight:800,color:monPct>=moy?C.green:C.amber,marginBottom:4}},monPct+"%"),
+      h("div",{style:{display:"flex",justifyContent:"center",gap:24,fontSize:13,color:C.muted}},
+        h("span",null,"Min : ",h("strong",null,min+"%")),
+        h("span",null,"Moy : ",h("strong",{style:{color:C.accent}},moy+"%")),
+        h("span",null,"Max : ",h("strong",null,max+"%")))),
+    h("div",null,jaugeComp("UE 3.4.S6 — Note de Recherche",monNR,moyNR,C.accent)),
+    h("div",null,jaugeComp("UE 5.6.S6 — Mémoire",monMFE,moyMFE,C.green)));
+}
+
+// ---- COMPTE RENDU IA ----
+function CompteRendu(props){
+  var esiId=props.esiId,esiPrenom=props.esiPrenom,mode=props.mode,C=props.c;
+  var _s1=useState([]),crs=_s1[0],setCrs=_s1[1];
+  var _s2=useState(false),show=_s2[0],setShow=_s2[1];
+  var _s3=useState(""),transcript=_s3[0],setTranscript=_s3[1];
+  var _s4=useState("visio"),typeG=_s4[0],setTypeG=_s4[1];
+  var _s5=useState(false),load=_s5[0],setLoad=_s5[1];
+  var _s6=useState(null),cr=_s6[0],setCr=_s6[1];
+  var _s7=useState(""),err=_s7[0],setErr=_s7[1];
+
+  useEffect(function(){
+    fbLire("comptesRendus/"+esiId,function(data){
+      if(!data)return setCrs([]);
+      setCrs(Object.values(data).sort(function(a,b){return b.date>a.date?1:-1;}));
+    });
+  },[esiId]);
+
+  function generer(){
+    if(!transcript.trim()){setErr("Colle d'abord le transcript.");return;}
+    setLoad(true);setErr("");setCr(null);
+    fetch("https://api.anthropic.com/v1/messages",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({model:"claude-sonnet-4-6",max_tokens:1000,messages:[{role:"user",content:"Tu es formateur IFSI expert en memoires infirmiers.\nESI : "+esiPrenom+"\nType de guidance : "+typeG+"\nDate : "+new Date().toLocaleDateString("fr-FR")+"\n\nTranscript :\n"+transcript+"\n\nReponds UNIQUEMENT en JSON valide sans markdown :{\"titre\":\"CR\",\"points_abordes\":[\"...\"],\"avancees\":[\"...\"],\"points_a_travailler\":[\"...\"],\"decisions\":[\"...\"],\"prochaine_etape\":\"...\",\"message_esi\":\"...\"}"}]})
+    }).then(function(r){return r.json();}).then(function(data){
+      var t=(data.content||[]).filter(function(b){return b.type==="text";}).map(function(b){return b.text;}).join("");
+      setCr(JSON.parse(t.replace(/```json|```/g,"").trim()));
+      setLoad(false);
+    }).catch(function(){setErr("Erreur de génération. Réessaie.");setLoad(false);});
+  }
+
+  function sauver(){
+    if(!cr)return;
+    var id=uid();
+    fbEcrire("comptesRendus/"+esiId+"/"+id,Object.assign({},cr,{id:id,date:new Date().toISOString(),type:typeG}));
+    setCr(null);setTranscript("");setShow(false);
+  }
+
+  function suppr(id){fbSuppr("comptesRendus/"+esiId+"/"+id);}
+
+  function Section(label,items,col){
+    if(!items||items.length===0)return null;
+    return h("div",{style:{marginBottom:12}},
+      h("div",{style:{color:col||C.accent,fontSize:11,fontWeight:700,marginBottom:6}},label),
+      items.map(function(it,i){return h("div",{key:i,style:{color:C.text,fontSize:13,lineHeight:1.7,marginBottom:3}},"• "+it);}));
+  }
+
+  return h("div",null,
+    mode==="dir"&&h("div",null,
+      show?h("div",{style:{background:C.panel,borderRadius:14,padding:16,marginBottom:16,border:"1px solid "+C.accent+"44"}},
+        h("div",{style:{color:C.accent,fontWeight:700,fontSize:14,marginBottom:12}},"📋 Nouveau compte rendu de guidance"),
+        h("div",{style:{display:"flex",gap:8,marginBottom:12}},
+          ["visio","présentiel"].map(function(t){return h("button",{key:t,onClick:function(){setTypeG(t);},style:bs(typeG===t?C.accentDim:"transparent",typeG===t?C.accent:C.muted,{border:"1px solid "+(typeG===t?C.accent:C.border),fontSize:12})},t==="visio"?"🎥 Visio":"🤝 Présentiel");})),
+        !cr&&h("div",null,
+          h("div",{style:{color:C.muted,fontSize:12,marginBottom:6}},"Colle le transcript (Zoom, Otter, Word...) ou tes notes brutes :"),
+          h("textarea",{value:transcript,onChange:function(e){setTranscript(e.target.value);},placeholder:"Transcript ou notes brutes de la guidance...",rows:8,style:Object.assign({},inp(C),{resize:"vertical",marginBottom:10,lineHeight:1.6})}),
+          err&&h("div",{style:{color:C.red,fontSize:12,marginBottom:8}},err),
+          h("div",{style:{display:"flex",gap:8}},
+            h("button",{onClick:generer,disabled:load,style:bs(C.accent,"#fff",{flex:1,opacity:load?0.7:1})},load?"⏳ Génération en cours...":"✨ Générer le CR avec l'IA"),
+            h("button",{onClick:function(){setShow(false);setTranscript("");setCr(null);},style:bs(C.card,C.muted,{border:"1px solid "+C.border})},"Annuler"))),
+        cr&&h("div",null,
+          h("div",{style:{background:C.card,borderRadius:12,padding:16,marginBottom:12}},
+            h("div",{style:{color:C.accent,fontWeight:800,fontSize:15,marginBottom:16}},cr.titre),
+            Section("📌 POINTS ABORDÉS",cr.points_abordes,C.accent),
+            Section("✅ AVANCÉES CONSTATÉES",cr.avancees,C.green),
+            Section("⚠️ POINTS À TRAVAILLER",cr.points_a_travailler,C.amber),
+            Section("🔖 DÉCISIONS PRISES",cr.decisions,C.muted),
+            cr.prochaine_etape&&h("div",{style:{marginBottom:12}},
+              h("div",{style:{color:C.accent,fontSize:11,fontWeight:700,marginBottom:6}},"➡️ PROCHAINE ÉTAPE"),
+              h("div",{style:{color:C.text,fontSize:13}},cr.prochaine_etape)),
+            cr.message_esi&&h("div",{style:{background:C.accentDim,borderRadius:8,padding:12,border:"1px solid "+C.accent+"33"}},
+              h("div",{style:{color:C.accent,fontSize:11,fontWeight:700,marginBottom:6}},"💬 MESSAGE POUR L'ESI"),
+              h("div",{style:{color:C.text,fontSize:13,lineHeight:1.7,fontStyle:"italic"}},cr.message_esi))),
+          h("div",{style:{display:"flex",gap:8}},
+            h("button",{onClick:sauver,style:bs(C.green,"#fff",{flex:1})},"💾 Valider et partager à l'ESI"),
+            h("button",{onClick:function(){setCr(null);},style:bs(C.card,C.muted,{border:"1px solid "+C.border})},"↩ Regénérer"))))
+      :h("button",{onClick:function(){setShow(true);},style:Object.assign({},bs("transparent",C.accent),{border:"1.5px dashed "+C.accent+"44",width:"100%",padding:"12px 0",marginBottom:16})},"+ Nouveau compte rendu de guidance")),
+    crs.length===0&&h("div",{style:{color:C.subtle,fontSize:13,fontStyle:"italic",textAlign:"center",padding:"30px 0"}},"Aucun compte rendu pour l'instant."),
+    crs.map(function(n){
+      return h("div",{key:n.id,style:{background:C.panel,borderRadius:14,padding:16,marginBottom:14,border:"1px solid "+C.border}},
+        h("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}},
+          h("div",null,
+            h("div",{style:{color:C.accent,fontWeight:800,fontSize:14}},n.titre),
+            h("div",{style:{color:C.subtle,fontSize:11,marginTop:2}},(n.type==="visio"?"🎥 Visio":"🤝 Présentiel")+" · "+dfr(n.date))),
+          mode==="dir"&&h("button",{onClick:function(){suppr(n.id);},style:{background:"transparent",border:"none",color:C.subtle,cursor:"pointer",fontSize:16}},"✕")),
+        Section("📌 Points abordés",n.points_abordes,C.accent),
+        Section("✅ Avancées",n.avancees,C.green),
+        Section("⚠️ À travailler",n.points_a_travailler,C.amber),
+        Section("🔖 Décisions",n.decisions,C.muted),
+        n.prochaine_etape&&h("div",{style:{marginBottom:8}},
+          h("div",{style:{color:C.accent,fontSize:11,fontWeight:700,marginBottom:4}},"➡️ PROCHAINE ÉTAPE"),
+          h("div",{style:{color:C.text,fontSize:13}},n.prochaine_etape)),
+        n.message_esi&&h("div",{style:{background:C.accentDim,borderRadius:8,padding:10,border:"1px solid "+C.accent+"22",marginTop:8}},
+          h("div",{style:{color:C.accent,fontSize:11,fontWeight:700,marginBottom:4}},"💬 MESSAGE"),
+          h("div",{style:{color:C.text,fontSize:12,lineHeight:1.7,fontStyle:"italic"}},n.message_esi)));
+    }));
+}
+
+// ---- DEADLINES & ALERTES ----
+var ICONS_DL=["📝","📖","🎓","🎤","📅","⚡"];
+function useDeadlines(){
+  var _s=useState([]),dls=_s[0],setDls=_s[1];
+  useEffect(function(){
+    fbLire("deadlines",function(data){
+      if(!data){
+        // Valeurs par défaut vides si rien dans Firebase
+        setDls([
+          {id:"dl1",label:"Remise Note de Recherche",date:"",icon:"📝",ue:"NR"},
+          {id:"dl2",label:"Remise Mémoire (1er jet)",date:"",icon:"📖",ue:"MFE"},
+          {id:"dl3",label:"Remise Mémoire final",date:"",icon:"🎓",ue:"MFE"},
+          {id:"dl4",label:"Soutenance",date:"",icon:"🎤",ue:"MFE"}
+        ]);
+      } else {
+        setDls(Object.values(data).sort(function(a,b){return a.date>b.date?1:-1;}));
+      }
+    });
+  },[]);
+  return dls;
+}
+
+function DeadlineEdit(props){
+  var C=props.c;
+  var dls=useDeadlines();
+  var _s1=useState(false),show=_s1[0],setShow=_s1[1];
+  var _s2=useState(null),editing=_s2[0],setEditing=_s2[1];
+  var _s3=useState({label:"",date:"",icon:"📅",ue:"MFE"}),form=_s3[0],setForm=_s3[1];
+
+  function sauver(){
+    if(!form.label.trim())return;
+    var id=editing||("dl"+uid());
+    fbEcrire("deadlines/"+id,Object.assign({},form,{id:id}));
+    setShow(false);setEditing(null);setForm({label:"",date:"",icon:"📅",ue:"MFE"});
+  }
+  function suppr(id){fbSuppr("deadlines/"+id);}
+  function editer(dl){setEditing(dl.id);setForm({label:dl.label,date:dl.date,icon:dl.icon,ue:dl.ue});setShow(true);}
+
+  return h("div",null,
+    h("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}},
+      h("div",null,
+        h("h2",{style:{color:C.text,fontSize:16,fontWeight:800}},"Deadlines"),
+        h("div",{style:{color:C.muted,fontSize:13}},"Dates clés visibles par toutes les ESI")),
+      h("button",{onClick:function(){setEditing(null);setForm({label:"",date:"",icon:"📅",ue:"MFE"});setShow(true);},style:bs(C.accent,"#fff")},"+ Ajouter")),
+    show&&h("div",{style:{background:C.panel,borderRadius:14,padding:16,marginBottom:16,border:"1px solid "+C.accent+"44"}},
+      h("div",{style:{color:C.accent,fontWeight:700,fontSize:13,marginBottom:12}},editing?"Modifier la deadline":"Nouvelle deadline"),
+      h("div",{style:{display:"flex",gap:8,marginBottom:8,flexWrap:"wrap"}},
+        h("div",{style:{flex:2,minWidth:180}},
+          h("div",{style:{color:C.muted,fontSize:11,marginBottom:4}},"INTITULÉ"),
+          h("input",{value:form.label,onChange:function(e){setForm(Object.assign({},form,{label:e.target.value}));},placeholder:"Ex: Remise Note de Recherche",style:inp(C)})),
+        h("div",{style:{flex:1,minWidth:120}},
+          h("div",{style:{color:C.muted,fontSize:11,marginBottom:4}},"DATE"),
+          h("input",{type:"date",value:form.date,onChange:function(e){setForm(Object.assign({},form,{date:e.target.value}));},style:Object.assign({},inp(C),{colorScheme:"dark"})}))),
+      h("div",{style:{display:"flex",gap:8,marginBottom:12,flexWrap:"wrap"}},
+        h("div",{style:{flex:1,minWidth:120}},
+          h("div",{style:{color:C.muted,fontSize:11,marginBottom:4}},"UE"),
+          h("select",{value:form.ue,onChange:function(e){setForm(Object.assign({},form,{ue:e.target.value}));},style:inp(C)},
+            h("option",{value:"NR"},"Note de Recherche"),
+            h("option",{value:"MFE"},"Mémoire"),
+            h("option",{value:""},"Général"))),
+        h("div",{style:{flex:1,minWidth:120}},
+          h("div",{style:{color:C.muted,fontSize:11,marginBottom:4}},"ICÔNE"),
+          h("select",{value:form.icon,onChange:function(e){setForm(Object.assign({},form,{icon:e.target.value}));},style:inp(C)},
+            ICONS_DL.map(function(ic){return h("option",{key:ic,value:ic},ic);})))),
+      h("div",{style:{display:"flex",gap:8}},
+        h("button",{onClick:sauver,style:bs(C.accent,"#fff",{flex:1})},editing?"Mettre à jour":"Ajouter"),
+        h("button",{onClick:function(){setShow(false);setEditing(null);},style:bs(C.card,C.muted,{border:"1px solid "+C.border})},"Annuler"))),
+    dls.length===0&&!show&&h("div",{style:{color:C.subtle,fontSize:13,fontStyle:"italic",textAlign:"center",padding:"30px 0"}},"Aucune deadline définie."),
+    dls.map(function(dl){
+      var hasDt=dl.date&&dl.date.length>0;
+      var jr=hasDt?Math.ceil((new Date(dl.date)-new Date())/(1000*60*60*24)):null;
+      var passe=hasDt&&jr<0;
+      var urgent=hasDt&&!passe&&jr<30;
+      var couleur=!hasDt?C.subtle:passe?C.subtle:urgent?C.red:C.green;
+      return h("div",{key:dl.id,style:{background:C.panel,borderRadius:12,padding:"12px 16px",marginBottom:10,border:"1px solid "+couleur+"33",display:"flex",alignItems:"center",gap:12}},
+        h("span",{style:{fontSize:24}},dl.icon),
+        h("div",{style:{flex:1}},
+          h("div",{style:{color:C.text,fontWeight:700,fontSize:14}},dl.label),
+          h("div",{style:{color:C.muted,fontSize:12,marginTop:2}},hasDt?new Date(dl.date+"T12:00").toLocaleDateString("fr-FR",{weekday:"long",day:"numeric",month:"long",year:"numeric"}):"Date non définie"),
+          h("div",{style:{color:C.subtle,fontSize:11}},dl.ue==="NR"?"UE 3.4.S6":dl.ue==="MFE"?"UE 5.6.S6":"Général")),
+        hasDt&&h("div",{style:{textAlign:"right",minWidth:60}},
+          h("div",{style:{color:couleur,fontWeight:800,fontSize:passe?12:18}},passe?"Passée":jr===0?"Auj.":jr+"j"),
+          !passe&&h("div",{style:{color:C.subtle,fontSize:10}},"restants")),
+        h("div",{style:{display:"flex",gap:6}},
+          h("button",{onClick:function(){editer(dl);},style:bs(C.card,C.muted,{border:"1px solid "+C.border,fontSize:12})},"✏️"),
+          h("button",{onClick:function(){suppr(dl.id);},style:bs(C.redDim,C.red,{border:"1px solid "+C.red+"33",fontSize:12})},"🗑")));
+    }));
+}
+
+function DeadlineView(props){
+  var esiId=props.esiId,data=props.data,C=props.c;
+  var dls=useDeadlines();
+  var now=new Date();
+  function joursRestants(dateStr){return Math.ceil((new Date(dateStr)-now)/(1000*60*60*24));}
+  function alerteEtapes(dl){
+    if(!data)return false;
+    if(dl.ue==="NR"){return pctNR(data.etapes)<50&&joursRestants(dl.date)<90;}
+    if(dl.ue==="MFE"){return pctMFE(data.etapes)<50&&joursRestants(dl.date)<90;}
+    return false;
+  }
+  var dlsAvecDate=dls.filter(function(dl){return dl.date&&dl.date.length>0;});
+  if(dlsAvecDate.length===0)return h("div",{style:{color:C.subtle,fontSize:13,fontStyle:"italic",textAlign:"center",padding:"40px 0"}},"Aucune deadline définie pour l'instant. Ton directeur les ajoutera bientôt.");
+  return h("div",null,
+    dlsAvecDate.map(function(dl){
+      var jr=joursRestants(dl.date);
+      var passe=jr<0;
+      var urgent=!passe&&jr<30;
+      var alerte=!passe&&alerteEtapes(dl);
+      var couleur=passe?C.subtle:urgent?C.red:alerte?C.amber:C.green;
+      var bg=passe?"transparent":urgent?C.redDim:alerte?C.amberDim:C.greenDim;
+      return h("div",{key:dl.id,style:{background:C.panel,borderRadius:14,padding:16,marginBottom:12,border:"1px solid "+couleur+"44"}},
+        h("div",{style:{display:"flex",alignItems:"center",gap:12}},
+          h("span",{style:{fontSize:28}},dl.icon),
+          h("div",{style:{flex:1}},
+            h("div",{style:{color:C.text,fontWeight:700,fontSize:14}},dl.label),
+            h("div",{style:{color:C.muted,fontSize:12,marginTop:2}},new Date(dl.date+"T12:00").toLocaleDateString("fr-FR",{weekday:"long",day:"numeric",month:"long",year:"numeric"}))),
+          h("div",{style:{textAlign:"right",minWidth:80}},
+            h("div",{style:{color:couleur,fontWeight:800,fontSize:passe?13:20}},passe?"Passée":jr===0?"Aujourd'hui !":jr+"j"),
+            !passe&&h("div",{style:{color:C.subtle,fontSize:10}},"restants"))),
+        !passe&&alerte&&h("div",{style:{marginTop:10,background:bg,borderRadius:8,padding:"8px 12px",color:C.amber,fontSize:12,fontWeight:600}},"⚠️ Tu es en retard sur tes étapes par rapport à cette deadline — pense à accélérer !"),
+        !passe&&urgent&&!alerte&&h("div",{style:{marginTop:10,background:bg,borderRadius:8,padding:"8px 12px",color:C.red,fontSize:12,fontWeight:600}},"🚨 Deadline dans moins de 30 jours !"));
+    }));
+}
+
+// ---- NOTIFICATIONS BADGE ----
+function useNotifs(esiId){
+  var _s1=useState(0),count=_s1[0],setCount=_s1[1];
+  useEffect(function(){
+    if(!esiId)return;
+    fbLire("messages/"+esiId,function(data){
+      if(!data)return setCount(0);
+      var nonLus=Object.values(data).filter(function(m){return m.auteur==="dir"&&!m.lu;}).length;
+      setCount(function(prev){return prev!==nonLus?nonLus:prev;});
+    });
+  },[esiId]);
+  function marquerLus(){
+    fbLire("messages/"+esiId,function(data){
+      if(!data)return;
+      Object.values(data).forEach(function(m){
+        if(m.auteur==="dir"&&!m.lu) fbEcrire("messages/"+esiId+"/"+m.id+"/lu",true);
+      });
+    });
+    setCount(0);
+  }
+  return {count:count,marquerLus:marquerLus};
 }
 
 function Planning(props){
@@ -363,13 +794,30 @@ function Planning(props){
 }
 
 
+function BtnDir(props){
+  var _s1=useState(false),show=_s1[0],setShow=_s1[1];
+  var _s2=useState(""),pwd=_s2[0],setPwd=_s2[1];
+  var _s3=useState(false),err=_s3[0],setErr=_s3[1];
+  function tenter(){
+    if(pwd==="Claude"){props.onDir();}
+    else{setErr(true);setPwd("");setTimeout(function(){setErr(false);},2000);}
+  }
+  if(!show)return h("button",{onClick:function(){setShow(true);},style:{background:C.accent,color:"#fff",border:"none",borderRadius:16,padding:"22px 40px",cursor:"pointer",fontSize:17,fontWeight:700}},"👨‍🏫 Espace Directeur");
+  return h("div",{style:{display:"flex",flexDirection:"column",alignItems:"center",gap:10}},
+    h("input",{type:"password",value:pwd,onChange:function(e){setPwd(e.target.value);},onKeyDown:function(e){if(e.key==="Enter")tenter();},placeholder:"Mot de passe...",autoFocus:true,style:{background:C.card,border:"1px solid "+(err?C.red:C.border),borderRadius:10,color:C.text,fontSize:15,padding:"10px 16px",outline:"none",textAlign:"center",width:200,colorScheme:"dark"}}),
+    err&&h("div",{style:{color:C.red,fontSize:12,fontWeight:700}},"Mot de passe incorrect"),
+    h("div",{style:{display:"flex",gap:8}},
+      h("button",{onClick:tenter,style:{background:C.accent,color:"#fff",border:"none",borderRadius:10,padding:"9px 20px",cursor:"pointer",fontWeight:700,fontSize:14}},"Entrer"),
+      h("button",{onClick:function(){setShow(false);setPwd("");},style:{background:C.card,color:C.muted,border:"1px solid "+C.border,borderRadius:10,padding:"9px 14px",cursor:"pointer",fontSize:14}},"Annuler")));
+}
+
 function Accueil(props){
   return h("div",{style:{minHeight:"100vh",background:C.bg,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:24}},
     h("div",{style:{fontSize:56,marginBottom:16}},"🎓"),
     h("h1",{style:{color:C.text,fontSize:24,fontWeight:800,marginBottom:8,textAlign:"center"}},"Suivi Mémoires Infirmiers"),
     h("p",{style:{color:C.muted,fontSize:15,marginBottom:40,textAlign:"center"}},"Directeur : ",h("strong",{style:{color:C.accent}},"Jain Loic")," · IFSI Beaujon · Promo 2024-27"),
     h("div",{style:{display:"flex",gap:20,flexWrap:"wrap",justifyContent:"center"}},
-      h("button",{onClick:props.onDir,style:{background:C.accent,color:"#fff",border:"none",borderRadius:16,padding:"22px 40px",cursor:"pointer",fontSize:17,fontWeight:700}},"👨‍🏫 Espace Directeur"),
+      h(BtnDir,{onDir:props.onDir}),
       h("button",{onClick:props.onEsi,style:{background:C.panel,color:C.text,border:"2px solid "+C.border,borderRadius:16,padding:"22px 40px",cursor:"pointer",fontSize:17,fontWeight:700}},"👩‍🎓 Espace ESI")));
 }
 
@@ -383,10 +831,24 @@ function AnalyseIA(props){
   function analyser(){
     if(!txt.trim()){setErr("Colle d'abord le contenu du document.");return;}
     setLoad(true);setErr("");setRes(null);
+    var prompt="Tu es formateur IFSI expert en mémoires infirmiers (IFSI Beaujon, AP-HP Paris).\n"+
+"Tu disposes de documents de référence qui représentent des travaux de qualité produits dans cet IFSI.\n\n"+
+"=== DOCUMENT DE RÉFÉRENCE 1 ===\n"+DOC_REF_MEMOIRE+"\n\n"+
+"=== DOCUMENT DE RÉFÉRENCE 2 ===\n"+DOC_REF_SOUTENANCE+"\n\n"+
+"=== DOCUMENT À ANALYSER ===\n"+
+"ESI : "+esi.prenom+"\n"+
+"Sujet : "+esi.sujet+"\n\n"+
+txt+"\n\n"+
+"=== CONSIGNE ===\n"+
+"Analyse ce document en te basant sur les critères de qualité des documents de référence ci-dessus.\n"+
+"Compare la structure, la rigueur méthodologique, les références théoriques, la qualité rédactionnelle.\n"+
+"Sois précis, bienveillant et constructif. Le commentaire_esi doit être rédigé directement à l'étudiant(e).\n\n"+
+"Réponds UNIQUEMENT en JSON valide sans markdown ni backticks :\n"+
+"{\"structure\":\"évaluation de la structure générale\",\"points_forts\":[\"point 1\",\"point 2\"],\"axes_amelioration\":[\"axe 1\",\"axe 2\"],\"commentaire_esi\":\"message à l'ESI\",\"avancement\":0}";
     fetch("https://api.anthropic.com/v1/messages",{
       method:"POST",
       headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({model:"claude-sonnet-4-6",max_tokens:1000,messages:[{role:"user",content:"Tu es formateur IFSI expert en mémoires infirmiers.\nESI: "+esi.prenom+"\nSujet: "+esi.sujet+"\n\nDocument:\n"+txt+"\n\nRéponds UNIQUEMENT en JSON valide sans markdown:\n{\"structure\":\"...\",\"points_forts\":[\"...\"],\"axes_amelioration\":[\"...\"],\"commentaire_esi\":\"...\",\"avancement\":0}"}]})
+      body:JSON.stringify({model:"claude-sonnet-4-6",max_tokens:1500,messages:[{role:"user",content:prompt}]})
     }).then(function(r){return r.json();}).then(function(data){
       var t=(data.content||[]).filter(function(b){return b.type==="text";}).map(function(b){return b.text;}).join("");
       setRes(JSON.parse(t.replace(/```json|```/g,"").trim()));
@@ -426,8 +888,8 @@ function AnalyseIA(props){
 }
 
 function Directeur(props){
-  var onBack=props.onBack,esis=props.esis,setEsis=props.setEsis;
-  var _s1=useState(esis[0]&&esis[0].id),sel=_s1[0],setSel=_s1[1];
+  var onBack=props.onBack;
+  var _s1=useState(ESI_DEFAUT[0]&&ESI_DEFAUT[0].id),sel=_s1[0],setSel=_s1[1];
   var _s2=useState("suivi"),tab=_s2[0],setTab=_s2[1];
   var _s3=useState(""),nc=_s3[0],setNc=_s3[1];
   var _s4=useState(""),ndl=_s4[0],setNdl=_s4[1];
@@ -435,19 +897,35 @@ function Directeur(props){
   var _s6=useState(false),showDoc=_s6[0],setShowDoc=_s6[1];
   var _s7=useState(""),ev=_s7[0],setEv=_s7[1];
   var _s8=useState(""),er=_s8[0],setEr=_s8[1];
+  // Données Firebase
+  var _s9=useState(initESI()),esis=_s9[0],setEsis=_s9[1];
+  var _s10=useState(true),fbLoad=_s10[0],setFbLoad=_s10[1];
+
+  // Chargement Firebase temps réel pour toutes les ESI
+  useEffect(function(){
+    fbChargerToutesESI(function(data){
+      setEsis(data);
+      setFbLoad(false);
+    });
+  },[]);
 
   var esi=esis.find(function(e){return e.id===sel;});
-  useEffect(function(){if(esi){setEv(esi.visio||"");setEr(esi.prochainRdv||"");};},[sel]);
+  useEffect(function(){if(esi){setEv(esi.visio||"");setEr(esi.prochainRdv||"");};},[sel,esis]);
 
-  function up(u){var n=esis.map(function(e){return e.id===u.id?u:e;});setEsis(n);sauver(n);}
-  function se(id,s){up(Object.assign({},esi,{etapes:Object.assign({},esi.etapes,{[id]:s}),derniereMAJ:new Date().toISOString()}));}
-  function si(){up(Object.assign({},esi,{visio:ev,prochainRdv:er,derniereMAJ:new Date().toISOString()}));}
-  function ac(){if(!nc.trim())return;up(Object.assign({},esi,{commentaires:(esi.commentaires||[]).concat([{id:uid(),texte:nc.trim(),date:new Date().toISOString()}]),derniereMAJ:new Date().toISOString()}));setNc("");}
-  function dc(id){up(Object.assign({},esi,{commentaires:esi.commentaires.filter(function(c){return c.id!==id;})}));}
-  function ad(){if(!ndl.trim()||!ndu.trim())return;up(Object.assign({},esi,{documents:(esi.documents||[]).concat([{id:uid(),label:ndl.trim(),url:ndu.trim(),date:new Date().toISOString()}]),derniereMAJ:new Date().toISOString()}));setNdl("");setNdu("");setShowDoc(false);}
-  function dd(id){up(Object.assign({},esi,{documents:(esi.documents||[]).filter(function(d){return d.id!==id;})}));}
-  function dr(id){up(Object.assign({},esi,{retours:(esi.retours||[]).filter(function(r){return r.id!==id;})}));}
+  // Mise à jour Firebase + state local
+  function up(u){
+    setEsis(function(prev){return prev.map(function(e){return e.id===u.id?u:e;});});
+    fbSauverESI(u);
+  }
+  function se(id,s){if(!esi)return;up(Object.assign({},esi,{etapes:Object.assign({},esi.etapes,{[id]:s}),derniereMAJ:new Date().toISOString()}));}
+  function si(){if(!esi)return;up(Object.assign({},esi,{visio:ev,prochainRdv:er,derniereMAJ:new Date().toISOString()}));}
+  function ac(){if(!nc.trim()||!esi)return;up(Object.assign({},esi,{commentaires:(esi.commentaires||[]).concat([{id:uid(),texte:nc.trim(),date:new Date().toISOString()}]),derniereMAJ:new Date().toISOString()}));setNc("");}
+  function dc(id){if(!esi)return;up(Object.assign({},esi,{commentaires:(esi.commentaires||[]).filter(function(c){return c.id!==id;})}));}
+  function ad(){if(!ndl.trim()||!ndu.trim()||!esi)return;up(Object.assign({},esi,{documents:(esi.documents||[]).concat([{id:uid(),label:ndl.trim(),url:ndu.trim(),date:new Date().toISOString()}]),derniereMAJ:new Date().toISOString()}));setNdl("");setNdu("");setShowDoc(false);}
+  function dd(id){if(!esi)return;up(Object.assign({},esi,{documents:(esi.documents||[]).filter(function(d){return d.id!==id;})}));}
+  function dr(id){if(!esi)return;up(Object.assign({},esi,{retours:(esi.retours||[]).filter(function(r){return r.id!==id;})}));}
   function onR(retour){
+    if(!esi)return;
     var av=retour.avancement,ne=Object.assign({},esi.etapes);
     if(av>=10)ne.nr_sujet="fait";
     if(av>=25)ne.nr_situation="fait";
@@ -467,9 +945,10 @@ function Directeur(props){
     setTab("retours");
   }
 
+  if(fbLoad)return h("div",{style:{minHeight:"100vh",background:C.bg,display:"flex",alignItems:"center",justifyContent:"center",color:C.muted,fontSize:15}},"⏳ Chargement des données...");
   if(!esi)return null;
   var p=pct(esi.etapes);
-  var tabs=[{id:"suivi",l:"📊 Suivi"},{id:"analyse",l:"🔍 Analyser"},{id:"retours",l:"💬 Retours"+(esi.retours&&esi.retours.length>0?" ("+esi.retours.length+")":"")},{id:"docs",l:"📎 Docs"+(esi.documents&&esi.documents.length>0?" ("+esi.documents.length+")":"")},{id:"planning",l:"📅 Planning"},{id:"notes",l:"📝 Notes"}];
+  var tabs=[{id:"suivi",l:"📊 Suivi"},{id:"analyse",l:"🔍 Analyser"},{id:"retours",l:"💬 Retours"+(esi.retours&&esi.retours.length>0?" ("+esi.retours.length+")":"")},{id:"messages",l:"✉️ Messages"},{id:"docs",l:"📎 Docs"+(esi.documents&&esi.documents.length>0?" ("+esi.documents.length+")":"")},{id:"planning",l:"📅 Planning"},{id:"notesvisio",l:"📋 Comptes rendus"},{id:"deadlines",l:"⚠️ Deadlines"},{id:"refs",l:"📚 Références"},{id:"notes",l:"🗒 Notes perso"}];
 
   return h("div",{style:{background:C.bg,minHeight:"100vh",display:"flex",flexDirection:"column",color:C.text}},
     h("div",{style:{background:C.panel,borderBottom:"1px solid "+C.border,padding:"12px 20px",display:"flex",alignItems:"center",gap:12,flexWrap:"wrap"}},
@@ -585,10 +1064,40 @@ function Directeur(props){
                 h("button",{onClick:ad,style:bs(C.accent,"#fff",{flex:1})},"Ajouter"),
                 h("button",{onClick:function(){setShowDoc(false);},style:bs(C.card,C.muted,{border:"1px solid "+C.border})},"Annuler")))
             :h("button",{onClick:function(){setShowDoc(true);},style:Object.assign({},bs("transparent",C.accent),{border:"1.5px dashed "+C.accent+"44",width:"100%",padding:"10px 0"})},"+ Partager un document ou lien")),
+          tab==="messages"&&h("div",null,
+            h("h2",{style:{color:C.text,fontSize:16,fontWeight:800,marginBottom:4}},"Messages avec "+esi.prenom),
+            h("div",{style:{color:C.muted,fontSize:13,marginBottom:20}},"Échanges directs avec l'ESI"),
+            h(Messagerie,{esiId:esi.id,esiPrenom:esi.prenom,mode:"dir",c:C})),
+          tab==="notesvisio"&&h("div",null,
+            h("h2",{style:{color:C.text,fontSize:16,fontWeight:800,marginBottom:4}},"Notes de guidance — "+esi.prenom),
+            h("div",{style:{color:C.muted,fontSize:13,marginBottom:20}},"Visibles par l'ESI après la guidance"),
+            h(CompteRendu,{esiId:esi.id,esiPrenom:esi.prenom,mode:"dir",c:C})),
           tab==="planning"&&h("div",null,
             h("h2",{style:{color:C.text,fontSize:16,fontWeight:800,marginBottom:4}},"Planning des guidances"),
             h("div",{style:{color:C.muted,fontSize:13,marginBottom:20}},"Proposez des créneaux visibles par toutes les ESI"),
             h(Planning,{mode:"dir",c:C})),
+          tab==="deadlines"&&h("div",null,h(DeadlineEdit,{c:C})),
+          tab==="refs"&&h("div",null,
+            h("h2",{style:{color:C.text,fontSize:16,fontWeight:800,marginBottom:4}},"Documents de référence"),
+            h("div",{style:{color:C.muted,fontSize:13,marginBottom:20}},"Ces documents alimentent l'analyse IA — ils servent de modèle de qualité pour évaluer les travaux de tes ESI"),
+            h("div",{style:{background:C.greenDim,border:"1px solid "+C.green+"44",borderRadius:10,padding:"12px 16px",marginBottom:20,fontSize:13,color:C.green,lineHeight:1.6}},
+              "✅ Ces références sont automatiquement injectées dans chaque analyse IA. L'IA compare le document soumis avec ces modèles pour produire un retour contextualisé à l'IFSI Beaujon."),
+            h("div",{style:{background:C.card,borderRadius:14,padding:20,marginBottom:16}},
+              h("div",{style:{display:"flex",alignItems:"center",gap:10,marginBottom:12}},
+                h("span",{style:{fontSize:28}},"📖"),
+                h("div",null,
+                  h("div",{style:{color:C.text,fontWeight:800,fontSize:15}},'"Les émotions des soignants face à la pratique professionnelle"'),
+                  h("div",{style:{color:C.muted,fontSize:12,marginTop:2}},"ALVES RODRIGUES Ingrid · Promo 2019-2022 · Directeur : JAIN Loïc · IFSI Beaujon"))),
+              h("div",{style:{color:C.muted,fontSize:12,fontWeight:700,marginBottom:8,textTransform:"uppercase",letterSpacing:1}},"Points clés utilisés comme référence"),
+              ["Structure en 4 parties : Situation → Enquête empirique → Cadre de référence → Discussion/Hypothèse","Situation de départ précise et vécue (mort périnatale aux urgences)","4 concepts développés : L'infirmier, Les émotions, La juste distance, La relation soignant-soigné","5 entretiens semi-directifs anonymisés, présentés en tableau, retranscrits en annexe","Allers-retours constants théorie/terrain avec citations intégrées","Bibliographie ISO 690 catégorisée (ouvrages, revues, textes officiels, sites)","Abstract bilingue FR/EN avec mots-clés","81 pages (33 de corps + annexes)"].map(function(p,i){return h("div",{key:i,style:{display:"flex",gap:8,marginBottom:5}},h("span",{style:{color:C.accent,marginTop:1,flexShrink:0}},"→"),h("span",{style:{color:C.text,fontSize:13,lineHeight:1.5}},p));})),
+            h("div",{style:{background:C.card,borderRadius:14,padding:20}},
+              h("div",{style:{display:"flex",alignItems:"center",gap:10,marginBottom:12}},
+                h("span",{style:{fontSize:28}},"🎤"),
+                h("div",null,
+                  h("div",{style:{color:C.text,fontWeight:800,fontSize:15}},"Présentation de soutenance"),
+                  h("div",{style:{color:C.muted,fontSize:12,marginTop:2}},"Exemple de diaporama anonymisé · IFSI Beaujon"))),
+              h("div",{style:{color:C.muted,fontSize:12,fontWeight:700,marginBottom:8,textTransform:"uppercase",letterSpacing:1}},"Structure de référence"),
+              ["Titre + sommaire bien structuré","Situation clinique résumée visuellement","Question de départ mise en valeur","Schéma des concepts et leurs liens","Résultats clés sous forme de citations choisies","Synthèse comparative théorie-terrain","Ouverture / question de recherche finale","10 minutes d'exposé — s'entraîner à voix haute"].map(function(p,i){return h("div",{key:i,style:{display:"flex",gap:8,marginBottom:5}},h("span",{style:{color:C.accent,marginTop:1,flexShrink:0}},"→"),h("span",{style:{color:C.text,fontSize:13,lineHeight:1.5}},p));}))),
           tab==="notes"&&h("div",null,
             h("div",{style:{display:"flex",gap:8,marginBottom:14}},
               h("input",{value:nc,onChange:function(e){setNc(e.target.value);},onKeyDown:function(e){if(e.key==="Enter")ac();},placeholder:"Ajouter une note (Entrée)…",style:Object.assign({},inp(C),{flex:1})}),
@@ -602,8 +1111,24 @@ function Directeur(props){
               h("button",{onClick:function(){dc(c.id);},style:{background:"transparent",border:"none",color:C.subtle,cursor:"pointer"}},"✕"));}))))));
 }
 
+function LoginESI(props){
+  var onLogin=props.onLogin,C=props.C;
+  var _s1=useState(""),pwd=_s1[0],setPwd=_s1[1];
+  var _s2=useState(false),err=_s2[0],setErr=_s2[1];
+  function tenter(){
+    var found=ESI_DEFAUT.find(function(e){return e.pwd===pwd.trim();});
+    if(found){onLogin(found.id);}
+    else{setErr(true);setTimeout(function(){setErr(false);},2500);}
+  }
+  return h("div",{style:{display:"flex",flexDirection:"column",alignItems:"center",gap:12,width:"100%",maxWidth:360}},
+    h("div",{style:{color:C.muted,fontSize:13,textAlign:"center",marginBottom:4}},"Entre ton numéro étudiant (N° FAC)"),
+    h("input",{type:"password",value:pwd,onChange:function(e){setPwd(e.target.value);},onKeyDown:function(e){if(e.key==="Enter")tenter();},placeholder:"N° étudiant...",autoFocus:true,style:{background:C.panel,border:"1px solid "+(err?C.red:C.border),borderRadius:12,color:C.text,fontSize:16,padding:"12px 18px",outline:"none",textAlign:"center",width:"100%",colorScheme:"dark"}}),
+    err&&h("div",{style:{color:C.red,fontSize:12,fontWeight:700}},"Numéro non reconnu. Vérifie ton numéro étudiant."),
+    h("button",{onClick:tenter,style:{background:C.accent,color:"#fff",border:"none",borderRadius:12,padding:"12px 0",cursor:"pointer",fontWeight:700,fontSize:15,width:"100%"}},"Accéder à mon espace"));
+}
+
 function EsiApp(props){
-  var onBack=props.onBack,esis=props.esis,setEsis=props.setEsis;
+  var onBack=props.onBack;
   var _s1=useState(null),esiId=_s1[0],setEsiId=_s1[1];
   var _s2=useState("accueil"),tab=_s2[0],setTab=_s2[1];
   var _s3=useState(null),ro=_s3[0],setRo=_s3[1];
@@ -611,18 +1136,28 @@ function EsiApp(props){
   var _s5=useState(""),depotLabel=_s5[0],setDepotLabel=_s5[1];
   var _s6=useState(""),depotUrl=_s6[0],setDepotUrl=_s6[1];
   var _s7=useState(""),depotOk=_s7[0],setDepotOk=_s7[1];
-  var data=esis.find(function(e){return e.id===esiId;});
+  // Données Firebase pour cette ESI
+  var _s8=useState(null),data=_s8[0],setData=_s8[1];
+  var _s9=useState(false),fbLoad=_s9[0],setFbLoad=_s9[1];
+
+  // Charge les données Firebase quand l'ESI se connecte
+  useEffect(function(){
+    if(!esiId){setData(null);return;}
+    setFbLoad(true);
+    fbChargerESI(esiId,function(d){
+      setData(d);
+      setFbLoad(false);
+    });
+  },[esiId]);
 
   function deposer(){
-    if(!depotLabel.trim()||!depotUrl.trim())return;
+    if(!depotLabel.trim()||!depotUrl.trim()||!data)return;
     var doc={id:uid(),label:depotLabel.trim(),url:depotUrl.trim(),date:new Date().toISOString(),parEsi:true};
-    var n=esis.map(function(e){
-      if(e.id!==esiId)return e;
-      return Object.assign({},e,{documentsEsi:(e.documentsEsi||[]).concat([doc]),derniereMAJ:new Date().toISOString()});
-    });
-    setEsis(n);sauver(n);
+    var updated=Object.assign({},data,{documentsEsi:(data.documentsEsi||[]).concat([doc]),derniereMAJ:new Date().toISOString()});
+    setData(updated);
+    fbSauverESI(updated);
     setDepotLabel("");setDepotUrl("");setShowDepot(false);
-    setDepotOk("Document depose !");
+    setDepotOk("Document déposé !");
     setTimeout(function(){setDepotOk("");},3000);
     envoyerNotification(data.prenom, 0, depotLabel.trim());
   }
@@ -632,13 +1167,16 @@ function EsiApp(props){
     h("div",{style:{fontSize:52,marginBottom:16}},"🎓"),
     h("h1",{style:{color:C2.text,fontSize:22,fontWeight:800,marginBottom:8,textAlign:"center"}},"Mon Espace Mémoire"),
     h("p",{style:{color:C2.muted,fontSize:14,marginBottom:32,textAlign:"center"}},"Directeur : ",h("strong",{style:{color:C2.accent}},"Jain Loic")," · Promo 2024-27"),
-    h("div",{style:{display:"flex",flexDirection:"column",gap:10,width:"100%",maxWidth:360}},
-      ESI_DEFAUT.map(function(e){return h("button",{key:e.id,onClick:function(){setEsiId(e.id);setTab("accueil");},style:{background:C2.panel,border:"1.5px solid "+C2.border,borderRadius:14,padding:"15px 20px",cursor:"pointer",color:C2.text,fontWeight:700,fontSize:15,textAlign:"left"}},e.prenom);})));
+    h(LoginESI,{onLogin:function(id){setEsiId(id);setTab("accueil");},C:C2}));
 
+  if(fbLoad)return h("div",{style:{minHeight:"100vh",background:C2.bg,display:"flex",alignItems:"center",justifyContent:"center",color:C2.muted,fontSize:15}},"⏳ Chargement...");
   if(!data)return null;
+
   var p=pct(data.etapes);
   var dr=(data.retours||[]).slice(-1)[0];
-  var tabs=[{id:"accueil",l:"🏠 Accueil"},{id:"etapes",l:"📊 Avancement"},{id:"retours",l:"💬 Retours"+((data.retours||[]).length>0?" ("+(data.retours||[]).length+")":"")},{id:"docs",l:"📎 Docs"+((data.documents||[]).length>0?" ("+(data.documents||[]).length+")":"")},{id:"planning",l:"📅 Planning"},{id:"methodo",l:"📚 Méthodo"},{id:"grilles",l:"📋 Grilles"},{id:"visio",l:"🎥 Visio"}];
+  var notifs=useNotifs(esiId);
+  var msgBadge=notifs.count>0?" ("+notifs.count+")":"";
+  var tabs=[{id:"accueil",l:"🏠 Accueil"},{id:"etapes",l:"📊 Avancement"},{id:"position",l:"📈 Ma position"},{id:"retours",l:"💬 Retours"+((data.retours||[]).length>0?" ("+(data.retours||[]).length+")":"")},{id:"messages",l:"✉️ Messages"+msgBadge},{id:"docs",l:"📎 Docs"+((data.documents||[]).length>0?" ("+(data.documents||[]).length+")":"")},{id:"planning",l:"📅 Planning"},{id:"notes",l:"📋 Comptes rendus"},{id:"deadlines",l:"⚠️ Deadlines"},{id:"methodo",l:"📚 Méthodo"},{id:"grilles",l:"📋 Grilles"},{id:"visio",l:"🎥 Visio"}];
 
   return h("div",{style:{background:C2.bg,minHeight:"100vh",display:"flex",flexDirection:"column",color:C2.text}},
     h("div",{style:{background:C2.panel,borderBottom:"1px solid "+C2.border,padding:"12px 20px",display:"flex",alignItems:"center",gap:12,flexWrap:"wrap"}},
@@ -756,13 +1294,35 @@ function EsiApp(props){
               h("div",{style:{color:C2.subtle,fontSize:12,marginTop:2}},dfr(d.date))),
             h("span",{style:{color:C2.accent,fontSize:20}},"→"));})),
         (data.documents||[]).length===0&&(data.documentsEsi||[]).length===0&&!showDepot&&h("div",{style:{color:C2.subtle,fontSize:14,fontStyle:"italic",textAlign:"center",padding:"20px 0"}},"Aucun document pour l'instant.")),
+      tab==="position"&&h("div",null,
+        h("h2",{style:{color:C2.text,fontSize:16,fontWeight:800,marginBottom:4}},"Ma position dans le groupe"),
+        h("div",{style:{color:C2.muted,fontSize:13,marginBottom:20}},"Anonyme — les noms des autres ESI ne sont pas affichés"),
+        h(Positionnement,{esiId:esiId,data:data,c:C2})),
+      tab==="messages"&&h("div",null,
+        h("h2",{style:{color:C2.text,fontSize:16,fontWeight:800,marginBottom:4}},"Messages avec ton directeur"),
+        h("div",{style:{color:C2.muted,fontSize:13,marginBottom:20}},"Pose tes questions, reçois des réponses"),
+        h(Messagerie,{esiId:esiId,esiPrenom:data.prenom,mode:"esi",c:C2})),
+      tab==="notes"&&h("div",null,
+        h("h2",{style:{color:C2.text,fontSize:16,fontWeight:800,marginBottom:4}},"Notes de guidance"),
+        h("div",{style:{color:C2.muted,fontSize:13,marginBottom:20}},"Retrouve ici les notes prises lors de vos guidances"),
+        h(CompteRendu,{esiId:esiId,esiPrenom:data.prenom,mode:"esi",c:C2})),
+      tab==="deadlines"&&h("div",null,
+        h("h2",{style:{color:C2.text,fontSize:16,fontWeight:800,marginBottom:4}},"Deadlines importantes"),
+        h("div",{style:{color:C2.muted,fontSize:13,marginBottom:20}},"Dates clés de ta formation"),
+        h(DeadlineView,{esiId:esiId,data:data,c:C2})),
       tab==="planning"&&h("div",null,
         h("h2",{style:{color:C2.text,fontSize:16,fontWeight:800,marginBottom:4}},"Planning des guidances"),
         h("div",{style:{color:C2.muted,fontSize:13,marginBottom:20}},"Réserve un créneau de guidance avec ton directeur"),
         h(Planning,{mode:"esi",esiPrenom:data.prenom,c:C2})),
       tab==="methodo"&&h("div",null,
         h("h2",{style:{color:C2.text,fontSize:16,fontWeight:800,marginBottom:4}},"Guide méthodologique"),
-        h("p",{style:{color:C2.muted,fontSize:13,marginBottom:20}},"Tout ce qu'il faut pour réussir ton mémoire"),
+        h("p",{style:{color:C2.muted,fontSize:13,marginBottom:16}},"Tout ce qu'il faut pour réussir ton mémoire"),
+        h("div",{style:{background:C2.accentDim,border:"1px solid "+C2.accent+"44",borderRadius:12,padding:16,marginBottom:20}},
+          h("div",{style:{color:C2.accent,fontWeight:800,fontSize:13,marginBottom:8}},"📖 Document de référence — Exemple de mémoire"),
+          h("div",{style:{color:C2.text,fontSize:13,fontWeight:600,marginBottom:4}},'"Les émotions des soignants face à la pratique professionnelle"'),
+          h("div",{style:{color:C2.muted,fontSize:12,marginBottom:10}},"ALVES RODRIGUES Ingrid · Promo 2019-2022 · IFSI Beaujon · Directeur : Jain Loïc"),
+          h("div",{style:{color:C2.muted,fontSize:12,lineHeight:1.7}},
+            "Ce mémoire de 81 pages (33 de corps + annexes) suit la structure recommandée : situation de départ clinique → exploration empirique (5 entretiens semi-directifs) → cadre de référence (4 concepts) → discussion et hypothèse de recherche. Il te sert de modèle pour structurer ton propre travail. Ton directeur s'en inspire pour évaluer tes documents soumis.")),
         GUIDE_ARS.concat(RESSOURCES).map(function(r){return h("div",{key:r.id||r.titre,style:{background:C2.panel,borderRadius:14,marginBottom:12,overflow:"hidden"}},
           h("button",{onClick:function(){setRo((ro===r.id||ro===r.titre)?null:(r.id||r.titre));},style:{width:"100%",background:"transparent",border:"none",color:C2.text,padding:"16px 20px",cursor:"pointer",display:"flex",alignItems:"center",gap:12,textAlign:"left"}},
             h("span",{style:{fontSize:22}},r.icon),
@@ -806,10 +1366,8 @@ function EsiApp(props){
 
 function Main(){
   var _s1=useState(null),mode=_s1[0],setMode=_s1[1];
-  var _s2=useState(function(){return charger();}),esis=_s2[0],setEsis=_s2[1];
-  useEffect(function(){if(!mode)setEsis(charger());},[mode]);
-  if(mode==="dir")return h(Directeur,{onBack:function(){setMode(null);},esis:esis,setEsis:setEsis});
-  if(mode==="esi")return h(EsiApp,{onBack:function(){setMode(null);},esis:esis,setEsis:setEsis});
+  if(mode==="dir")return h(Directeur,{onBack:function(){setMode(null);}});
+  if(mode==="esi")return h(EsiApp,{onBack:function(){setMode(null);}});
   return h(Accueil,{onDir:function(){setMode("dir");},onEsi:function(){setMode("esi");}});
 }
 
