@@ -88,12 +88,12 @@ const EJS_SERVICE="service_kaqyuwv";
 const EJS_TEMPLATE="template_qlyy59l";
 const EJS_KEY="3-vR92lSwgE2qExz4";
 
-function envoyerNotification(esiPrenom, avancement){
+function envoyerNotification(esiPrenom, avancement, docName){
   try{
     emailjs.init(EJS_KEY);
     emailjs.send(EJS_SERVICE, EJS_TEMPLATE, {
     student_name: esiPrenom,
-    document_name: "Analyse IA",
+    document_name: docName||"Analyse IA",
     date: new Date().toLocaleDateString("fr-FR", {day:"numeric",month:"long",year:"numeric",hour:"2-digit",minute:"2-digit"}),
     avancement: avancement+"%",
     name: "Suivi Mémoires"
@@ -292,7 +292,15 @@ function Directeur(props){
             })),
           tab==="docs"&&h("div",null,
             h("div",{style:{display:"flex",flexDirection:"column",gap:8,marginBottom:12}},
-              (esi.documents||[]).length===0&&!showDoc&&h("div",{style:{color:C.subtle,fontSize:13,fontStyle:"italic",padding:"12px 0"}},"Aucun document partagé."),
+              (esi.documentsEsi||[]).length>0&&h("div",{style:{marginBottom:16}},
+              h("div",{style:{color:C.green,fontSize:12,fontWeight:700,marginBottom:8}},"📤 DÉPÔTS DE L'ESI"),
+              (esi.documentsEsi||[]).slice().reverse().map(function(d){return h("div",{key:d.id,style:{background:C.card,borderRadius:8,padding:"10px 14px",display:"flex",alignItems:"center",gap:10,marginBottom:8,border:"1px solid "+C.green+"44"}},
+                h("span",{style:{fontSize:18}},"📤"),
+                h("div",{style:{flex:1}},
+                  h("a",{href:d.url,target:"_blank",rel:"noopener noreferrer",style:{color:C.green,fontWeight:600,fontSize:13,textDecoration:"none"}},d.label),
+                  h("div",{style:{color:C.subtle,fontSize:11,marginTop:2}},dfr(d.date))),
+                h("span",{style:{fontSize:11,color:C.green,background:C.greenDim,borderRadius:99,padding:"2px 8px"}},"ESI"));})),
+            (esi.documents||[]).length===0&&!showDoc&&h("div",{style:{color:C.subtle,fontSize:13,fontStyle:"italic",padding:"12px 0"}},"Aucun document partagé."),
               (esi.documents||[]).map(function(d){return h("div",{key:d.id,style:{background:C.card,borderRadius:8,padding:"10px 14px",display:"flex",alignItems:"center",gap:10}},
                 h("span",{style:{fontSize:18}},"📄"),
                 h("div",{style:{flex:1}},
@@ -320,11 +328,29 @@ function Directeur(props){
 }
 
 function EsiApp(props){
-  var onBack=props.onBack,esis=props.esis;
+  var onBack=props.onBack,esis=props.esis,setEsis=props.setEsis;
   var _s1=useState(null),esiId=_s1[0],setEsiId=_s1[1];
   var _s2=useState("accueil"),tab=_s2[0],setTab=_s2[1];
   var _s3=useState(null),ro=_s3[0],setRo=_s3[1];
+  var _s4=useState(false),showDepot=_s4[0],setShowDepot=_s4[1];
+  var _s5=useState(""),depotLabel=_s5[0],setDepotLabel=_s5[1];
+  var _s6=useState(""),depotUrl=_s6[0],setDepotUrl=_s6[1];
+  var _s7=useState(""),depotOk=_s7[0],setDepotOk=_s7[1];
   var data=esis.find(function(e){return e.id===esiId;});
+
+  function deposer(){
+    if(!depotLabel.trim()||!depotUrl.trim())return;
+    var doc={id:uid(),label:depotLabel.trim(),url:depotUrl.trim(),date:new Date().toISOString(),parEsi:true};
+    var n=esis.map(function(e){
+      if(e.id!==esiId)return e;
+      return Object.assign({},e,{documentsEsi:(e.documentsEsi||[]).concat([doc]),derniereMAJ:new Date().toISOString()});
+    });
+    setEsis(n);sauver(n);
+    setDepotLabel("");setDepotUrl("");setShowDepot(false);
+    setDepotOk("Document depose !");
+    setTimeout(function(){setDepotOk("");},3000);
+    envoyerNotification(data.prenom, 0, depotLabel.trim());
+  }
 
   if(!esiId)return h("div",{style:{minHeight:"100vh",background:C2.bg,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:24}},
     h("button",{onClick:onBack,style:Object.assign({},bs(C2.panel,C2.muted,{border:"1px solid "+C2.border}),{position:"absolute",top:20,left:20})},"← Accueil"),
@@ -406,14 +432,34 @@ function EsiApp(props){
               h("div",{style:{color:C2.amber,fontSize:11,fontWeight:700,marginBottom:6}},"⚠️ À AMÉLIORER"),
               (r.axes_amelioration||[]).map(function(a,i){return h("div",{key:i,style:{color:C2.text,fontSize:13,marginBottom:4}},"• "+a);}))));})),
       tab==="docs"&&h("div",null,
-        h("h2",{style:{color:C2.text,fontSize:16,fontWeight:800,marginBottom:20}},"Documents partagés par ton directeur"),
-        (data.documents||[]).length===0?h("div",{style:{color:C2.subtle,fontSize:14,fontStyle:"italic",textAlign:"center",padding:"40px 0"}},"Aucun document partagé pour l'instant.")
-        :(data.documents||[]).map(function(d){return h("a",{key:d.id,href:d.url,target:"_blank",rel:"noopener noreferrer",style:{display:"flex",alignItems:"center",gap:14,background:C2.panel,borderRadius:12,padding:"14px 18px",marginBottom:10,textDecoration:"none",border:"1px solid "+C2.border}},
-          h("span",{style:{fontSize:24}},"📄"),
-          h("div",{style:{flex:1}},
-            h("div",{style:{color:C2.accent,fontWeight:700,fontSize:14}},d.label),
-            h("div",{style:{color:C2.subtle,fontSize:12,marginTop:2}},dfr(d.date))),
-          h("span",{style:{color:C2.accent,fontSize:20}},"→"));})),
+        h("h2",{style:{color:C2.text,fontSize:16,fontWeight:800,marginBottom:4}},"Documents"),
+        h("div",{style:{color:C2.muted,fontSize:13,marginBottom:16}},"Déposez vos travaux via un lien Google Drive, OneDrive, etc."),
+        depotOk&&h("div",{style:{background:C2.greenDim,border:"1px solid "+C2.green+"44",borderRadius:10,padding:"10px 14px",marginBottom:14,color:C2.green,fontWeight:700,fontSize:13}},depotOk),
+        showDepot?h("div",{style:{background:C2.panel,borderRadius:12,padding:16,marginBottom:16,border:"1px solid "+C2.accent+"44"}},
+          h("div",{style:{color:C2.accent,fontWeight:700,fontSize:13,marginBottom:12}},"📎 Déposer un document"),
+          h("input",{value:depotLabel,onChange:function(e){setDepotLabel(e.target.value);},placeholder:"Nom du document (ex: Chapitre 1 - brouillon)",style:Object.assign({},inp(C2),{marginBottom:8})}),
+          h("input",{value:depotUrl,onChange:function(e){setDepotUrl(e.target.value);},placeholder:"Lien (https://drive.google.com/...)",style:Object.assign({},inp(C2),{marginBottom:12})}),
+          h("div",{style:{display:"flex",gap:8}},
+            h("button",{onClick:deposer,style:bs(C2.accent,"#fff",{flex:1})},"Déposer"),
+            h("button",{onClick:function(){setShowDepot(false);setDepotLabel("");setDepotUrl("");},style:bs(C2.card,C2.muted,{border:"1px solid "+C2.border})},"Annuler")))
+        :h("button",{onClick:function(){setShowDepot(true);},style:Object.assign({},bs("transparent",C2.accent),{border:"1.5px dashed "+C2.accent+"44",width:"100%",padding:"12px 0",marginBottom:16})},"+ Déposer un document"),
+        (data.documentsEsi||[]).length>0&&h("div",{style:{marginBottom:16}},
+          h("div",{style:{color:C2.muted,fontSize:11,fontWeight:700,marginBottom:8}},"MES DÉPÔTS"),
+          (data.documentsEsi||[]).slice().reverse().map(function(d){return h("a",{key:d.id,href:d.url,target:"_blank",rel:"noopener noreferrer",style:{display:"flex",alignItems:"center",gap:14,background:C2.panel,borderRadius:12,padding:"14px 18px",marginBottom:10,textDecoration:"none",border:"1px solid "+C2.green+"44"}},
+            h("span",{style:{fontSize:24}},"📤"),
+            h("div",{style:{flex:1}},
+              h("div",{style:{color:C2.green,fontWeight:700,fontSize:14}},d.label),
+              h("div",{style:{color:C2.subtle,fontSize:12,marginTop:2}},dfr(d.date))),
+            h("span",{style:{color:C2.accent,fontSize:20}},"→"));})),
+        (data.documents||[]).length>0&&h("div",null,
+          h("div",{style:{color:C2.muted,fontSize:11,fontWeight:700,marginBottom:8}},"DOCUMENTS DE TON DIRECTEUR"),
+          (data.documents||[]).map(function(d){return h("a",{key:d.id,href:d.url,target:"_blank",rel:"noopener noreferrer",style:{display:"flex",alignItems:"center",gap:14,background:C2.panel,borderRadius:12,padding:"14px 18px",marginBottom:10,textDecoration:"none",border:"1px solid "+C2.border}},
+            h("span",{style:{fontSize:24}},"📄"),
+            h("div",{style:{flex:1}},
+              h("div",{style:{color:C2.accent,fontWeight:700,fontSize:14}},d.label),
+              h("div",{style:{color:C2.subtle,fontSize:12,marginTop:2}},dfr(d.date))),
+            h("span",{style:{color:C2.accent,fontSize:20}},"→"));})),
+        (data.documents||[]).length===0&&(data.documentsEsi||[]).length===0&&!showDepot&&h("div",{style:{color:C2.subtle,fontSize:14,fontStyle:"italic",textAlign:"center",padding:"20px 0"}},"Aucun document pour l'instant."),
       tab==="methodo"&&h("div",null,
         h("h2",{style:{color:C2.text,fontSize:16,fontWeight:800,marginBottom:4}},"Guide méthodologique"),
         h("p",{style:{color:C2.muted,fontSize:13,marginBottom:20}},"Tout ce qu'il faut pour réussir ton mémoire"),
@@ -455,7 +501,7 @@ function EsiApp(props){
           h("div",{style:{color:C2.text,fontWeight:700,fontSize:16,marginBottom:8}},"Zoom - Jain Loic"),
           h("div",{style:{color:C2.muted,fontSize:13,marginBottom:6}},"Code secret : ",h("strong",{style:{color:C2.amber}},ZOOM_CODE)),
           h("a",{href:ZOOM_LINK,target:"_blank",rel:"noopener noreferrer",style:{display:"inline-block",marginTop:16,background:C2.accent,color:"#fff",borderRadius:12,padding:"14px 32px",fontWeight:700,fontSize:16,textDecoration:"none"}},"🎥 Rejoindre la visio Zoom"))
-    )));
+    ))));
 }
 
 function Main(){
@@ -463,7 +509,7 @@ function Main(){
   var _s2=useState(function(){return charger();}),esis=_s2[0],setEsis=_s2[1];
   useEffect(function(){if(!mode)setEsis(charger());},[mode]);
   if(mode==="dir")return h(Directeur,{onBack:function(){setMode(null);},esis:esis,setEsis:setEsis});
-  if(mode==="esi")return h(EsiApp,{onBack:function(){setMode(null);},esis:esis});
+  if(mode==="esi")return h(EsiApp,{onBack:function(){setMode(null);},esis:esis,setEsis:setEsis});
   return h(Accueil,{onDir:function(){setMode("dir");},onEsi:function(){setMode("esi");}});
 }
 
