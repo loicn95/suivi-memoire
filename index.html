@@ -21,16 +21,25 @@ const {useState,useEffect,useCallback}=React;
 const C={bg:"#0D1117",panel:"#161B22",card:"#21262D",cardHover:"#2D333B",border:"#30363D",accent:"#58A6FF",accentDim:"#1F3A5F",green:"#3FB950",greenDim:"#1A3A2A",amber:"#D29922",amberDim:"#3A2A0A",red:"#F85149",redDim:"#3A1A1A",text:"#E6EDF3",muted:"#8B949E",subtle:"#484F58"};
 const C2={bg:"#0F172A",panel:"#1E293B",card:"#273449",border:"#334155",accent:"#6366F1",accentDim:"#1e1b4b",green:"#22C55E",greenDim:"#14532d",amber:"#F59E0B",amberDim:"#451a03",red:"#EF4444",redDim:"#450a0a",text:"#F1F5F9",muted:"#94A3B8",subtle:"#475569"};
 
-const ETAPES=[
-  {id:"sujet",label:"Sujet validé",icon:"📌",conseil:"Le sujet doit être précis, ancré dans une situation clinique vécue en stage."},
-  {id:"plan",label:"Plan approuvé",icon:"📋",conseil:"Ton plan doit comporter une introduction, un cadre théorique, une partie pratique et une conclusion."},
-  {id:"biblio",label:"Bibliographie",icon:"📚",conseil:"Minimum 10 références récentes (moins de 10 ans)."},
-  {id:"chap1",label:"Chapitre 1",icon:"✏️",conseil:"Présente ta situation de départ et la question de départ."},
-  {id:"chap2",label:"Chapitre 2",icon:"✏️",conseil:"Développe le cadre conceptuel : définis tes concepts clés."},
-  {id:"chap3",label:"Chapitre 3",icon:"✏️",conseil:"Confronte tes concepts à la réalité, formule ta problématique."},
-  {id:"relecture",label:"Relecture",icon:"🔍",conseil:"Relis en entier, vérifie la cohérence. Fais relire par un tiers."},
-  {id:"soutenance",label:"Soutenance",icon:"🎓",conseil:"Prépare un exposé de 10-15 min. Anticipe les questions du jury."}
+const ETAPES_NR=[
+  {id:"nr_sujet",label:"Sujet validé",icon:"📌",conseil:"Le sujet doit être précis, ancré dans une situation clinique vécue en stage."},
+  {id:"nr_situation",label:"Situation d'appel et analyse",icon:"🏥",conseil:"Décris la situation clinique de manière précise et objective. Argumente le choix en regard de l'intérêt professionnel."},
+  {id:"nr_question",label:"Question de départ",icon:"❓",conseil:"Formule une question ouverte, ni trop large ni trop précise, découlant directement de la situation d'appel."},
+  {id:"nr_concepts",label:"Concepts et revue de littérature",icon:"📖",conseil:"Identifie les concepts clés. Effectue une recension des écrits : minimum 10 références récentes (moins de 10 ans)."},
+  {id:"nr_biblio",label:"Bibliographie",icon:"📚",conseil:"Norme ISO 690. Minimum 10 références, sources fiables et actualisées."},
+  {id:"nr_methode",label:"Méthode d'enquête",icon:"🔬",conseil:"Décris la méthode envisagée pour l'enquête exploratoire (théorique et/ou empirique). Doit être cohérente et argumentée."}
 ];
+const ETAPES_MFE=[
+  {id:"mfe_plan",label:"Construction et validation du plan",icon:"📋",conseil:"Le plan doit être structuré et validé avec ton directeur avant de commencer la rédaction."},
+  {id:"mfe_enquete",label:"Enquête exploratoire",icon:"🔍",conseil:"Mets en œuvre ta méthode d'enquête (entretiens, questionnaires...). Assure-toi que les résultats sont fiables et utiles."},
+  {id:"mfe_cadre",label:"Cadre de références théoriques",icon:"📖",conseil:"Appuie-toi sur des références théoriques cohérentes et pertinentes pour éclairer ta problématique."},
+  {id:"mfe_analyse",label:"Analyse et confrontation des résultats",icon:"⚖️",conseil:"Confronte ton cadre de références avec les résultats de ton enquête. Le raisonnement doit être logique et objectif."},
+  {id:"mfe_discussion",label:"Discussion et question/hypothèse de recherche",icon:"💡",conseil:"Formule ta question de recherche et/ou hypothèse. Elle doit être cohérente, précise et découler de ton cheminement."},
+  {id:"mfe_redaction",label:"Rédaction finale",icon:"✏️",conseil:"25 à 30 pages hors annexes. Introduction, développement, conclusion. Vocabulaire précis et professionnel."},
+  {id:"mfe_relecture",label:"Relecture et mise en forme",icon:"🔎",conseil:"Vérifie orthographe, syntaxe, mise en forme (Times New Roman 12, interligne 1.5, marges 3cm). Fais relire par un tiers."},
+  {id:"mfe_soutenance",label:"Soutenance préparée",icon:"🎓",conseil:"Exposé de 10 min. Anticipe les questions du jury. Entraîne-toi à voix haute."}
+];
+const ETAPES=[...ETAPES_NR,...ETAPES_MFE];
 const STATUTS=[
   {id:"todo",label:"À faire",color:"#484F58",bg:"#21262D"},
   {id:"encours",label:"En cours",color:"#D29922",bg:"#3A2A0A"},
@@ -106,7 +115,9 @@ function initESI(){return ESI_DEFAUT.map(function(e){return Object.assign({},e,{
 function charger(){try{var d=localStorage.getItem(SK);return d?JSON.parse(d):initESI();}catch(e){return initESI();}}
 function sauver(d){try{localStorage.setItem(SK,JSON.stringify(d));}catch(e){}}
 function uid(){return Math.random().toString(36).slice(2,9);}
-function pct(etapes){return Math.round(ETAPES.filter(function(e){return etapes[e.id]==="fait";}).length/ETAPES.length*100);}
+function pctNR(etapes){return Math.round(ETAPES_NR.filter(function(e){return etapes[e.id]==="fait";}).length/ETAPES_NR.length*100);}
+function pctMFE(etapes){return Math.round(ETAPES_MFE.filter(function(e){return etapes[e.id]==="fait";}).length/ETAPES_MFE.length*100);}
+function pct(etapes){return Math.round((pctNR(etapes)+pctMFE(etapes))/2);}
 function dfr(iso){if(!iso)return"—";return new Date(iso).toLocaleDateString("fr-FR",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"});}
 function rfr(s){if(!s)return null;return new Date(s).toLocaleDateString("fr-FR",{weekday:"long",day:"numeric",month:"long",hour:"2-digit",minute:"2-digit"});}
 function futur(s){return s&&new Date(s)>new Date();}
@@ -209,9 +220,20 @@ function Directeur(props){
   function dr(id){up(Object.assign({},esi,{retours:(esi.retours||[]).filter(function(r){return r.id!==id;})}));}
   function onR(retour){
     var av=retour.avancement,ne=Object.assign({},esi.etapes);
-    if(av>=10)ne.sujet="fait";if(av>=25)ne.plan="fait";if(av>=35)ne.biblio="fait";
-    if(av>=50)ne.chap1="fait";if(av>=65)ne.chap2="fait";if(av>=80)ne.chap3="fait";
-    if(av>=90)ne.relecture="fait";if(av>=100)ne.soutenance="fait";
+    if(av>=10)ne.nr_sujet="fait";
+    if(av>=25)ne.nr_situation="fait";
+    if(av>=35)ne.nr_question="fait";
+    if(av>=50)ne.nr_concepts="fait";
+    if(av>=60)ne.nr_biblio="fait";
+    if(av>=70)ne.nr_methode="fait";
+    if(av>=75)ne.mfe_plan="fait";
+    if(av>=80)ne.mfe_enquete="fait";
+    if(av>=85)ne.mfe_cadre="fait";
+    if(av>=90)ne.mfe_analyse="fait";
+    if(av>=93)ne.mfe_discussion="fait";
+    if(av>=96)ne.mfe_redaction="fait";
+    if(av>=98)ne.mfe_relecture="fait";
+    if(av>=100)ne.mfe_soutenance="fait";
     up(Object.assign({},esi,{retours:(esi.retours||[]).concat([retour]),etapes:ne,derniereMAJ:new Date().toISOString()}));
     setTab("retours");
   }
@@ -260,15 +282,35 @@ function Directeur(props){
           h("div",{style:{display:"flex",gap:4,flexWrap:"wrap"}},
             tabs.map(function(t){return h("button",{key:t.id,onClick:function(){setTab(t.id);},style:Object.assign({},bs(tab===t.id?C.accent:"transparent",tab===t.id?"#fff":C.muted),{borderRadius:"8px 8px 0 0",padding:"7px 14px",fontSize:12,borderBottom:tab===t.id?"2px solid "+C.accent:"2px solid transparent"})},t.l);}))),
         h("div",{style:{flex:1,overflowY:"auto",padding:"20px 24px"}},
-          tab==="suivi"&&h("div",{style:{display:"flex",flexDirection:"column",gap:6}},
-            ETAPES.map(function(et){
-              var cur=esi.etapes[et.id]||"todo";
-              return h("div",{key:et.id,style:{display:"flex",alignItems:"center",gap:10,background:C.card,borderRadius:10,padding:"9px 14px",flexWrap:"wrap"}},
-                h("span",{style:{fontSize:16}},et.icon),
-                h("span",{style:{flex:1,color:C.text,fontSize:13,fontWeight:500,minWidth:100}},et.label),
-                h("div",{style:{display:"flex",gap:4,flexWrap:"wrap"}},
-                  STATUTS.map(function(st){return h("button",{key:st.id,onClick:function(){se(et.id,st.id);},style:Object.assign({},bs(cur===st.id?st.bg:"transparent",cur===st.id?st.color:C.subtle),{border:"1px solid "+(cur===st.id?st.color+"88":C.border),fontSize:11,padding:"3px 9px"})},st.label);})));
-            })),
+          tab==="suivi"&&h("div",null,
+            h("div",{style:{display:"flex",gap:16,marginBottom:20,flexWrap:"wrap"}},
+              h("div",{style:{flex:1,minWidth:200,background:C.card,borderRadius:12,padding:"12px 16px"}},
+                h("div",{style:{color:C.muted,fontSize:11,fontWeight:700,marginBottom:6}},"UE 3.4.S6 — NOTE DE RECHERCHE"),
+                h(Barre,{v:pctNR(esi.etapes),c:C}),
+                h("div",{style:{textAlign:"right",color:C.accent,fontWeight:700,fontSize:14,marginTop:4}},pctNR(esi.etapes)+"%")),
+              h("div",{style:{flex:1,minWidth:200,background:C.card,borderRadius:12,padding:"12px 16px"}},
+                h("div",{style:{color:C.muted,fontSize:11,fontWeight:700,marginBottom:6}},"UE 5.6.S6 — MÉMOIRE FIN D'ÉTUDES"),
+                h(Barre,{v:pctMFE(esi.etapes),c:C}),
+                h("div",{style:{textAlign:"right",color:C.accent,fontWeight:700,fontSize:14,marginTop:4}},pctMFE(esi.etapes)+"%"))),
+            h("div",{style:{color:C.accent,fontSize:12,fontWeight:700,marginBottom:8,marginTop:4}},"📝 UE 3.4.S6 — Note de recherche"),
+            h("div",{style:{display:"flex",flexDirection:"column",gap:6,marginBottom:16}},
+              ETAPES_NR.map(function(et){
+                var cur=esi.etapes[et.id]||"todo";
+                return h("div",{key:et.id,style:{display:"flex",alignItems:"center",gap:10,background:C.card,borderRadius:10,padding:"9px 14px",flexWrap:"wrap"}},
+                  h("span",{style:{fontSize:16}},et.icon),
+                  h("span",{style:{flex:1,color:C.text,fontSize:13,fontWeight:500,minWidth:100}},et.label),
+                  h("div",{style:{display:"flex",gap:4,flexWrap:"wrap"}},
+                    STATUTS.map(function(st){return h("button",{key:st.id,onClick:function(){se(et.id,st.id);},style:Object.assign({},bs(cur===st.id?st.bg:"transparent",cur===st.id?st.color:C.subtle),{border:"1px solid "+(cur===st.id?st.color+"88":C.border),fontSize:11,padding:"3px 9px"})},st.label);})));})),
+            h("div",{style:{color:C.accent,fontSize:12,fontWeight:700,marginBottom:8}},"🎓 UE 5.6.S6 — Mémoire de fin d'études"),
+            h("div",{style:{display:"flex",flexDirection:"column",gap:6}},
+              ETAPES_MFE.map(function(et){
+                var cur=esi.etapes[et.id]||"todo";
+                return h("div",{key:et.id,style:{display:"flex",alignItems:"center",gap:10,background:C.card,borderRadius:10,padding:"9px 14px",flexWrap:"wrap"}},
+                  h("span",{style:{fontSize:16}},et.icon),
+                  h("span",{style:{flex:1,color:C.text,fontSize:13,fontWeight:500,minWidth:100}},et.label),
+                  h("div",{style:{display:"flex",gap:4,flexWrap:"wrap"}},
+                    STATUTS.map(function(st){return h("button",{key:st.id,onClick:function(){se(et.id,st.id);},style:Object.assign({},bs(cur===st.id?st.bg:"transparent",cur===st.id?st.color:C.subtle),{border:"1px solid "+(cur===st.id?st.color+"88":C.border),fontSize:11,padding:"3px 9px"})},st.label);})));})),
+          ),
           tab==="analyse"&&h(AnalyseIA,{esi:esi,onRetour:onR}),
           tab==="retours"&&h("div",null,
             (esi.retours||[]).length===0?h("div",{style:{color:C.subtle,fontSize:13,fontStyle:"italic",padding:"20px 0"}},'Aucun retour. Va dans "Analyser" pour générer une analyse.')
@@ -401,8 +443,30 @@ function EsiApp(props){
             h("div",{style:{color:C2.muted,fontSize:13,lineHeight:1.6}},pe.conseil));
         })()),
       tab==="etapes"&&h("div",null,
-        h("div",{style:{marginBottom:20}},h(Barre,{v:p,c:C2}),h("div",{style:{textAlign:"right",color:C2.accent,fontWeight:700,fontSize:16,marginTop:6}},p+"%")),
-        ETAPES.map(function(et){
+        h("div",{style:{display:"flex",gap:12,marginBottom:20,flexWrap:"wrap"}},
+          h("div",{style:{flex:1,minWidth:180,background:C2.panel,borderRadius:12,padding:"12px 16px"}},
+            h("div",{style:{color:C2.muted,fontSize:11,fontWeight:700,marginBottom:6}},"UE 3.4.S6 — NOTE DE RECHERCHE"),
+            h(Barre,{v:pctNR(data.etapes),c:C2}),
+            h("div",{style:{textAlign:"right",color:C2.accent,fontWeight:700,fontSize:14,marginTop:4}},pctNR(data.etapes)+"%")),
+          h("div",{style:{flex:1,minWidth:180,background:C2.panel,borderRadius:12,padding:"12px 16px"}},
+            h("div",{style:{color:C2.muted,fontSize:11,fontWeight:700,marginBottom:6}},"UE 5.6.S6 — MÉMOIRE FIN D'ÉTUDES"),
+            h(Barre,{v:pctMFE(data.etapes),c:C2}),
+            h("div",{style:{textAlign:"right",color:C2.accent,fontWeight:700,fontSize:14,marginTop:4}},pctMFE(data.etapes)+"%"))),
+        h("div",{style:{color:C2.accent,fontSize:12,fontWeight:700,marginBottom:8}},"📝 UE 3.4.S6 — Note de recherche"),
+        h("div",{style:{marginBottom:20}},
+          ETAPES_NR.map(function(et){
+            var s=data.etapes[et.id]||"todo";
+            var cols={fait:C2.green,encours:C2.amber,bloque:C2.red,todo:C2.subtle};
+            var bgs={fait:C2.greenDim,encours:C2.amberDim,bloque:C2.redDim,todo:C2.card};
+            var labs={fait:"✅ Validé",encours:"⏳ En cours",bloque:"🚫 Bloqué",todo:"○ À faire"};
+            return h("div",{key:et.id,style:{background:C2.panel,borderRadius:14,padding:16,marginBottom:10,border:"1px solid "+(s==="fait"?C2.green+"44":s==="encours"?C2.amber+"44":C2.border)}},
+              h("div",{style:{display:"flex",alignItems:"center",gap:10}},
+                h("span",{style:{fontSize:20}},et.icon),
+                h("span",{style:{flex:1,color:C2.text,fontWeight:700,fontSize:14}},et.label),
+                h("span",{style:{fontSize:12,color:cols[s],background:bgs[s],borderRadius:99,padding:"3px 10px",fontWeight:700}},labs[s])),
+              s!=="fait"&&h("div",{style:{color:C2.muted,fontSize:13,lineHeight:1.6,paddingLeft:30,marginTop:8}},et.conseil));})),
+        h("div",{style:{color:C2.accent,fontSize:12,fontWeight:700,marginBottom:8}},"🎓 UE 5.6.S6 — Mémoire de fin d'études"),
+        ETAPES_MFE.map(function(et){
           var s=data.etapes[et.id]||"todo";
           var cols={fait:C2.green,encours:C2.amber,bloque:C2.red,todo:C2.subtle};
           var bgs={fait:C2.greenDim,encours:C2.amberDim,bloque:C2.redDim,todo:C2.card};
@@ -412,8 +476,7 @@ function EsiApp(props){
               h("span",{style:{fontSize:20}},et.icon),
               h("span",{style:{flex:1,color:C2.text,fontWeight:700,fontSize:14}},et.label),
               h("span",{style:{fontSize:12,color:cols[s],background:bgs[s],borderRadius:99,padding:"3px 10px",fontWeight:700}},labs[s])),
-            s!=="fait"&&h("div",{style:{color:C2.muted,fontSize:13,lineHeight:1.6,paddingLeft:30,marginTop:8}},et.conseil));
-        })),
+            s!=="fait"&&h("div",{style:{color:C2.muted,fontSize:13,lineHeight:1.6,paddingLeft:30,marginTop:8}},et.conseil));})),
       tab==="retours"&&h("div",null,
         h("h2",{style:{color:C2.text,fontSize:16,fontWeight:800,marginBottom:20}},"Retours de ton directeur"),
         (data.retours||[]).length===0?h("div",{style:{color:C2.subtle,fontSize:14,fontStyle:"italic",textAlign:"center",padding:"40px 0"}},"Aucun retour pour l'instant.")
