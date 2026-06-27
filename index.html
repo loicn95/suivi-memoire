@@ -7,6 +7,8 @@
 <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:Inter,system-ui,sans-serif;background:#0D1117}
@@ -111,6 +113,29 @@ function envoyerNotification(esiPrenom, avancement, docName){
 }
 
 const SK="jain-loic-v2";
+
+// Firebase config
+const FB_CONFIG={
+  apiKey:"AIzaSyCw_ZxjskciwG29QNj0g3HdB9qJYys-vV8",
+  authDomain:"suivi-memoire.firebaseapp.com",
+  databaseURL:"https://suivi-memoire-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId:"suivi-memoire",
+  storageBucket:"suivi-memoire.firebasestorage.app",
+  messagingSenderId:"205179877900",
+  appId:"1:205179877900:web:49c6fd77cd7342f0420c29"
+};
+var fbApp=null,fbDb=null;
+function initFB(){
+  try{
+    if(!fbApp){fbApp=firebase.initializeApp(FB_CONFIG);fbDb=firebase.database();}
+    return fbDb;
+  }catch(e){return null;}
+}
+function fbRef(path){var db=initFB();return db?db.ref(path):null;}
+function fbLire(path,cb){var r=fbRef(path);if(r)r.on("value",function(snap){cb(snap.val()||{});});}
+function fbEcrire(path,data){var r=fbRef(path);if(r)r.set(data);}
+function fbPush(path,data){var r=fbRef(path);if(r)r.push(data);}
+function fbSuppr(path){var r=fbRef(path);if(r)r.remove();}
 function initESI(){return ESI_DEFAUT.map(function(e){return Object.assign({},e,{etapes:{},commentaires:[],documents:[],retours:[],visio:"",prochainRdv:"",derniereMAJ:null});});}
 function charger(){try{var d=localStorage.getItem(SK);return d?JSON.parse(d):initESI();}catch(e){return initESI();}}
 function sauver(d){try{localStorage.setItem(SK,JSON.stringify(d));}catch(e){}}
@@ -132,6 +157,106 @@ function Barre(props){
   var col=v===100?c.green:v>=50?c.accent:c.amber;
   return h("div",{style:{background:c.border,borderRadius:99,height:6,overflow:"hidden",flex:1}},
     h("div",{style:{width:v+"%",height:"100%",background:col,borderRadius:99,transition:"width .4s"}}));
+}
+
+function Planning(props){
+  var mode=props.mode; // "dir" ou "esi"
+  var esiPrenom=props.esiPrenom||"";
+  var _s1=useState({}),creneaux=_s1[0],setCreneaux=_s1[1];
+  var _s2=useState(""),newDate=_s2[0],setNewDate=_s2[1];
+  var _s3=useState(""),newHeure=_s3[0],setNewHeure=_s3[1];
+  var _s4=useState(""),newDuree=_s4[0],setNewDuree=_s4[1];
+  var _s5=useState(null),msg=_s5[0],setMsg=_s5[1];
+  var C=props.c;
+
+  useEffect(function(){
+    fbLire("creneaux",function(data){setCreneaux(data||{});});
+  },[]);
+
+  function showMsg(txt,ok){
+    setMsg({txt:txt,ok:ok});
+    setTimeout(function(){setMsg(null);},3000);
+  }
+
+  function ajouterCreneau(){
+    if(!newDate||!newHeure)return;
+    var duree=newDuree||"30";
+    var dt=newDate+"T"+newHeure;
+    var id=uid();
+    fbEcrire("creneaux/"+id,{id:id,datetime:dt,duree:duree,reserve:false,esiPrenom:"",esiId:"",createdAt:new Date().toISOString()});
+    setNewDate("");setNewHeure("");setNewDuree("");
+    showMsg("Créneau ajouté !",true);
+  }
+
+  function supprimerCreneau(id){
+    fbSuppr("creneaux/"+id);
+  }
+
+  function reserverCreneau(id){
+    if(!esiPrenom)return;
+    fbEcrire("creneaux/"+id+"/reserve",true);
+    fbEcrire("creneaux/"+id+"/esiPrenom",esiPrenom);
+    envoyerNotification(esiPrenom, 0, "Réservation RDV guidance");
+    showMsg("RDV réservé ! Ton directeur a été notifié.",true);
+  }
+
+  function annulerReservation(id){
+    fbEcrire("creneaux/"+id+"/reserve",false);
+    fbEcrire("creneaux/"+id+"/esiPrenom","");
+    showMsg("Réservation annulée.",false);
+  }
+
+  var liste=Object.values(creneaux).sort(function(a,b){return new Date(a.datetime)-new Date(b.datetime);});
+  var futurs=liste.filter(function(c){return new Date(c.datetime)>new Date();});
+  var passes=liste.filter(function(c){return new Date(c.datetime)<=new Date();});
+
+  function fmtDt(dt){
+    return new Date(dt).toLocaleDateString("fr-FR",{weekday:"long",day:"numeric",month:"long",hour:"2-digit",minute:"2-digit"});
+  }
+
+  return h("div",null,
+    msg&&h("div",{style:{background:msg.ok?C.greenDim:C.amberDim,border:"1px solid "+(msg.ok?C.green:C.amber)+"44",borderRadius:10,padding:"10px 14px",marginBottom:14,color:msg.ok?C.green:C.amber,fontWeight:700,fontSize:13}},msg.txt),
+    mode==="dir"&&h("div",{style:{background:C.panel,borderRadius:14,padding:16,marginBottom:20,border:"1px solid "+C.accent+"33"}},
+      h("div",{style:{color:C.accent,fontWeight:700,fontSize:13,marginBottom:12}},"➕ Proposer un créneau"),
+      h("div",{style:{display:"flex",gap:8,flexWrap:"wrap",alignItems:"flex-end"}},
+        h("div",{style:{flex:1,minWidth:140}},
+          h("div",{style:{color:C.muted,fontSize:11,marginBottom:4}},"DATE"),
+          h("input",{type:"date",value:newDate,onChange:function(e){setNewDate(e.target.value);},style:Object.assign({},inp(C),{colorScheme:"dark"})})),
+        h("div",{style:{flex:1,minWidth:100}},
+          h("div",{style:{color:C.muted,fontSize:11,marginBottom:4}},"HEURE"),
+          h("input",{type:"time",value:newHeure,onChange:function(e){setNewHeure(e.target.value);},style:Object.assign({},inp(C),{colorScheme:"dark"})})),
+        h("div",{style:{flex:1,minWidth:100}},
+          h("div",{style:{color:C.muted,fontSize:11,marginBottom:4}},"DURÉE (min)"),
+          h("select",{value:newDuree,onChange:function(e){setNewDuree(e.target.value);},style:Object.assign({},inp(C))},
+            h("option",{value:"30"},"30 min"),
+            h("option",{value:"45"},"45 min"),
+            h("option",{value:"60"},"1h"),
+            h("option",{value:"90"},"1h30"))),
+        h("button",{onClick:ajouterCreneau,style:bs(C.accent,"#fff",{alignSelf:"flex-end",whiteSpace:"nowrap"})},"Ajouter"))),
+    futurs.length===0&&h("div",{style:{color:C.subtle,fontSize:14,fontStyle:"italic",textAlign:"center",padding:"30px 0"}},"Aucun créneau disponible."),
+    futurs.length>0&&h("div",{style:{marginBottom:24}},
+      h("div",{style:{color:C.muted,fontSize:11,fontWeight:700,marginBottom:10}},"CRÉNEAUX À VENIR"),
+      futurs.map(function(cr){
+        var estMoi=cr.esiPrenom===esiPrenom;
+        return h("div",{key:cr.id,style:{background:C.panel,borderRadius:12,padding:"14px 16px",marginBottom:10,border:"1px solid "+(cr.reserve?C.amber+"44":C.accent+"44"),display:"flex",alignItems:"center",gap:12,flexWrap:"wrap"}},
+          h("div",{style:{flex:1}},
+            h("div",{style:{color:C.text,fontWeight:700,fontSize:14}},fmtDt(cr.datetime)),
+            h("div",{style:{color:C.muted,fontSize:12,marginTop:2}},"Durée : "+cr.duree+" min"),
+            cr.reserve&&h("div",{style:{color:C.amber,fontSize:12,fontWeight:700,marginTop:4}},"📅 Réservé par "+cr.esiPrenom)),
+          mode==="dir"&&h("div",{style:{display:"flex",gap:6}},
+            h("button",{onClick:function(){supprimerCreneau(cr.id);},style:bs(C.redDim,C.red,{border:"1px solid "+C.red+"44",fontSize:12})},"Supprimer")),
+          mode==="esi"&&!cr.reserve&&h("button",{onClick:function(){reserverCreneau(cr.id);},style:bs(C.accent,"#fff",{fontSize:13,whiteSpace:"nowrap"})},"📅 Réserver"),
+          mode==="esi"&&cr.reserve&&estMoi&&h("button",{onClick:function(){annulerReservation(cr.id);},style:bs(C.amberDim,C.amber,{border:"1px solid "+C.amber+"44",fontSize:12})},"Annuler"),
+          mode==="esi"&&cr.reserve&&!estMoi&&h("span",{style:{color:C.subtle,fontSize:12,fontStyle:"italic"}},"Non disponible"));
+      })),
+    passes.length>0&&mode==="dir"&&h("div",null,
+      h("div",{style:{color:C.subtle,fontSize:11,fontWeight:700,marginBottom:8}},"CRÉNEAUX PASSÉS"),
+      passes.map(function(cr){
+        return h("div",{key:cr.id,style:{background:C.card,borderRadius:12,padding:"12px 16px",marginBottom:8,opacity:0.6,display:"flex",alignItems:"center",gap:12}},
+          h("div",{style:{flex:1}},
+            h("div",{style:{color:C.muted,fontSize:13}},fmtDt(cr.datetime)),
+            cr.reserve&&h("div",{style:{color:C.muted,fontSize:12}},"✓ "+cr.esiPrenom)),
+          h("button",{onClick:function(){supprimerCreneau(cr.id);},style:bs("transparent",C.subtle,{fontSize:11,border:"1px solid "+C.border})},"Suppr."));})));
 }
 
 function Accueil(props){
@@ -240,7 +365,7 @@ function Directeur(props){
 
   if(!esi)return null;
   var p=pct(esi.etapes);
-  var tabs=[{id:"suivi",l:"📊 Suivi"},{id:"analyse",l:"🔍 Analyser"},{id:"retours",l:"💬 Retours"+(esi.retours&&esi.retours.length>0?" ("+esi.retours.length+")":"")},{id:"docs",l:"📎 Docs"+(esi.documents&&esi.documents.length>0?" ("+esi.documents.length+")":"")},{id:"notes",l:"📝 Notes"}];
+  var tabs=[{id:"suivi",l:"📊 Suivi"},{id:"analyse",l:"🔍 Analyser"},{id:"retours",l:"💬 Retours"+(esi.retours&&esi.retours.length>0?" ("+esi.retours.length+")":"")},{id:"docs",l:"📎 Docs"+(esi.documents&&esi.documents.length>0?" ("+esi.documents.length+")":"")},{id:"planning",l:"📅 Planning"},{id:"notes",l:"📝 Notes"}];
 
   return h("div",{style:{background:C.bg,minHeight:"100vh",display:"flex",flexDirection:"column",color:C.text}},
     h("div",{style:{background:C.panel,borderBottom:"1px solid "+C.border,padding:"12px 20px",display:"flex",alignItems:"center",gap:12,flexWrap:"wrap"}},
@@ -356,6 +481,10 @@ function Directeur(props){
                 h("button",{onClick:ad,style:bs(C.accent,"#fff",{flex:1})},"Ajouter"),
                 h("button",{onClick:function(){setShowDoc(false);},style:bs(C.card,C.muted,{border:"1px solid "+C.border})},"Annuler")))
             :h("button",{onClick:function(){setShowDoc(true);},style:Object.assign({},bs("transparent",C.accent),{border:"1.5px dashed "+C.accent+"44",width:"100%",padding:"10px 0"})},"+ Partager un document ou lien")),
+          tab==="planning"&&h("div",null,
+            h("h2",{style:{color:C.text,fontSize:16,fontWeight:800,marginBottom:4}},"Planning des guidances"),
+            h("div",{style:{color:C.muted,fontSize:13,marginBottom:20}},"Proposez des créneaux visibles par toutes les ESI"),
+            h(Planning,{mode:"dir",c:C})),
           tab==="notes"&&h("div",null,
             h("div",{style:{display:"flex",gap:8,marginBottom:14}},
               h("input",{value:nc,onChange:function(e){setNc(e.target.value);},onKeyDown:function(e){if(e.key==="Enter")ac();},placeholder:"Ajouter une note (Entrée)…",style:Object.assign({},inp(C),{flex:1})}),
@@ -405,7 +534,7 @@ function EsiApp(props){
   if(!data)return null;
   var p=pct(data.etapes);
   var dr=(data.retours||[]).slice(-1)[0];
-  var tabs=[{id:"accueil",l:"🏠 Accueil"},{id:"etapes",l:"📊 Avancement"},{id:"retours",l:"💬 Retours"+((data.retours||[]).length>0?" ("+(data.retours||[]).length+")":"")},{id:"docs",l:"📎 Docs"+((data.documents||[]).length>0?" ("+(data.documents||[]).length+")":"")},{id:"methodo",l:"📚 Méthodo"},{id:"grilles",l:"📋 Grilles"},{id:"visio",l:"🎥 Visio"}];
+  var tabs=[{id:"accueil",l:"🏠 Accueil"},{id:"etapes",l:"📊 Avancement"},{id:"retours",l:"💬 Retours"+((data.retours||[]).length>0?" ("+(data.retours||[]).length+")":"")},{id:"docs",l:"📎 Docs"+((data.documents||[]).length>0?" ("+(data.documents||[]).length+")":"")},{id:"planning",l:"📅 Planning"},{id:"methodo",l:"📚 Méthodo"},{id:"grilles",l:"📋 Grilles"},{id:"visio",l:"🎥 Visio"}];
 
   return h("div",{style:{background:C2.bg,minHeight:"100vh",display:"flex",flexDirection:"column",color:C2.text}},
     h("div",{style:{background:C2.panel,borderBottom:"1px solid "+C2.border,padding:"12px 20px",display:"flex",alignItems:"center",gap:12,flexWrap:"wrap"}},
@@ -523,6 +652,10 @@ function EsiApp(props){
               h("div",{style:{color:C2.subtle,fontSize:12,marginTop:2}},dfr(d.date))),
             h("span",{style:{color:C2.accent,fontSize:20}},"→"));})),
         (data.documents||[]).length===0&&(data.documentsEsi||[]).length===0&&!showDepot&&h("div",{style:{color:C2.subtle,fontSize:14,fontStyle:"italic",textAlign:"center",padding:"20px 0"}},"Aucun document pour l'instant.")),
+      tab==="planning"&&h("div",null,
+        h("h2",{style:{color:C2.text,fontSize:16,fontWeight:800,marginBottom:4}},"Planning des guidances"),
+        h("div",{style:{color:C2.muted,fontSize:13,marginBottom:20}},"Réserve un créneau de guidance avec ton directeur"),
+        h(Planning,{mode:"esi",esiPrenom:data.prenom,c:C2})),
       tab==="methodo"&&h("div",null,
         h("h2",{style:{color:C2.text,fontSize:16,fontWeight:800,marginBottom:4}},"Guide méthodologique"),
         h("p",{style:{color:C2.muted,fontSize:13,marginBottom:20}},"Tout ce qu'il faut pour réussir ton mémoire"),
