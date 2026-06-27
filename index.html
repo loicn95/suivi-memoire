@@ -955,14 +955,126 @@ function Directeur(props){
   return h("div",{style:{background:C.bg,minHeight:"100vh",display:"flex",flexDirection:"column",color:C.text}},
     h("div",{style:{background:C.panel,borderBottom:"1px solid "+C.border,padding:"12px 20px",display:"flex",alignItems:"center",gap:12,flexWrap:"wrap"}},
       h("button",{onClick:onBack,style:bs(C.card,C.muted,{border:"1px solid "+C.border})},"← Accueil"),
-      h("div",null,
+      h("div",{style:{flex:1}},
         h("div",{style:{fontWeight:800,fontSize:15}},"👨‍🏫 Espace Directeur · ",h("span",{style:{color:C.accent}},"Jain Loic")),
-        h("div",{style:{color:C.muted,fontSize:12}},esis.length+" ESI · Promo 2024-27"))),
-    h("div",{style:{display:"flex",flex:1,minHeight:0}},
+        h("div",{style:{color:C.muted,fontSize:12}},esis.length+" ESI · Promo 2024-27")),
+      h("button",{onClick:function(){setTab(tab==="dashboard"?"suivi":"dashboard");},
+        style:bs(tab==="dashboard"?C.accent:C.card,tab==="dashboard"?"#fff":C.muted,{border:"1px solid "+(tab==="dashboard"?C.accent:C.border),fontSize:12})},
+        tab==="dashboard"?"📋 Vue ESI →":"🏠 Vue globale")),
+
+    tab==="dashboard"
+      ? h("div",{style:{flex:1,overflowY:"auto",padding:"24px"}},
+          h("div",{style:{marginBottom:20}},
+            h("div",{style:{color:C.text,fontWeight:800,fontSize:18,marginBottom:4}},"Vue globale — Promo 2024-27"),
+            h("div",{style:{color:C.muted,fontSize:13}},"Avancement de tes 6 ESI en un coup d'œil")),
+          h("div",{style:{display:"flex",gap:12,marginBottom:24,flexWrap:"wrap"}},
+            (function(){
+              var moyG=Math.round(esis.reduce(function(a,e){return a+pct(e.etapes);},0)/esis.length);
+              var enRetard=esis.filter(function(e){return pct(e.etapes)<30;}).length;
+              var bienAvances=esis.filter(function(e){return pct(e.etapes)>=70;}).length;
+              var demandesVal=esis.reduce(function(a,e){return a+(e.etapesEsi?Object.values(e.etapesEsi).filter(function(v){return v==="demande";}).length:0);},0);
+              return [
+                h("div",{key:"moy",style:{flex:1,minWidth:130,background:C.card,borderRadius:14,padding:"16px 18px",textAlign:"center"}},
+                  h("div",{style:{fontSize:36,fontWeight:800,color:C.accent}},moyG+"%"),
+                  h("div",{style:{color:C.muted,fontSize:12,marginTop:4}},"Avancement moyen")),
+                h("div",{key:"bien",style:{flex:1,minWidth:130,background:C.greenDim,borderRadius:14,padding:"16px 18px",textAlign:"center",border:"1px solid "+C.green+"44"}},
+                  h("div",{style:{fontSize:36,fontWeight:800,color:C.green}},bienAvances),
+                  h("div",{style:{color:C.green,fontSize:12,marginTop:4,fontWeight:600}},"Bien avancées (≥70%)")),
+                h("div",{key:"ret",style:{flex:1,minWidth:130,background:enRetard>0?C.redDim:C.card,borderRadius:14,padding:"16px 18px",textAlign:"center",border:"1px solid "+(enRetard>0?C.red+"44":C.border)}},
+                  h("div",{style:{fontSize:36,fontWeight:800,color:enRetard>0?C.red:C.muted}},enRetard),
+                  h("div",{style:{color:enRetard>0?C.red:C.muted,fontSize:12,marginTop:4,fontWeight:600}},"En retard (<30%)")),
+                demandesVal>0&&h("div",{key:"val",style:{flex:1,minWidth:130,background:C.amberDim,borderRadius:14,padding:"16px 18px",textAlign:"center",border:"1px solid "+C.amber+"44"}},
+                  h("div",{style:{fontSize:36,fontWeight:800,color:C.amber}},demandesVal),
+                  h("div",{style:{color:C.amber,fontSize:12,marginTop:4,fontWeight:600}},"Étapes à valider"))
+              ];
+            })()),
+          h("div",{style:{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(320px,1fr))",gap:14}},
+            esis.map(function(e){
+              var pp=pct(e.etapes);
+              var nr=pctNR(e.etapes);
+              var mfe=pctMFE(e.etapes);
+              var dernierRetour=(e.retours||[]).slice(-1)[0];
+              var demandesEsi=e.etapesEsi?Object.entries(e.etapesEsi).filter(function(kv){return kv[1]==="demande";}).map(function(kv){return kv[0];}):[];
+              var couleur=pp>=70?C.green:pp>=40?C.accent:pp>=20?C.amber:C.red;
+              return h("div",{key:e.id,style:{background:C.card,borderRadius:16,padding:18,border:"1px solid "+C.border,cursor:"pointer"},
+                onClick:function(){setSel(e.id);setTab("suivi");}},
+                h("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:12}},
+                  h("div",null,
+                    h("div",{style:{color:C.text,fontWeight:800,fontSize:14}},e.prenom),
+                    h("div",{style:{color:C.muted,fontSize:11,fontStyle:"italic",marginTop:2,lineHeight:1.4}},e.sujet)),
+                  h("div",{style:{textAlign:"right",flexShrink:0,marginLeft:8}},
+                    h("div",{style:{fontSize:22,fontWeight:800,color:couleur}},pp+"%"),
+                    h("div",{style:{fontSize:10,color:C.muted}},"global"))),
+                h("div",{style:{marginBottom:12}},
+                  h("div",{style:{display:"flex",alignItems:"center",gap:8,marginBottom:5}},
+                    h("span",{style:{color:C.muted,fontSize:10,width:32,flexShrink:0}},"NR"),
+                    h(Barre,{v:nr,c:C}),
+                    h("span",{style:{color:C.accent,fontSize:11,fontWeight:700,width:32,textAlign:"right"}},nr+"%")),
+                  h("div",{style:{display:"flex",alignItems:"center",gap:8}},
+                    h("span",{style:{color:C.muted,fontSize:10,width:32,flexShrink:0}},"MFE"),
+                    h(Barre,{v:mfe,c:C}),
+                    h("span",{style:{color:C.green,fontSize:11,fontWeight:700,width:32,textAlign:"right"}},mfe+"%"))),
+                h("div",{style:{display:"flex",flexDirection:"column",gap:5,marginBottom:12}},
+                  dernierRetour&&h("div",{style:{display:"flex",gap:6,alignItems:"flex-start"}},
+                    h("span",{style:{fontSize:11,color:C.accent,flexShrink:0}},"💬"),
+                    h("div",{style:{color:C.muted,fontSize:11,lineHeight:1.4}},
+                      h("span",{style:{color:C.subtle,fontSize:10}},dfr(dernierRetour.date)+" · "),
+                      dernierRetour.commentaire_esi&&dernierRetour.commentaire_esi.substring(0,80)+"…")),
+                  futur(e.prochainRdv)&&h("div",{style:{display:"flex",gap:6,alignItems:"center"}},
+                    h("span",{style:{fontSize:11,color:C.amber}},"📅"),
+                    h("span",{style:{color:C.amber,fontSize:11,fontWeight:600}},rfr(e.prochainRdv))),
+                  demandesEsi.length>0&&h("div",{style:{background:C.amberDim,borderRadius:8,padding:"5px 10px",display:"flex",gap:6,alignItems:"center"}},
+                    h("span",{style:{fontSize:11}},"✋"),
+                    h("span",{style:{color:C.amber,fontSize:11,fontWeight:700}},demandesEsi.length+" étape(s) à valider")),
+                  (e.retours||[]).length===0&&!futur(e.prochainRdv)&&h("div",{style:{color:C.subtle,fontSize:11,fontStyle:"italic"}},"Aucun retour ni RDV planifié")),
+                h("div",{style:{display:"flex",gap:6,flexWrap:"wrap"}},
+                  h("button",{onClick:function(ev){ev.stopPropagation();setSel(e.id);setTab("suivi");},style:bs(C.accentDim,C.accent,{fontSize:11,padding:"4px 10px",border:"1px solid "+C.accent+"44"})},"📊 Suivi"),
+                  h("button",{onClick:function(ev){ev.stopPropagation();setSel(e.id);setTab("analyse");},style:bs(C.card,C.muted,{fontSize:11,padding:"4px 10px",border:"1px solid "+C.border})},"🔍 Analyser"),
+                  h("button",{onClick:function(ev){ev.stopPropagation();setSel(e.id);setTab("messages");},style:bs(C.card,C.muted,{fontSize:11,padding:"4px 10px",border:"1px solid "+C.border})},"✉️ Message")));
+            })))
+
+      : h("div",{style:{display:"flex",flex:1,minHeight:0}},
+          h("div",{style:{width:250,minWidth:250,background:C.panel,borderRight:"1px solid "+C.border,overflowY:"auto",padding:"12px 8px"}},
+            esis.map(function(e){
+              var pp=pct(e.etapes);
+              return h("div",{key:e.id,onClick:function(){setSel(e.id);},style:{background:e.id===sel?C.accentDim:C.card,border:"1.5px solid "+(e.id===sel?C.accent:C.border),borderRadius:12,padding:"12px 14px",cursor:"pointer",marginBottom:8}},
+                h("div",{style:{display:"flex",justifyContent:"space-between",marginBottom:6}},
+                  h("span",{style:{color:C.text,fontWeight:700,fontSize:13}},e.prenom),
+                  h("span",{style:{color:pp===100?C.green:C.accent,fontWeight:800,fontSize:13}},pp+"%")),
+                h("div",{style:{background:C.border,borderRadius:99,height:4,overflow:"hidden"}},
+                  h("div",{style:{width:pp+"%",height:"100%",background:pp===100?C.green:C.accent,borderRadius:99}})),
+                h("div",{style:{display:"flex",gap:4,marginTop:6,flexWrap:"wrap"}},
+                  e.retours&&e.retours.length>0&&h("span",{style:{fontSize:10,color:C.accent,background:C.accentDim,borderRadius:99,padding:"1px 7px",fontWeight:700}},"💬 "+e.retours.length),
+                  futur(e.prochainRdv)&&h("span",{style:{fontSize:10,color:C.amber,background:C.amberDim,borderRadius:99,padding:"1px 7px",fontWeight:700}},"📅 RDV"),
+                  (Object.values(e.etapesEsi||{}).filter(function(v){return v==="demande";}).length>0)&&h("span",{style:{fontSize:10,color:C.amber,background:C.amberDim,borderRadius:99,padding:"1px 7px",fontWeight:700}},"✋ À valider")));
+            })),
+          h("div",{style:{flex:1,display:"flex",flexDirection:"column",overflow:"hidden"}},
+            h("div",{style:{padding:"16px 24px 0",borderBottom:"1px solid "+C.border}},
+              h("div",{style:{display:"flex",alignItems:"center",gap:12,marginBottom:12,flexWrap:"wrap"}},
+                h("div",{style:{flex:1}},
+                  h("div",{style:{color:C.text,fontWeight:800,fontSize:17}},esi.prenom),
+                  h("div",{style:{color:C.muted,fontSize:13,fontStyle:"italic",marginTop:2}},esi.sujet)),
+                h("div",{style:{display:"flex",alignItems:"center",gap:10}},
+                  h(Barre,{v:p,c:C}),
+                  h("span",{style:{color:p===100?C.green:C.accent,fontWeight:800,fontSize:18,minWidth:48}},p+"%"))),
+              h("div",{style:{display:"flex",gap:10,marginBottom:12,flexWrap:"wrap"}},
+                h("div",{style:{display:"flex",alignItems:"center",gap:6}},
+                  h("span",{style:{color:C.muted,fontSize:12}},"📅"),
+                  h("input",{type:"datetime-local",value:er,onChange:function(e){setEr(e.target.value);},onBlur:si,style:Object.assign({},inp(C),{width:"auto",fontSize:12,padding:"4px 8px",colorScheme:"dark"})})),
+                h("div",{style:{display:"flex",alignItems:"center",gap:6}},
+                  h("span",{style:{color:C.muted,fontSize:12}},"🎥"),
+                  h("input",{value:ev,onChange:function(e){setEv(e.target.value);},onBlur:si,placeholder:"Lien visio…",style:Object.assign({},inp(C),{width:200,fontSize:12,padding:"4px 8px"})}),
+                  esi.visio&&h("a",{href:esi.visio,target:"_blank",rel:"noopener noreferrer",style:{color:C.green,fontSize:12,fontWeight:700,textDecoration:"none"}},"→ Rejoindre"))),
+              h("div",{style:{display:"flex",gap:4,flexWrap:"wrap"}},
+                tabs.filter(function(t){return t.id!=="dashboard";}).map(function(t){return h("button",{key:t.id,onClick:function(){setTab(t.id);},style:Object.assign({},bs(tab===t.id?C.accent:"transparent",tab===t.id?"#fff":C.muted),{borderRadius:"8px 8px 0 0",padding:"7px 14px",fontSize:12,borderBottom:tab===t.id?"2px solid "+C.accent:"2px solid transparent"})},t.l);}))),
+            h("div",{style:{flex:1,overflowY:"auto",padding:"20px 24px"}},
+
+    // MODE ESI — sidebar + onglets
+    tab!=="dashboard"&&h("div",{style:{display:"flex",flex:1,minHeight:0}},
       h("div",{style:{width:250,minWidth:250,background:C.panel,borderRight:"1px solid "+C.border,overflowY:"auto",padding:"12px 8px"}},
         esis.map(function(e){
           var pp=pct(e.etapes);
-          return h("div",{key:e.id,onClick:function(){setSel(e.id);setTab("suivi");},style:{background:e.id===sel?C.accentDim:C.card,border:"1.5px solid "+(e.id===sel?C.accent:C.border),borderRadius:12,padding:"12px 14px",cursor:"pointer",marginBottom:8}},
+          return h("div",{key:e.id,onClick:function(){setSel(e.id);},style:{background:e.id===sel?C.accentDim:C.card,border:"1.5px solid "+(e.id===sel?C.accent:C.border),borderRadius:12,padding:"12px 14px",cursor:"pointer",marginBottom:8}},
             h("div",{style:{display:"flex",justifyContent:"space-between",marginBottom:6}},
               h("span",{style:{color:C.text,fontWeight:700,fontSize:13}},e.prenom),
               h("span",{style:{color:pp===100?C.green:C.accent,fontWeight:800,fontSize:13}},pp+"%")),
@@ -991,85 +1103,8 @@ function Directeur(props){
               h("input",{value:ev,onChange:function(e){setEv(e.target.value);},onBlur:si,placeholder:"Lien visio…",style:Object.assign({},inp(C),{width:200,fontSize:12,padding:"4px 8px"})}),
               esi.visio&&h("a",{href:esi.visio,target:"_blank",rel:"noopener noreferrer",style:{color:C.green,fontSize:12,fontWeight:700,textDecoration:"none"}},"→ Rejoindre"))),
           h("div",{style:{display:"flex",gap:4,flexWrap:"wrap"}},
-            tabs.map(function(t){return h("button",{key:t.id,onClick:function(){setTab(t.id);},style:Object.assign({},bs(tab===t.id?C.accent:"transparent",tab===t.id?"#fff":C.muted),{borderRadius:"8px 8px 0 0",padding:"7px 14px",fontSize:12,borderBottom:tab===t.id?"2px solid "+C.accent:"2px solid transparent"})},t.l);}))),
+            tabs.filter(function(t){return t.id!=="dashboard";}).map(function(t){return h("button",{key:t.id,onClick:function(){setTab(t.id);},style:Object.assign({},bs(tab===t.id?C.accent:"transparent",tab===t.id?"#fff":C.muted),{borderRadius:"8px 8px 0 0",padding:"7px 14px",fontSize:12,borderBottom:tab===t.id?"2px solid "+C.accent:"2px solid transparent"})},t.l);}))),
         h("div",{style:{flex:1,overflowY:"auto",padding:"20px 24px"}},
-          tab==="dashboard"&&h("div",null,
-            h("div",{style:{marginBottom:20}},
-              h("div",{style:{color:C.text,fontWeight:800,fontSize:18,marginBottom:4}},"Vue globale — Promo 2024-27"),
-              h("div",{style:{color:C.muted,fontSize:13}},"Avancement de tes 6 ESI en un coup d'œil")),
-            // Stats globales
-            h("div",{style:{display:"flex",gap:12,marginBottom:24,flexWrap:"wrap"}},
-              (function(){
-                var total=esis.length;
-                var moyG=Math.round(esis.reduce(function(a,e){return a+pct(e.etapes);},0)/total);
-                var enRetard=esis.filter(function(e){return pct(e.etapes)<30;}).length;
-                var bienAvances=esis.filter(function(e){return pct(e.etapes)>=70;}).length;
-                var demandesVal=esis.reduce(function(a,e){return a+(e.etapesEsi&&Object.values(e.etapesEsi).filter(function(v){return v==="demande";}).length||0);},0);
-                return [
-                  h("div",{key:"moy",style:{flex:1,minWidth:120,background:C.card,borderRadius:14,padding:"14px 18px",textAlign:"center"}},
-                    h("div",{style:{fontSize:32,fontWeight:800,color:C.accent}},moyG+"%"),
-                    h("div",{style:{color:C.muted,fontSize:12,marginTop:4}},"Avancement moyen")),
-                  h("div",{key:"bien",style:{flex:1,minWidth:120,background:C.greenDim,borderRadius:14,padding:"14px 18px",textAlign:"center",border:"1px solid "+C.green+"44"}},
-                    h("div",{style:{fontSize:32,fontWeight:800,color:C.green}},bienAvances),
-                    h("div",{style:{color:C.green,fontSize:12,marginTop:4,fontWeight:600}},"Bien avancées (≥70%)")),
-                  h("div",{key:"ret",style:{flex:1,minWidth:120,background:enRetard>0?C.redDim:C.card,borderRadius:14,padding:"14px 18px",textAlign:"center",border:"1px solid "+(enRetard>0?C.red+"44":C.border)}},
-                    h("div",{style:{fontSize:32,fontWeight:800,color:enRetard>0?C.red:C.muted}},enRetard),
-                    h("div",{style:{color:enRetard>0?C.red:C.muted,fontSize:12,marginTop:4,fontWeight:600}},"En retard (<30%)")),
-                  demandesVal>0&&h("div",{key:"val",style:{flex:1,minWidth:120,background:C.amberDim,borderRadius:14,padding:"14px 18px",textAlign:"center",border:"1px solid "+C.amber+"44"}},
-                    h("div",{style:{fontSize:32,fontWeight:800,color:C.amber}},demandesVal),
-                    h("div",{style:{color:C.amber,fontSize:12,marginTop:4,fontWeight:600}},"Étapes à valider"))
-                ];
-              })()),
-            // Grille des 6 ESI
-            h("div",{style:{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(320px,1fr))",gap:14}},
-              esis.map(function(e){
-                var pp=pct(e.etapes);
-                var nr=pctNR(e.etapes);
-                var mfe=pctMFE(e.etapes);
-                var dernierRetour=(e.retours||[]).slice(-1)[0];
-                var demandesEsi=e.etapesEsi?Object.entries(e.etapesEsi).filter(function(kv){return kv[1]==="demande";}).map(function(kv){return kv[0];}):[];
-                var couleur=pp>=70?C.green:pp>=40?C.accent:pp>=20?C.amber:C.red;
-                return h("div",{key:e.id,style:{background:C.card,borderRadius:16,padding:18,border:"1px solid "+(sel===e.id?C.accent:C.border),cursor:"pointer",transition:"border-color .2s"},
-                  onClick:function(){setSel(e.id);setTab("suivi");}},
-                  // En-tête ESI
-                  h("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:12}},
-                    h("div",null,
-                      h("div",{style:{color:C.text,fontWeight:800,fontSize:14}},e.prenom),
-                      h("div",{style:{color:C.muted,fontSize:11,fontStyle:"italic",marginTop:2,lineHeight:1.4}},e.sujet)),
-                    h("div",{style:{textAlign:"right",flexShrink:0,marginLeft:8}},
-                      h("div",{style:{fontSize:22,fontWeight:800,color:couleur}},pp+"%"),
-                      h("div",{style:{fontSize:10,color:C.muted}},"global"))),
-                  // Barres NR + MFE
-                  h("div",{style:{marginBottom:12}},
-                    h("div",{style:{display:"flex",alignItems:"center",gap:8,marginBottom:5}},
-                      h("span",{style:{color:C.muted,fontSize:10,width:32,flexShrink:0}},"NR"),
-                      h(Barre,{v:nr,c:C}),
-                      h("span",{style:{color:C.accent,fontSize:11,fontWeight:700,width:32,textAlign:"right"}},nr+"%")),
-                    h("div",{style:{display:"flex",alignItems:"center",gap:8}},
-                      h("span",{style:{color:C.muted,fontSize:10,width:32,flexShrink:0}},"MFE"),
-                      h(Barre,{v:mfe,c:C}),
-                      h("span",{style:{color:C.green,fontSize:11,fontWeight:700,width:32,textAlign:"right"}},mfe+"%"))),
-                  // Infos clés
-                  h("div",{style:{display:"flex",flexDirection:"column",gap:5}},
-                    dernierRetour&&h("div",{style:{display:"flex",gap:6,alignItems:"flex-start"}},
-                      h("span",{style:{fontSize:11,color:C.accent,flexShrink:0}},"💬"),
-                      h("div",{style:{color:C.muted,fontSize:11,lineHeight:1.4}},
-                        h("span",{style:{color:C.subtle,fontSize:10}},dfr(dernierRetour.date)+" · "),
-                        dernierRetour.commentaire_esi&&dernierRetour.commentaire_esi.substring(0,80)+"…")),
-                    futur(e.prochainRdv)&&h("div",{style:{display:"flex",gap:6,alignItems:"center"}},
-                      h("span",{style:{fontSize:11,color:C.amber}},"📅"),
-                      h("span",{style:{color:C.amber,fontSize:11,fontWeight:600}},rfr(e.prochainRdv))),
-                    demandesEsi.length>0&&h("div",{style:{background:C.amberDim,borderRadius:8,padding:"5px 10px",display:"flex",gap:6,alignItems:"center"}},
-                      h("span",{style:{fontSize:11}},"✋"),
-                      h("span",{style:{color:C.amber,fontSize:11,fontWeight:700}},demandesEsi.length+" étape(s) à valider")),
-                    (e.retours||[]).length===0&&!futur(e.prochainRdv)&&h("div",{style:{color:C.subtle,fontSize:11,fontStyle:"italic"}},"Aucun retour ni RDV planifié")),
-                  // Bouton accès rapide
-                  h("div",{style:{display:"flex",gap:6,marginTop:12,flexWrap:"wrap"}},
-                    h("button",{onClick:function(ev){ev.stopPropagation();setSel(e.id);setTab("suivi");},style:bs(C.accentDim,C.accent,{fontSize:11,padding:"4px 10px",border:"1px solid "+C.accent+"44"})},"📊 Suivi"),
-                    h("button",{onClick:function(ev){ev.stopPropagation();setSel(e.id);setTab("analyse");},style:bs(C.card,C.muted,{fontSize:11,padding:"4px 10px",border:"1px solid "+C.border})},"🔍 Analyser"),
-                    h("button",{onClick:function(ev){ev.stopPropagation();setSel(e.id);setTab("messages");},style:bs(C.card,C.muted,{fontSize:11,padding:"4px 10px",border:"1px solid "+C.border})},"✉️ Message")));
-              }))),
-          tab==="suivi"&&h("div",null,
             // Demandes de validation ESI
             (function(){
               var demandes=Object.entries(esi.etapesEsi||{}).filter(function(kv){return kv[1]==="demande"&&esi.etapes[kv[0]]!=="fait";});
@@ -1212,7 +1247,7 @@ function Directeur(props){
               h("div",{style:{flex:1}},
                 h("div",{style:{color:C.text,fontSize:13,lineHeight:1.5}},c.texte),
                 h("div",{style:{color:C.subtle,fontSize:11,marginTop:4}},dfr(c.date))),
-              h("button",{onClick:function(){dc(c.id);},style:{background:"transparent",border:"none",color:C.subtle,cursor:"pointer"}},"✕"));}))))));
+              h("button",{onClick:function(){dc(c.id);},style:{background:"transparent",border:"none",color:C.subtle,cursor:"pointer"}},"✕"));}))))))));
 }
 
 function LoginESI(props){
