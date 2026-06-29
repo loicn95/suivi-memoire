@@ -13,6 +13,14 @@
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:Inter,system-ui,sans-serif;background:#0D1117}
 input,textarea,button{font-family:inherit}
+/* Mobile */
+@media(max-width:600px){
+  .tabs-scroll{display:flex;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;gap:4px;padding-bottom:2px}
+  .tabs-scroll::-webkit-scrollbar{display:none}
+  .tab-btn{white-space:nowrap;flex-shrink:0;font-size:12px!important;padding:6px 10px!important}
+  .card-grid{grid-template-columns:1fr!important}
+  .hide-mobile{display:none!important}
+}
 </style>
 </head>
 <body>
@@ -54,7 +62,8 @@ const ESI_DEFAUT=[
   {id:"e3",prenom:"JEAN Lisa",sujet:"Soins palliatifs / fin de vie",pwd:"22420869",email:"jeanlisa972@gmail.com"},
   {id:"e4",prenom:"LECHOPIER-SIKORSKI Chloé",sujet:"Gestion des urgences / barrière linguistique",pwd:"22413962",email:"Chloe.lechopier.sikorski@gmail.com"},
   {id:"e5",prenom:"PECOUD Émilie",sujet:"Douleur du patient amputé",pwd:"22418729",email:"emilie.pecoud24@orange.fr"},
-  {id:"e6",prenom:"RYST Lucie",sujet:"Communication patient / extubation",pwd:"71613697",email:"ryst.lucie@gmail.com"}
+  {id:"e6",prenom:"RYST Lucie",sujet:"Communication patient / extubation",pwd:"71613697",email:"ryst.lucie@gmail.com"},
+  {id:"e7",prenom:"RANDAL Laétitia",sujet:"",pwd:"22319100",email:""}
 ];
 const RESSOURCES=[
   {id:"r1",label:"Formuler une problématique",icon:"🎯",contenu:"La problématique est une question centrale.\n\n• Découler d'une situation clinique réelle\n• Formulée sous forme de question ouverte\n• Ni trop large, ni trop précise\n\nExemple : En quoi la relation soignant-soigné influence-t-elle la prise en charge de la douleur ?"},
