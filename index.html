@@ -1507,14 +1507,14 @@ function EsiApp(props){
     envoyerNotification(data.prenom, 0, depotLabel.trim());
   }
 
+  var notifs=useNotifs(esiId);
+
   if(!esiId)return h("div",{style:{minHeight:"100vh",background:C2.bg,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:24}},
     h("button",{onClick:onBack,style:Object.assign({},bs(C2.panel,C2.muted,{border:"1px solid "+C2.border}),{position:"absolute",top:20,left:20})},"← Accueil"),
     h("div",{style:{fontSize:52,marginBottom:16}},"🎓"),
     h("h1",{style:{color:C2.text,fontSize:22,fontWeight:800,marginBottom:8,textAlign:"center"}},"Mon Espace Mémoire"),
     h("p",{style:{color:C2.muted,fontSize:14,marginBottom:32,textAlign:"center"}},"Directeur : ",h("strong",{style:{color:C2.accent}},"Jain Loic")," · Promo 2024-27"),
     h(LoginESI,{onLogin:function(id){setEsiId(id);setTab("accueil");},C:C2}));
-
-  var notifs=useNotifs(esiId);
 
   if(fbLoad)return h("div",{style:{minHeight:"100vh",background:C2.bg,display:"flex",alignItems:"center",justifyContent:"center",color:C2.muted,fontSize:15}},"⏳ Chargement...");
   if(!data)return null;
