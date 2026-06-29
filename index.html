@@ -1514,12 +1514,13 @@ function EsiApp(props){
     h("p",{style:{color:C2.muted,fontSize:14,marginBottom:32,textAlign:"center"}},"Directeur : ",h("strong",{style:{color:C2.accent}},"Jain Loic")," · Promo 2024-27"),
     h(LoginESI,{onLogin:function(id){setEsiId(id);setTab("accueil");},C:C2}));
 
+  var notifs=useNotifs(esiId);
+
   if(fbLoad)return h("div",{style:{minHeight:"100vh",background:C2.bg,display:"flex",alignItems:"center",justifyContent:"center",color:C2.muted,fontSize:15}},"⏳ Chargement...");
   if(!data)return null;
 
   var p=pct(data.etapes||{});
   var dr=(data.retours||[]).slice(-1)[0];
-  var notifs=useNotifs(esiId);
   var msgBadge=notifs.count>0?" 🔴":"";
   var retourBadge=notifs.countRetours>0?" 🔴":"";
   var docBadge=notifs.countDocs>0?" 🔴":"";
