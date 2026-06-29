@@ -267,8 +267,8 @@ function fbChargerToutesESI(cb){
   });
 }
 function uid(){return Math.random().toString(36).slice(2,9);}
-function pctNR(etapes){return Math.round(ETAPES_NR.filter(function(e){return etapes[e.id]==="fait";}).length/ETAPES_NR.length*100);}
-function pctMFE(etapes){return Math.round(ETAPES_MFE.filter(function(e){return etapes[e.id]==="fait";}).length/ETAPES_MFE.length*100);}
+function pctNR(etapes){if(!etapes)return 0;return Math.round(ETAPES_NR.filter(function(e){return etapes[e.id]==="fait";}).length/ETAPES_NR.length*100);}
+function pctMFE(etapes){if(!etapes)return 0;return Math.round(ETAPES_MFE.filter(function(e){return etapes[e.id]==="fait";}).length/ETAPES_MFE.length*100);}
 function pct(etapes){return Math.round((pctNR(etapes)+pctMFE(etapes))/2);}
 function dfr(iso){if(!iso)return"—";return new Date(iso).toLocaleDateString("fr-FR",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"});}
 function rfr(s){if(!s)return null;return new Date(s).toLocaleDateString("fr-FR",{weekday:"long",day:"numeric",month:"long",hour:"2-digit",minute:"2-digit"});}
@@ -328,12 +328,12 @@ function Positionnement(props){
     fbChargerToutesESI(function(all){setToutesEsis(all);});
   },[]);
   if(!data||!toutesEsis)return h("div",{style:{color:C.muted,fontSize:13,textAlign:"center",padding:"40px 0"}},"⏳ Calcul en cours...");
-  var monPct=pct(data.etapes);
+  var monPct=pct(data.etapes||{});
   var tousP=toutesEsis.map(function(e){return pct(e.etapes);});
   var moy=Math.round(tousP.reduce(function(a,b){return a+b;},0)/tousP.length);
   var min=Math.min.apply(null,tousP);
   var max=Math.max.apply(null,tousP);
-  var monNR=pctNR(data.etapes),monMFE=pctMFE(data.etapes);
+  var monNR=pctNR(data.etapes||{}),monMFE=pctMFE(data.etapes||{});
   var moyNR=Math.round(toutesEsis.map(function(e){return pctNR(e.etapes);}).reduce(function(a,b){return a+b;},0)/toutesEsis.length);
   var moyMFE=Math.round(toutesEsis.map(function(e){return pctMFE(e.etapes);}).reduce(function(a,b){return a+b;},0)/toutesEsis.length);
   function jaugeComp(label,moi2,moy2,couleur){
@@ -559,8 +559,8 @@ function DeadlineView(props){
   function joursRestants(dateStr){return Math.ceil((new Date(dateStr)-now)/(1000*60*60*24));}
   function alerteEtapes(dl){
     if(!data)return false;
-    if(dl.ue==="NR"){return pctNR(data.etapes)<50&&joursRestants(dl.date)<90;}
-    if(dl.ue==="MFE"){return pctMFE(data.etapes)<50&&joursRestants(dl.date)<90;}
+    if(dl.ue==="NR"){return pctNR(data.etapes||{})<50&&joursRestants(dl.date)<90;}
+    if(dl.ue==="MFE"){return pctMFE(data.etapes||{})<50&&joursRestants(dl.date)<90;}
     return false;
   }
   var dlsAvecDate=dls.filter(function(dl){return dl.date&&dl.date.length>0;});
@@ -1134,7 +1134,7 @@ function Directeur(props){
   function dr(id){if(!esi)return;up(Object.assign({},esi,{retours:(esi.retours||[]).filter(function(r){return r.id!==id;})}));}
   function onR(retour){
     if(!esi)return;
-    var av=retour.avancement,ne=Object.assign({},esi.etapes);
+    var av=retour.avancement,ne=Object.assign({},esi.etapes||{});
     if(av>=10)ne.nr_sujet="fait";
     if(av>=25)ne.nr_situation="fait";
     if(av>=35)ne.nr_question="fait";
@@ -1156,7 +1156,7 @@ function Directeur(props){
 
   if(fbLoad)return h("div",{style:{minHeight:"100vh",background:C.bg,display:"flex",alignItems:"center",justifyContent:"center",color:C.muted,fontSize:15}},"⏳ Chargement des données...");
   if(!esi)return null;
-  var p=pct(esi.etapes);
+  var p=pct(esi.etapes||{});
   var tabs=[{id:"dashboard",l:"🏠 Vue globale"},{id:"suivi",l:"📊 Suivi"+(Object.values(esi.etapesEsi||{}).filter(function(v){return v==="demande";}).length>0?" ✋":"")},{id:"analyse",l:"🔍 Analyser"},{id:"retours",l:"💬 Retours"+(esi.retours&&esi.retours.length>0?" ("+esi.retours.length+")":"")},{id:"messages",l:"✉️ Messages"},{id:"docs",l:"📎 Docs"+(esi.documents&&esi.documents.length>0?" ("+esi.documents.length+")":"")},{id:"planning",l:"📅 Planning"},{id:"notesvisio",l:"📋 Comptes rendus"},{id:"deadlines",l:"⚠️ Deadlines"},{id:"refs",l:"📚 Références"},{id:"journal",l:"📒 Journal"},{id:"notes",l:"🗒 Notes perso"}];
 
   return h("div",{style:{background:C.bg,minHeight:"100vh",display:"flex",flexDirection:"column",color:C.text}},
@@ -1309,7 +1309,7 @@ function Directeur(props){
         h("div",{style:{flex:1,overflowY:"auto",padding:"20px 24px"}},
             // Demandes de validation ESI
             (function(){
-              var demandes=Object.entries(esi.etapesEsi||{}).filter(function(kv){return kv[1]==="demande"&&esi.etapes[kv[0]]!=="fait";});
+              var demandes=Object.entries(esi.etapesEsi||{}).filter(function(kv){return kv[1]==="demande"&&(esi.etapes||{})[kv[0]]!=="fait";});
               if(demandes.length===0)return null;
               return h("div",{style:{background:C.amberDim,border:"1px solid "+C.amber+"44",borderRadius:12,padding:16,marginBottom:16}},
                 h("div",{style:{color:C.amber,fontWeight:800,fontSize:13,marginBottom:10}},"✋ "+esi.prenom.split(" ")[1]+" a signalé "+demandes.length+" avancée(s) — en attente de ta validation"),
@@ -1335,16 +1335,16 @@ function Directeur(props){
             h("div",{style:{display:"flex",gap:16,marginBottom:20,flexWrap:"wrap"}},
               h("div",{style:{flex:1,minWidth:200,background:C.card,borderRadius:12,padding:"12px 16px"}},
                 h("div",{style:{color:C.muted,fontSize:11,fontWeight:700,marginBottom:6}},"UE 3.4.S6 — NOTE DE RECHERCHE"),
-                h(Barre,{v:pctNR(esi.etapes),c:C}),
-                h("div",{style:{textAlign:"right",color:C.accent,fontWeight:700,fontSize:14,marginTop:4}},pctNR(esi.etapes)+"%")),
+                h(Barre,{v:pctNR(esi.etapes||{}),c:C}),
+                h("div",{style:{textAlign:"right",color:C.accent,fontWeight:700,fontSize:14,marginTop:4}},pctNR(esi.etapes||{})+"%")),
               h("div",{style:{flex:1,minWidth:200,background:C.card,borderRadius:12,padding:"12px 16px"}},
                 h("div",{style:{color:C.muted,fontSize:11,fontWeight:700,marginBottom:6}},"UE 5.6.S6 — MÉMOIRE FIN D'ÉTUDES"),
-                h(Barre,{v:pctMFE(esi.etapes),c:C}),
-                h("div",{style:{textAlign:"right",color:C.accent,fontWeight:700,fontSize:14,marginTop:4}},pctMFE(esi.etapes)+"%"))),
+                h(Barre,{v:pctMFE(esi.etapes||{}),c:C}),
+                h("div",{style:{textAlign:"right",color:C.accent,fontWeight:700,fontSize:14,marginTop:4}},pctMFE(esi.etapes||{})+"%"))),
             h("div",{style:{color:C.accent,fontSize:12,fontWeight:700,marginBottom:8,marginTop:4}},"📝 UE 3.4.S6 — Note de recherche"),
             h("div",{style:{display:"flex",flexDirection:"column",gap:6,marginBottom:16}},
               ETAPES_NR.map(function(et){
-                var cur=esi.etapes[et.id]||"todo";
+                var cur=(esi.etapes||{})[et.id]||"todo";
                 return h("div",{key:et.id,style:{display:"flex",alignItems:"center",gap:10,background:C.card,borderRadius:10,padding:"9px 14px",flexWrap:"wrap"}},
                   h("span",{style:{fontSize:16}},et.icon),
                   h("span",{style:{flex:1,color:C.text,fontSize:13,fontWeight:500,minWidth:100}},et.label),
@@ -1353,7 +1353,7 @@ function Directeur(props){
             h("div",{style:{color:C.accent,fontSize:12,fontWeight:700,marginBottom:8}},"🎓 UE 5.6.S6 — Mémoire de fin d'études"),
             h("div",{style:{display:"flex",flexDirection:"column",gap:6}},
               ETAPES_MFE.map(function(et){
-                var cur=esi.etapes[et.id]||"todo";
+                var cur=(esi.etapes||{})[et.id]||"todo";
                 return h("div",{key:et.id,style:{display:"flex",alignItems:"center",gap:10,background:C.card,borderRadius:10,padding:"9px 14px",flexWrap:"wrap"}},
                   h("span",{style:{fontSize:16}},et.icon),
                   h("span",{style:{flex:1,color:C.text,fontSize:13,fontWeight:500,minWidth:100}},et.label),
@@ -1517,7 +1517,7 @@ function EsiApp(props){
   if(fbLoad)return h("div",{style:{minHeight:"100vh",background:C2.bg,display:"flex",alignItems:"center",justifyContent:"center",color:C2.muted,fontSize:15}},"⏳ Chargement...");
   if(!data)return null;
 
-  var p=pct(data.etapes);
+  var p=pct(data.etapes||{});
   var dr=(data.retours||[]).slice(-1)[0];
   var notifs=useNotifs(esiId);
   var msgBadge=notifs.count>0?" 🔴":"";
@@ -1542,7 +1542,7 @@ function EsiApp(props){
           h("div",{style:{fontSize:13,color:C2.muted,marginBottom:8}},"TON AVANCEMENT GLOBAL"),
           h(Barre,{v:p,c:C2}),
           h("div",{style:{display:"flex",justifyContent:"space-between",marginTop:8,fontSize:13,color:C2.muted}},
-            h("span",null,ETAPES.filter(function(e){return data.etapes[e.id]==="fait";}).length+"/"+ETAPES.length+" étapes validées"),
+            h("span",null,ETAPES.filter(function(e){return (data.etapes||{})[e.id]==="fait";}).length+"/"+ETAPES.length+" étapes validées"),
             h("span",{style:{color:p===100?C2.green:C2.accent,fontWeight:700}},p+"%"))),
         data.prochainRdv&&h("div",{style:{background:futur(data.prochainRdv)?C2.amberDim:C2.redDim,border:"1px solid "+(futur(data.prochainRdv)?C2.amber:C2.red)+"44",borderRadius:12,padding:16,marginBottom:16}},
           h("div",{style:{color:futur(data.prochainRdv)?C2.amber:C2.red,fontWeight:700,fontSize:14,marginBottom:6}},"📅 "+(futur(data.prochainRdv)?"Prochain RDV avec ton directeur":"RDV passé")),
@@ -1553,10 +1553,10 @@ function EsiApp(props){
           h("div",{style:{color:C2.text,fontSize:13,lineHeight:1.8,fontStyle:"italic"}},dr.commentaire_esi),
           h("button",{onClick:function(){setTab("retours");},style:{marginTop:10,background:"transparent",border:"1px solid "+C2.accent,color:C2.accent,borderRadius:8,padding:"5px 12px",cursor:"pointer",fontSize:12,fontWeight:600}},"Voir tous les retours →")),
         (function(){
-          var pe=ETAPES.find(function(e){return !data.etapes[e.id]||data.etapes[e.id]==="todo"||data.etapes[e.id]==="encours";});
+          var pe=ETAPES.find(function(e){return !(data.etapes||{})[e.id]||(data.etapes||{})[e.id]==="todo"||(data.etapes||{})[e.id]==="encours";});
           if(!pe)return h("div",{style:{background:C2.greenDim,borderRadius:12,padding:20,textAlign:"center",color:C2.green,fontWeight:700,fontSize:16}},"🎉 Toutes les étapes sont validées !");
           return h("div",{style:{background:C2.panel,borderRadius:12,padding:16}},
-            h("div",{style:{color:C2.muted,fontSize:11,fontWeight:700,marginBottom:8}},data.etapes[pe.id]==="encours"?"⏳ EN COURS":"📍 PROCHAINE ÉTAPE"),
+            h("div",{style:{color:C2.muted,fontSize:11,fontWeight:700,marginBottom:8}},(data.etapes||{})[pe.id]==="encours"?"⏳ EN COURS":"📍 PROCHAINE ÉTAPE"),
             h("div",{style:{color:C2.text,fontWeight:700,fontSize:15,marginBottom:8}},pe.icon+" "+pe.label),
             h("div",{style:{color:C2.muted,fontSize:13,lineHeight:1.6}},pe.conseil));
         })()),
@@ -1566,16 +1566,16 @@ function EsiApp(props){
         h("div",{style:{display:"flex",gap:12,marginBottom:20,flexWrap:"wrap"}},
           h("div",{style:{flex:1,minWidth:180,background:C2.panel,borderRadius:12,padding:"12px 16px"}},
             h("div",{style:{color:C2.muted,fontSize:11,fontWeight:700,marginBottom:6}},"UE 3.4.S6 — NOTE DE RECHERCHE"),
-            h(Barre,{v:pctNR(data.etapes),c:C2}),
-            h("div",{style:{textAlign:"right",color:C2.accent,fontWeight:700,fontSize:14,marginTop:4}},pctNR(data.etapes)+"%")),
+            h(Barre,{v:pctNR(data.etapes||{}),c:C2}),
+            h("div",{style:{textAlign:"right",color:C2.accent,fontWeight:700,fontSize:14,marginTop:4}},pctNR(data.etapes||{})+"%")),
           h("div",{style:{flex:1,minWidth:180,background:C2.panel,borderRadius:12,padding:"12px 16px"}},
             h("div",{style:{color:C2.muted,fontSize:11,fontWeight:700,marginBottom:6}},"UE 5.6.S6 — MÉMOIRE FIN D'ÉTUDES"),
-            h(Barre,{v:pctMFE(data.etapes),c:C2}),
-            h("div",{style:{textAlign:"right",color:C2.accent,fontWeight:700,fontSize:14,marginTop:4}},pctMFE(data.etapes)+"%"))),
+            h(Barre,{v:pctMFE(data.etapes||{}),c:C2}),
+            h("div",{style:{textAlign:"right",color:C2.accent,fontWeight:700,fontSize:14,marginTop:4}},pctMFE(data.etapes||{})+"%"))),
         h("div",{style:{color:C2.accent,fontSize:12,fontWeight:700,marginBottom:8}},"📝 UE 3.4.S6 — Note de recherche"),
         h("div",{style:{marginBottom:20}},
           ETAPES_NR.map(function(et){
-            var sDir=data.etapes[et.id]||"todo";
+            var sDir=(data.etapes||{})[et.id]||"todo";
             var sEsi=(data.etapesEsi||{})[et.id]||"";
             var valide=sDir==="fait";
             var enDemande=sEsi==="demande"&&!valide;
@@ -1604,7 +1604,7 @@ function EsiApp(props){
               !valide&&h("div",{style:{color:C2.muted,fontSize:12,lineHeight:1.6,paddingLeft:30,marginTop:8}},et.conseil));})),
         h("div",{style:{color:C2.accent,fontSize:12,fontWeight:700,marginBottom:8}},"🎓 UE 5.6.S6 — Mémoire de fin d'études"),
         ETAPES_MFE.map(function(et){
-          var sDir=data.etapes[et.id]||"todo";
+          var sDir=(data.etapes||{})[et.id]||"todo";
           var sEsi=(data.etapesEsi||{})[et.id]||"";
           var valide=sDir==="fait";
           var enDemande=sEsi==="demande"&&!valide;
