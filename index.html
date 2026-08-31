@@ -222,6 +222,19 @@ function initFB(){
 }
 function fbRef(path){var db=initFB();return db?db.ref(path):null;}
 function fbLire(path,cb){var r=fbRef(path);if(r)r.on("value",function(snap){cb(snap.val()||{});});}
+function fbLireUne(path,cb,timeout){
+  var r=fbRef(path);
+  if(!r){cb({});return;}
+  var done=false;
+  var timer=setTimeout(function(){
+    if(!done){done=true;cb({});}
+  },timeout||5000);
+  r.once("value",function(snap){
+    if(!done){done=true;clearTimeout(timer);cb(snap.val()||{});}
+  },function(){
+    if(!done){done=true;clearTimeout(timer);cb({});}
+  });
+}
 function fbEcrire(path,data){var r=fbRef(path);if(r)r.set(data);}
 function fbPush(path,data){var r=fbRef(path);if(r)r.push(data);}
 function fbSuppr(path){var r=fbRef(path);if(r)r.remove();}
@@ -250,10 +263,10 @@ function fbSauverESI(esi){
 }
 // Charge les données d'une ESI depuis Firebase et fusionne avec les données de base
 function fbChargerESI(esiId,cb){
-  fbLire("esis/"+esiId,function(data){
+  fbLireUne("esis/"+esiId,function(data){
     var base=ESI_DEFAUT.find(function(e){return e.id===esiId;})||{};
     cb(Object.assign({},base,data||{}));
-  });
+  },5000);
 }
 // Charge toutes les ESI depuis Firebase
 function fbChargerToutesESI(cb){
@@ -1497,10 +1510,21 @@ function EsiApp(props){
   useEffect(function(){
     if(!esiId){setData(null);return;}
     setFbLoad(true);
+    // Chargement initial rapide avec timeout
     fbChargerESI(esiId,function(d){
       setData(d);
       setFbLoad(false);
     });
+    // Écoute en temps réel après le premier chargement
+    var r=fbRef("esis/"+esiId);
+    if(r){
+      r.on("value",function(snap){
+        var base=ESI_DEFAUT.find(function(e){return e.id===esiId;})||{};
+        setData(Object.assign({},base,snap.val()||{}));
+        setFbLoad(false);
+      });
+      return function(){r.off();};
+    }
   },[esiId]);
 
   function deposer(){
