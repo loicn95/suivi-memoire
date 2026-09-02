@@ -255,6 +255,8 @@ function fbSauverESI(esi){
     documents:esi.documents||[],
     documentsEsi:esi.documentsEsi||[],
     retours:esi.retours||[],
+    notes:esi.notes||"",
+    sujet:esi.sujet||"",
     visio:esi.visio||"",
     prochainRdv:esi.prochainRdv||"",
     derniereMAJ:new Date().toISOString()
@@ -1105,12 +1107,34 @@ function Directeur(props){
   var _s9=useState(initESI()),esis=_s9[0],setEsis=_s9[1];
   var _s10=useState(true),fbLoad=_s10[0],setFbLoad=_s10[1];
 
-  // Chargement Firebase temps réel pour toutes les ESI
+  // Chargement Firebase - afficher immédiatement les données de base
   useEffect(function(){
-    fbChargerToutesESI(function(data){
-      setEsis(data);
-      setFbLoad(false);
-    });
+    // Afficher immédiatement sans attendre Firebase
+    setEsis(ESI_DEFAUT);
+    setFbLoad(false);
+    // Enrichir avec Firebase en arrière-plan
+    var r=fbRef("esis");
+    if(r){
+      r.on("value",function(snap){
+        var data=snap.val()||{};
+        setEsis(ESI_DEFAUT.map(function(base){
+          var fb=data[base.id]||{};
+          return Object.assign({},base,{
+            etapes:fb.etapes||{},
+            etapesEsi:fb.etapesEsi||{},
+            commentaires:fb.commentaires||[],
+            retours:fb.retours||[],
+            documents:fb.documents||[],
+            documentsEsi:fb.documentsEsi||[],
+            notes:fb.notes||"",
+            visio:fb.visio||"",
+            prochainRdv:fb.prochainRdv||"",
+            sujet:fb.sujet||base.sujet||""
+          });
+        }));
+      });
+      return function(){r.off();};
+    }
   },[]);
 
   var esi=esis.find(function(e){return e.id===sel;});
