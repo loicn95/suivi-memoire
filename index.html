@@ -339,9 +339,9 @@ function Messagerie(props){
             h("div",{style:{color:estMoi?C.accent:C.muted,fontSize:10,fontWeight:700,marginBottom:4}},estMoi?"Moi":(mode==="dir"?esiPrenom:"Directeur")+" · "+dfr(m.date)),
             h("div",{style:{color:C.text,fontSize:13,lineHeight:1.6}},m.texte)));
       })),
-    h("div",{style:{display:"flex",gap:8,borderTop:"1px solid "+C.border,paddingTop:12}},
-      h("input",{value:txt,onChange:function(e){setTxt(e.target.value);},onKeyDown:function(e){if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();envoyer();}},placeholder:"Votre message...",style:Object.assign({},inp(C),{flex:1})}),
-      h("button",{onClick:envoyer,style:bs(C.accent,"#fff")},"Envoyer")));
+    h("div",{style:{display:"flex",gap:8,borderTop:"1px solid "+C.border,paddingTop:12,alignItems:"flex-end"}},
+      h("textarea",{value:txt,onChange:function(e){setTxt(e.target.value);},onKeyDown:function(e){if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();envoyer();}},placeholder:"Votre message...",rows:3,style:Object.assign({},inp(C),{flex:1,resize:"vertical",fontSize:15,padding:"12px 14px",lineHeight:1.5,minHeight:60})}),
+      h("button",{onClick:envoyer,style:bs(C.accent,"#fff",{padding:"12px 20px",fontSize:14,alignSelf:"stretch"})},"Envoyer")));
 }
 
 // ---- POSITIONNEMENT ANONYME ----
