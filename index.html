@@ -329,7 +329,7 @@ function Messagerie(props){
     if(mode==="esi") envoyerNotification(esiPrenom,0,"Message: "+txt.trim().substring(0,50));
     setTxt("");
   }
-  return h("div",{style:{display:"flex",flexDirection:"column",height:420}},
+  return h("div",{style:{display:"flex",flexDirection:"column",height:"65vh",minHeight:400}},
     h("div",{style:{flex:1,overflowY:"auto",display:"flex",flexDirection:"column",gap:8,paddingBottom:12}},
       msgs.length===0&&h("div",{style:{color:C.subtle,fontSize:13,fontStyle:"italic",textAlign:"center",padding:"40px 0"}},"Aucun message pour l'instant."),
       msgs.map(function(m){
@@ -386,105 +386,6 @@ function Positionnement(props){
         h("span",null,"Max : ",h("strong",null,max+"%")))),
     h("div",null,jaugeComp("UE 3.4.S6 — Note de Recherche",monNR,moyNR,C.accent)),
     h("div",null,jaugeComp("UE 5.6.S6 — Mémoire",monMFE,moyMFE,C.green)));
-}
-
-// ---- COMPTE RENDU IA ----
-function CompteRendu(props){
-  var esiId=props.esiId,esiPrenom=props.esiPrenom,mode=props.mode,C=props.c;
-  var _s1=useState([]),crs=_s1[0],setCrs=_s1[1];
-  var _s2=useState(false),show=_s2[0],setShow=_s2[1];
-  var _s3=useState(""),transcript=_s3[0],setTranscript=_s3[1];
-  var _s4=useState("visio"),typeG=_s4[0],setTypeG=_s4[1];
-  var _s5=useState(false),load=_s5[0],setLoad=_s5[1];
-  var _s6=useState(null),cr=_s6[0],setCr=_s6[1];
-  var _s7=useState(""),err=_s7[0],setErr=_s7[1];
-
-  useEffect(function(){
-    fbLire("comptesRendus/"+esiId,function(data){
-      if(!data)return setCrs([]);
-      setCrs(Object.values(data).sort(function(a,b){return b.date>a.date?1:-1;}));
-    });
-  },[esiId]);
-
-  function generer(){
-    if(!transcript.trim()){setErr("Colle d'abord le transcript.");return;}
-    setLoad(true);setErr("");setCr(null);
-    fetch("https://api.anthropic.com/v1/messages",{
-      method:"POST",
-      headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({model:"claude-sonnet-4-6",max_tokens:1000,messages:[{role:"user",content:"Tu es formateur IFSI expert en memoires infirmiers.\nESI : "+esiPrenom+"\nType de guidance : "+typeG+"\nDate : "+new Date().toLocaleDateString("fr-FR")+"\n\nTranscript :\n"+transcript+"\n\nReponds UNIQUEMENT en JSON valide sans markdown :{\"titre\":\"CR\",\"points_abordes\":[\"...\"],\"avancees\":[\"...\"],\"points_a_travailler\":[\"...\"],\"decisions\":[\"...\"],\"prochaine_etape\":\"...\",\"message_esi\":\"...\"}"}]})
-    }).then(function(r){return r.json();}).then(function(data){
-      var t=(data.content||[]).filter(function(b){return b.type==="text";}).map(function(b){return b.text;}).join("");
-      setCr(JSON.parse(t.replace(/```json|```/g,"").trim()));
-      setLoad(false);
-    }).catch(function(){setErr("Erreur de génération. Réessaie.");setLoad(false);});
-  }
-
-  function sauver(){
-    if(!cr)return;
-    var id=uid();
-    fbEcrire("comptesRendus/"+esiId+"/"+id,Object.assign({},cr,{id:id,date:new Date().toISOString(),type:typeG}));
-    setCr(null);setTranscript("");setShow(false);
-  }
-
-  function suppr(id){fbSuppr("comptesRendus/"+esiId+"/"+id);}
-
-  function Section(label,items,col){
-    if(!items||items.length===0)return null;
-    return h("div",{style:{marginBottom:12}},
-      h("div",{style:{color:col||C.accent,fontSize:11,fontWeight:700,marginBottom:6}},label),
-      items.map(function(it,i){return h("div",{key:i,style:{color:C.text,fontSize:13,lineHeight:1.7,marginBottom:3}},"• "+it);}));
-  }
-
-  return h("div",null,
-    mode==="dir"&&h("div",null,
-      show?h("div",{style:{background:C.panel,borderRadius:14,padding:16,marginBottom:16,border:"1px solid "+C.accent+"44"}},
-        h("div",{style:{color:C.accent,fontWeight:700,fontSize:14,marginBottom:12}},"📋 Nouveau compte rendu de guidance"),
-        h("div",{style:{display:"flex",gap:8,marginBottom:12}},
-          ["visio","présentiel"].map(function(t){return h("button",{key:t,onClick:function(){setTypeG(t);},style:bs(typeG===t?C.accentDim:"transparent",typeG===t?C.accent:C.muted,{border:"1px solid "+(typeG===t?C.accent:C.border),fontSize:12})},t==="visio"?"🎥 Visio":"🤝 Présentiel");})),
-        !cr&&h("div",null,
-          h("div",{style:{color:C.muted,fontSize:12,marginBottom:6}},"Colle le transcript (Zoom, Otter, Word...) ou tes notes brutes :"),
-          h("textarea",{value:transcript,onChange:function(e){setTranscript(e.target.value);},placeholder:"Transcript ou notes brutes de la guidance...",rows:8,style:Object.assign({},inp(C),{resize:"vertical",marginBottom:10,lineHeight:1.6})}),
-          err&&h("div",{style:{color:C.red,fontSize:12,marginBottom:8}},err),
-          h("div",{style:{display:"flex",gap:8}},
-            h("button",{onClick:generer,disabled:load,style:bs(C.accent,"#fff",{flex:1,opacity:load?0.7:1})},load?"⏳ Génération en cours...":"✨ Générer le CR avec l'IA"),
-            h("button",{onClick:function(){setShow(false);setTranscript("");setCr(null);},style:bs(C.card,C.muted,{border:"1px solid "+C.border})},"Annuler"))),
-        cr&&h("div",null,
-          h("div",{style:{background:C.card,borderRadius:12,padding:16,marginBottom:12}},
-            h("div",{style:{color:C.accent,fontWeight:800,fontSize:15,marginBottom:16}},cr.titre),
-            Section("📌 POINTS ABORDÉS",cr.points_abordes,C.accent),
-            Section("✅ AVANCÉES CONSTATÉES",cr.avancees,C.green),
-            Section("⚠️ POINTS À TRAVAILLER",cr.points_a_travailler,C.amber),
-            Section("🔖 DÉCISIONS PRISES",cr.decisions,C.muted),
-            cr.prochaine_etape&&h("div",{style:{marginBottom:12}},
-              h("div",{style:{color:C.accent,fontSize:11,fontWeight:700,marginBottom:6}},"➡️ PROCHAINE ÉTAPE"),
-              h("div",{style:{color:C.text,fontSize:13}},cr.prochaine_etape)),
-            cr.message_esi&&h("div",{style:{background:C.accentDim,borderRadius:8,padding:12,border:"1px solid "+C.accent+"33"}},
-              h("div",{style:{color:C.accent,fontSize:11,fontWeight:700,marginBottom:6}},"💬 MESSAGE POUR L'ESI"),
-              h("div",{style:{color:C.text,fontSize:13,lineHeight:1.7,fontStyle:"italic"}},cr.message_esi))),
-          h("div",{style:{display:"flex",gap:8}},
-            h("button",{onClick:sauver,style:bs(C.green,"#fff",{flex:1})},"💾 Valider et partager à l'ESI"),
-            h("button",{onClick:function(){setCr(null);},style:bs(C.card,C.muted,{border:"1px solid "+C.border})},"↩ Regénérer"))))
-      :h("button",{onClick:function(){setShow(true);},style:Object.assign({},bs("transparent",C.accent),{border:"1.5px dashed "+C.accent+"44",width:"100%",padding:"12px 0",marginBottom:16})},"+ Nouveau compte rendu de guidance")),
-    crs.length===0&&h("div",{style:{color:C.subtle,fontSize:13,fontStyle:"italic",textAlign:"center",padding:"30px 0"}},"Aucun compte rendu pour l'instant."),
-    crs.map(function(n){
-      return h("div",{key:n.id,style:{background:C.panel,borderRadius:14,padding:16,marginBottom:14,border:"1px solid "+C.border}},
-        h("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}},
-          h("div",null,
-            h("div",{style:{color:C.accent,fontWeight:800,fontSize:14}},n.titre),
-            h("div",{style:{color:C.subtle,fontSize:11,marginTop:2}},(n.type==="visio"?"🎥 Visio":"🤝 Présentiel")+" · "+dfr(n.date))),
-          mode==="dir"&&h("button",{onClick:function(){suppr(n.id);},style:{background:"transparent",border:"none",color:C.subtle,cursor:"pointer",fontSize:16}},"✕")),
-        Section("📌 Points abordés",n.points_abordes,C.accent),
-        Section("✅ Avancées",n.avancees,C.green),
-        Section("⚠️ À travailler",n.points_a_travailler,C.amber),
-        Section("🔖 Décisions",n.decisions,C.muted),
-        n.prochaine_etape&&h("div",{style:{marginBottom:8}},
-          h("div",{style:{color:C.accent,fontSize:11,fontWeight:700,marginBottom:4}},"➡️ PROCHAINE ÉTAPE"),
-          h("div",{style:{color:C.text,fontSize:13}},n.prochaine_etape)),
-        n.message_esi&&h("div",{style:{background:C.accentDim,borderRadius:8,padding:10,border:"1px solid "+C.accent+"22",marginTop:8}},
-          h("div",{style:{color:C.accent,fontSize:11,fontWeight:700,marginBottom:4}},"💬 MESSAGE"),
-          h("div",{style:{color:C.text,fontSize:12,lineHeight:1.7,fontStyle:"italic"}},n.message_esi)));
-    }));
 }
 
 // ---- DEADLINES & ALERTES ----
@@ -890,76 +791,6 @@ function Accueil(props){
       h("button",{onClick:props.onEsi,style:{background:C.panel,color:C.text,border:"2px solid "+C.border,borderRadius:16,padding:"22px 40px",cursor:"pointer",fontSize:17,fontWeight:700}},"👩‍🎓 Espace ESI")));
 }
 
-function AnalyseIA(props){
-  var esi=props.esi,onRetour=props.onRetour;
-  var _useState=useState(""),txt=_useState[0],setTxt=_useState[1];
-  var _useState2=useState(false),load=_useState2[0],setLoad=_useState2[1];
-  var _useState3=useState(null),res=_useState3[0],setRes=_useState3[1];
-  var _useState4=useState(""),err=_useState4[0],setErr=_useState4[1];
-
-  function analyser(){
-    if(!txt.trim()){setErr("Colle d'abord le contenu du document.");return;}
-    setLoad(true);setErr("");setRes(null);
-    var prompt="Tu es formateur IFSI expert en mémoires infirmiers (IFSI Beaujon, AP-HP Paris).\n"+
-"Tu disposes de documents de référence qui représentent des travaux de qualité produits dans cet IFSI.\n\n"+
-"=== DOCUMENT DE RÉFÉRENCE 1 ===\n"+DOC_REF_MEMOIRE+"\n\n"+
-"=== DOCUMENT DE RÉFÉRENCE 2 ===\n"+DOC_REF_SOUTENANCE+"\n\n"+
-"=== DOCUMENT À ANALYSER ===\n"+
-"ESI : "+esi.prenom+"\n"+
-"Sujet : "+esi.sujet+"\n\n"+
-txt+"\n\n"+
-"=== CONSIGNE ===\n"+
-"Analyse ce document en te basant sur les critères de qualité des documents de référence ci-dessus.\n"+
-"Compare la structure, la rigueur méthodologique, les références théoriques, la qualité rédactionnelle.\n"+
-"Sois précis, bienveillant et constructif. Le commentaire_esi doit être rédigé directement à l'étudiant(e).\n\n"+
-"Réponds UNIQUEMENT en JSON valide sans markdown ni backticks :\n"+
-"{\"structure\":\"évaluation de la structure générale\",\"points_forts\":[\"point 1\",\"point 2\"],\"axes_amelioration\":[\"axe 1\",\"axe 2\"],\"commentaire_esi\":\"message à l'ESI\",\"avancement\":0}";
-    fetch("https://api.anthropic.com/v1/messages",{
-      method:"POST",
-      headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({model:"claude-sonnet-4-6",max_tokens:1500,messages:[{role:"user",content:prompt}]})
-    }).then(function(r){return r.json();}).then(function(data){
-      var t=(data.content||[]).filter(function(b){return b.type==="text";}).map(function(b){return b.text;}).join("");
-      setRes(JSON.parse(t.replace(/```json|```/g,"").trim()));
-      setLoad(false);
-    }).catch(function(){setErr("Erreur d'analyse. Réessaie.");setLoad(false);});
-  }
-
-  function sauvegarder(){
-    if(!res)return;
-    onRetour(Object.assign({id:uid(),date:new Date().toISOString()},res));
-    envoyerNotification(esi.prenom, res.avancement);
-    envoyerEmailESI(esi.id,
-      "Nouveau retour sur ton mémoire — "+res.avancement+"% d'avancement",
-      "Ton directeur Jain Loic vient de déposer un retour sur ton travail. Connecte-toi sur suivi-memoire.vercel.app pour le consulter dans l'onglet Retours."
-    );
-    setRes(null);setTxt("");
-  }
-
-  return h("div",null,
-    h("div",{style:{background:C.amberDim,border:"1px solid "+C.amber+"44",borderRadius:10,padding:"12px 16px",marginBottom:14,fontSize:13,color:C.amber,lineHeight:1.6}},
-      "💡 Colle le texte du document de l'ESI. L'IA va analyser la structure, identifier les points forts et générer un commentaire à transmettre à l'étudiant."),
-    h("textarea",{value:txt,onChange:function(e){setTxt(e.target.value);},placeholder:"Colle ici le contenu du document…",rows:8,style:Object.assign({},inp(C),{resize:"vertical",lineHeight:1.6,marginBottom:8})}),
-    err&&h("div",{style:{color:C.red,fontSize:12,marginBottom:8}},err),
-    h("button",{onClick:analyser,disabled:load,style:bs(load?C.subtle:C.accent,"#fff",{width:"100%",padding:"11px 0",opacity:load?0.7:1,fontSize:14})},load?"⏳ Analyse en cours…":"🔍 Analyser avec l'IA"),
-    res&&h("div",{style:{marginTop:18,background:C.card,borderRadius:12,padding:18}},
-      h("div",{style:{color:C.green,fontWeight:700,fontSize:14,marginBottom:14}},"✅ Analyse — Avancement estimé : "+res.avancement+"%"),
-      h("div",{style:{marginBottom:14}},
-        h("div",{style:{color:C.muted,fontSize:11,fontWeight:700,marginBottom:6}},"STRUCTURE"),
-        h("div",{style:{color:C.text,fontSize:13,lineHeight:1.7}},res.structure)),
-      h("div",{style:{display:"flex",gap:12,marginBottom:14,flexWrap:"wrap"}},
-        h("div",{style:{flex:1,minWidth:160,background:C.greenDim,borderRadius:10,padding:12}},
-          h("div",{style:{color:C.green,fontSize:11,fontWeight:700,marginBottom:8}},"✅ POINTS FORTS"),
-          (res.points_forts||[]).map(function(p,i){return h("div",{key:i,style:{color:C.text,fontSize:13,marginBottom:5}},"• "+p);})),
-        h("div",{style:{flex:1,minWidth:160,background:C.amberDim,borderRadius:10,padding:12}},
-          h("div",{style:{color:C.amber,fontSize:11,fontWeight:700,marginBottom:8}},"⚠️ À AMÉLIORER"),
-          (res.axes_amelioration||[]).map(function(a,i){return h("div",{key:i,style:{color:C.text,fontSize:13,marginBottom:5}},"• "+a);}))),
-      h("div",{style:{background:C.panel,borderRadius:10,padding:14,marginBottom:14,borderLeft:"3px solid "+C.accent}},
-        h("div",{style:{color:C.accent,fontSize:11,fontWeight:700,marginBottom:8}},"💬 COMMENTAIRE POUR L'ESI"),
-        h("div",{style:{color:C.text,fontSize:13,lineHeight:1.8,fontStyle:"italic"}},res.commentaire_esi)),
-      h("button",{onClick:sauvegarder,style:bs(C.green,"#fff",{width:"100%",padding:"10px 0",fontSize:14})},"💾 Sauvegarder et envoyer à l'ESI")));
-}
-
 // ---- JOURNAL DE BORD ----
 var ICONES_TYPE={etape:"✅",retour:"💬",doc:"📎",depot:"📤",rdv:"📅",validation:"✋",default:"📝"};
 
@@ -1203,7 +1034,7 @@ function Directeur(props){
   if(fbLoad)return h("div",{style:{minHeight:"100vh",background:C.bg,display:"flex",alignItems:"center",justifyContent:"center",color:C.muted,fontSize:15}},"⏳ Chargement des données...");
   if(!esi)return null;
   var p=pct(esi.etapes||{});
-  var tabs=[{id:"dashboard",l:"🏠 Vue globale"},{id:"suivi",l:"📊 Suivi"+(Object.values(esi.etapesEsi||{}).filter(function(v){return v==="demande";}).length>0?" ✋":"")},{id:"analyse",l:"🔍 Analyser"},{id:"retours",l:"💬 Retours"+(esi.retours&&esi.retours.length>0?" ("+esi.retours.length+")":"")},{id:"messages",l:"✉️ Messages"},{id:"docs",l:"📎 Docs"+(esi.documents&&esi.documents.length>0?" ("+esi.documents.length+")":"")},{id:"planning",l:"📅 Planning"},{id:"notesvisio",l:"📋 Comptes rendus"},{id:"deadlines",l:"⚠️ Deadlines"},{id:"refs",l:"📚 Références"},{id:"journal",l:"📒 Journal"},{id:"notes",l:"🗒 Notes perso"}];
+  var tabs=[{id:"dashboard",l:"🏠 Vue globale"},{id:"suivi",l:"📊 Suivi"+(Object.values(esi.etapesEsi||{}).filter(function(v){return v==="demande";}).length>0?" ✋":"")},{id:"retours",l:"💬 Retours"+(esi.retours&&esi.retours.length>0?" ("+esi.retours.length+")":"")},{id:"messages",l:"✉️ Messages"},{id:"docs",l:"📎 Docs"+(esi.documents&&esi.documents.length>0?" ("+esi.documents.length+")":"")},{id:"planning",l:"📅 Planning"},{id:"deadlines",l:"⚠️ Deadlines"},{id:"refs",l:"📚 Références"},{id:"journal",l:"📒 Journal"},{id:"notes",l:"🗒 Notes perso"}];
 
   return h("div",{style:{background:C.bg,minHeight:"100vh",display:"flex",flexDirection:"column",color:C.text}},
     h("div",{style:{background:C.panel,borderBottom:"1px solid "+C.border,padding:"12px 20px",display:"flex",alignItems:"center",gap:12,flexWrap:"wrap"}},
@@ -1282,7 +1113,6 @@ function Directeur(props){
                   (e.retours||[]).length===0&&!futur(e.prochainRdv)&&h("div",{style:{color:C.subtle,fontSize:11,fontStyle:"italic"}},"Aucun retour ni RDV planifié")),
                 h("div",{style:{display:"flex",gap:6,flexWrap:"wrap"}},
                   h("button",{onClick:function(ev){ev.stopPropagation();setSel(e.id);setTab("suivi");},style:bs(C.accentDim,C.accent,{fontSize:11,padding:"4px 10px",border:"1px solid "+C.accent+"44"})},"📊 Suivi"),
-                  h("button",{onClick:function(ev){ev.stopPropagation();setSel(e.id);setTab("analyse");},style:bs(C.card,C.muted,{fontSize:11,padding:"4px 10px",border:"1px solid "+C.border})},"🔍 Analyser"),
                   h("button",{onClick:function(ev){ev.stopPropagation();setSel(e.id);setTab("messages");},style:bs(C.card,C.muted,{fontSize:11,padding:"4px 10px",border:"1px solid "+C.border})},"✉️ Message")));
             })),
           h("div",{style:{marginTop:28}},
@@ -1293,17 +1123,7 @@ function Directeur(props){
       : h("div",{style:{display:"flex",flex:1,minHeight:0}},
           h("div",{style:{width:250,minWidth:250,background:C.panel,borderRight:"1px solid "+C.border,overflowY:"auto",padding:"12px 8px"}},
             esis.map(function(e){
-              var pp=pct(e.etapes);
-              return h("div",{key:e.id,onClick:function(){setSel(e.id);},style:{background:e.id===sel?C.accentDim:C.card,border:"1.5px solid "+(e.id===sel?C.accent:C.border),borderRadius:12,padding:"12px 14px",cursor:"pointer",marginBottom:8}},
-                h("div",{style:{display:"flex",justifyContent:"space-between",marginBottom:6}},
-                  h("span",{style:{color:C.text,fontWeight:700,fontSize:13}},e.prenom),
-                  h("span",{style:{color:pp===100?C.green:C.accent,fontWeight:800,fontSize:13}},pp+"%")),
-                h("div",{style:{background:C.border,borderRadius:99,height:4,overflow:"hidden"}},
-                  h("div",{style:{width:pp+"%",height:"100%",background:pp===100?C.green:C.accent,borderRadius:99}})),
-                h("div",{style:{display:"flex",gap:4,marginTop:6,flexWrap:"wrap"}},
-                  e.retours&&e.retours.length>0&&h("span",{style:{fontSize:10,color:C.accent,background:C.accentDim,borderRadius:99,padding:"1px 7px",fontWeight:700}},"💬 "+e.retours.length),
-                  futur(e.prochainRdv)&&h("span",{style:{fontSize:10,color:C.amber,background:C.amberDim,borderRadius:99,padding:"1px 7px",fontWeight:700}},"📅 RDV"),
-                  (Object.values(e.etapesEsi||{}).filter(function(v){return v==="demande";}).length>0)&&h("span",{style:{fontSize:10,color:C.amber,background:C.amberDim,borderRadius:99,padding:"1px 7px",fontWeight:700}},"✋ À valider")));
+              return h(CarteESISidebar,{key:e.id,e:e,sel:sel,setSel:setSel,C:C});
             })),
           h("div",{style:{flex:1,display:"flex",flexDirection:"column",overflow:"hidden"}},
             h("div",{style:{padding:"16px 24px 0",borderBottom:"1px solid "+C.border}},
@@ -1330,7 +1150,6 @@ function Directeur(props){
     tab!=="dashboard"&&h("div",{style:{display:"flex",flex:1,minHeight:0}},
       h("div",{style:{width:250,minWidth:250,background:C.panel,borderRight:"1px solid "+C.border,overflowY:"auto",padding:"12px 8px"}},
         esis.map(function(e){
-          var pp=pct(e.etapes);
           return h(CarteESISidebar,{key:e.id,e:e,sel:sel,setSel:setSel,C:C});
         })),
       h("div",{style:{flex:1,display:"flex",flexDirection:"column",overflow:"hidden"}},
@@ -1406,9 +1225,8 @@ function Directeur(props){
                   h("div",{style:{display:"flex",gap:4,flexWrap:"wrap"}},
                     STATUTS.map(function(st){return h("button",{key:st.id,onClick:function(){se(et.id,st.id);},style:Object.assign({},bs(cur===st.id?st.bg:"transparent",cur===st.id?st.color:C.subtle),{border:"1px solid "+(cur===st.id?st.color+"88":C.border),fontSize:11,padding:"3px 9px"})},st.label);})));})),
           ),
-          tab==="analyse"&&h(AnalyseIA,{esi:esi,onRetour:onR}),
           tab==="retours"&&h("div",null,
-            (esi.retours||[]).length===0?h("div",{style:{color:C.subtle,fontSize:13,fontStyle:"italic",padding:"20px 0"}},'Aucun retour. Va dans "Analyser" pour générer une analyse.')
+            (esi.retours||[]).length===0?h("div",{style:{color:C.subtle,fontSize:13,fontStyle:"italic",padding:"20px 0"}},"Aucun retour pour l'instant.")
             :(esi.retours||[]).slice().reverse().map(function(r){return h("div",{key:r.id,style:{background:C.card,borderRadius:12,padding:16,marginBottom:12}},
               h("div",{style:{display:"flex",justifyContent:"space-between",marginBottom:10}},
                 h("span",{style:{color:C.muted,fontSize:12}},dfr(r.date)),
@@ -1457,10 +1275,6 @@ function Directeur(props){
             h("h2",{style:{color:C.text,fontSize:16,fontWeight:800,marginBottom:4}},"Messages avec "+esi.prenom),
             h("div",{style:{color:C.muted,fontSize:13,marginBottom:20}},"Échanges directs avec l'ESI"),
             h(Messagerie,{esiId:esi.id,esiPrenom:esi.prenom,mode:"dir",c:C})),
-          tab==="notesvisio"&&h("div",null,
-            h("h2",{style:{color:C.text,fontSize:16,fontWeight:800,marginBottom:4}},"Notes de guidance — "+esi.prenom),
-            h("div",{style:{color:C.muted,fontSize:13,marginBottom:20}},"Visibles par l'ESI après la guidance"),
-            h(CompteRendu,{esiId:esi.id,esiPrenom:esi.prenom,mode:"dir",c:C})),
           tab==="planning"&&h("div",null,
             h("h2",{style:{color:C.text,fontSize:16,fontWeight:800,marginBottom:4}},"Planning des guidances"),
             h("div",{style:{color:C.muted,fontSize:13,marginBottom:20}},"Proposez des créneaux visibles par toutes les ESI"),
@@ -1581,7 +1395,7 @@ function EsiApp(props){
   var msgBadge=notifs.count>0?" 🔴":"";
   var retourBadge=notifs.countRetours>0?" 🔴":"";
   var docBadge=notifs.countDocs>0?" 🔴":"";
-  var tabs=[{id:"accueil",l:"🏠 Accueil"},{id:"etapes",l:"📊 Avancement"},{id:"position",l:"📈 Ma position"},{id:"retours",l:"💬 Retours"+retourBadge+((data.retours||[]).length>0?" ("+(data.retours||[]).length+")":"")},{id:"messages",l:"✉️ Messages"+msgBadge},{id:"docs",l:"📎 Docs"+docBadge+((data.documents||[]).length>0?" ("+(data.documents||[]).length+")":"")},{id:"planning",l:"📅 Planning"},{id:"notes",l:"📋 Comptes rendus"},{id:"deadlines",l:"⚠️ Deadlines"},{id:"methodo",l:"📚 Méthodo"},{id:"grilles",l:"📋 Grilles"},{id:"visio",l:"🎥 Visio"}];
+  var tabs=[{id:"accueil",l:"🏠 Accueil"},{id:"etapes",l:"📊 Avancement"},{id:"position",l:"📈 Ma position"},{id:"retours",l:"💬 Retours"+retourBadge+((data.retours||[]).length>0?" ("+(data.retours||[]).length+")":"")},{id:"messages",l:"✉️ Messages"+msgBadge},{id:"docs",l:"📎 Docs"+docBadge+((data.documents||[]).length>0?" ("+(data.documents||[]).length+")":"")},{id:"planning",l:"📅 Planning"},{id:"deadlines",l:"⚠️ Deadlines"},{id:"methodo",l:"📚 Méthodo"},{id:"grilles",l:"📋 Grilles"},{id:"visio",l:"🎥 Visio"}];
 
   return h("div",{style:{background:C2.bg,minHeight:"100vh",display:"flex",flexDirection:"column",color:C2.text}},
     h("div",{style:{background:C2.panel,borderBottom:"1px solid "+C2.border,padding:"12px 20px",display:"flex",alignItems:"center",gap:12,flexWrap:"wrap"}},
@@ -1745,10 +1559,6 @@ function EsiApp(props){
         h("h2",{style:{color:C2.text,fontSize:16,fontWeight:800,marginBottom:4}},"Messages avec ton directeur"),
         h("div",{style:{color:C2.muted,fontSize:13,marginBottom:20}},"Pose tes questions, reçois des réponses"),
         h(Messagerie,{esiId:esiId,esiPrenom:data.prenom,mode:"esi",c:C2})),
-      tab==="notes"&&h("div",null,
-        h("h2",{style:{color:C2.text,fontSize:16,fontWeight:800,marginBottom:4}},"Notes de guidance"),
-        h("div",{style:{color:C2.muted,fontSize:13,marginBottom:20}},"Retrouve ici les notes prises lors de vos guidances"),
-        h(CompteRendu,{esiId:esiId,esiPrenom:data.prenom,mode:"esi",c:C2})),
       tab==="deadlines"&&h("div",null,
         h("h2",{style:{color:C2.text,fontSize:16,fontWeight:800,marginBottom:4}},"Deadlines importantes"),
         h("div",{style:{color:C2.muted,fontSize:13,marginBottom:20}},"Dates clés de ta formation"),
