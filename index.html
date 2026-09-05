@@ -59,7 +59,6 @@ const STATUTS=[
 const ESI_DEFAUT=[
   {id:"e1",prenom:"BRUCTER Naïma",sujet:"Refus de soins / manque d'asepsie",pwd:"22323033",email:"bructernaima.esi@gmail.com"},
   {id:"e2",prenom:"IOJE Paula",sujet:"Levée de sédation patient intubé ventilé",pwd:"22422307",email:"ioje.paula@gmail.com"},
-  {id:"e3",prenom:"JEAN Lisa",sujet:"Soins palliatifs / fin de vie",pwd:"22420869",email:"jeanlisa972@gmail.com"},
   {id:"e4",prenom:"LECHOPIER-SIKORSKI Chloé",sujet:"Gestion des urgences / barrière linguistique",pwd:"22413962",email:"Chloe.lechopier.sikorski@gmail.com"},
   {id:"e5",prenom:"PECOUD Émilie",sujet:"Douleur du patient amputé",pwd:"22418729",email:"emilie.pecoud24@orange.fr"},
   {id:"e6",prenom:"RYST Lucie",sujet:"Communication patient / extubation",pwd:"71613697",email:"ryst.lucie@gmail.com"},
@@ -794,6 +793,18 @@ function Accueil(props){
 // ---- JOURNAL DE BORD ----
 var ICONES_TYPE={etape:"✅",retour:"💬",doc:"📎",depot:"📤",rdv:"📅",validation:"✋",default:"📝"};
 
+function iconeEtCouleurEntree(e,C){
+  if(e.type==="etape"){
+    if(e.msg&&e.msg.indexOf("en cours")!==-1)return{icone:"⏳",couleur:C.amber,bg:C.amberDim};
+    if(e.msg&&e.msg.indexOf("bloqu")!==-1)return{icone:"🚫",couleur:C.red,bg:C.redDim};
+    return{icone:"✅",couleur:C.green,bg:C.greenDim};
+  }
+  if(e.type==="retour")return{icone:ICONES_TYPE.retour,couleur:C.accent,bg:C.accentDim};
+  if(e.type==="rdv")return{icone:ICONES_TYPE.rdv,couleur:C.amber,bg:C.amberDim};
+  if(e.type==="depot")return{icone:ICONES_TYPE.depot,couleur:C.green,bg:C.greenDim};
+  return{icone:ICONES_TYPE[e.type]||ICONES_TYPE.default,couleur:C.muted,bg:C.card};
+}
+
 function useNotifsDir(esiId){
   var _s1=useState(0),countMsg=_s1[0],setCountMsg=_s1[1];
   var _s2=useState(0),countDepots=_s2[0],setCountDepots=_s2[1];
@@ -873,9 +884,8 @@ function JournalESI(props){
       ? h("div",{style:{color:C.subtle,fontSize:13,fontStyle:"italic",textAlign:"center",padding:"40px 0"}},"Aucun événement"+(filtre!=="tout"?" dans cette catégorie":"")+" pour l'instant.")
       : h("div",null,
           affich.map(function(e,i){
-            var icone=ICONES_TYPE[e.type]||ICONES_TYPE.default;
-            var couleur=e.type==="etape"?C.green:e.type==="retour"?C.accent:e.type==="rdv"?C.amber:e.type==="depot"?C.green:C.muted;
-            var bg=e.type==="etape"?C.greenDim:e.type==="retour"?C.accentDim:e.type==="rdv"?C.amberDim:C.card;
+            var ic=iconeEtCouleurEntree(e,C);
+            var icone=ic.icone,couleur=ic.couleur,bg=ic.bg;
             return h("div",{key:e.id||i,style:{display:"flex",gap:12,marginBottom:8,alignItems:"flex-start"}},
               h("div",{style:{display:"flex",flexDirection:"column",alignItems:"center",gap:0}},
                 h("div",{style:{width:32,height:32,borderRadius:"50%",background:bg,border:"2px solid "+couleur+"44",display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,flexShrink:0}},icone),
@@ -912,8 +922,8 @@ function JournalGlobal(props){
   if(allEntries.length===0)return h("div",{style:{color:C.subtle,fontSize:13,fontStyle:"italic",textAlign:"center",padding:"20px 0"}},"Aucune activité enregistrée pour l'instant.");
   return h("div",null,
     allEntries.map(function(e,i){
-      var icone=ICONES_TYPE[e.type]||ICONES_TYPE.default;
-      var couleur=e.type==="etape"?C.green:e.type==="retour"?C.accent:e.type==="rdv"?C.amber:e.type==="depot"?C.green:C.muted;
+      var ic=iconeEtCouleurEntree(e,C);
+      var icone=ic.icone,couleur=ic.couleur;
       return h("div",{key:e.id||i,style:{display:"flex",gap:10,marginBottom:8,alignItems:"flex-start"}},
         h("div",{style:{width:28,height:28,borderRadius:"50%",background:C.card,border:"1.5px solid "+couleur+"44",display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,flexShrink:0}},icone),
         h("div",{style:{flex:1,background:C.panel,borderRadius:8,padding:"8px 12px"}},
@@ -937,6 +947,9 @@ function Directeur(props){
   // Données Firebase
   var _s9=useState(initESI()),esis=_s9[0],setEsis=_s9[1];
   var _s10=useState(true),fbLoad=_s10[0],setFbLoad=_s10[1];
+  var _s11=useState(false),showBroadcast=_s11[0],setShowBroadcast=_s11[1];
+  var _s12=useState(""),broadcastTxt=_s12[0],setBroadcastTxt=_s12[1];
+  var _s13=useState(""),broadcastOk=_s13[0],setBroadcastOk=_s13[1];
 
   // Chargement Firebase - afficher immédiatement les données de base
   useEffect(function(){
@@ -995,6 +1008,17 @@ function Directeur(props){
     up(Object.assign({},esi,{visio:ev,prochainRdv:er,derniereMAJ:new Date().toISOString()}));
     if(er)log(esi.id,"rdv","📅 RDV planifié : "+rfr(er));
   }
+  function envoyerBroadcast(){
+    if(!broadcastTxt.trim())return;
+    var txt=broadcastTxt.trim();
+    esis.forEach(function(e){
+      var id=uid();
+      fbEcrire("messages/"+e.id+"/"+id,{id:id,texte:txt,auteur:"dir",date:new Date().toISOString(),lu:false});
+    });
+    setBroadcastTxt("");setShowBroadcast(false);
+    setBroadcastOk("Message envoyé à toutes les ESI ("+esis.length+") !");
+    setTimeout(function(){setBroadcastOk("");},4000);
+  }
   function ac(){if(!nc.trim()||!esi)return;up(Object.assign({},esi,{commentaires:(esi.commentaires||[]).concat([{id:uid(),texte:nc.trim(),date:new Date().toISOString()}]),derniereMAJ:new Date().toISOString()}));setNc("");}
   function dc(id){if(!esi)return;up(Object.assign({},esi,{commentaires:(esi.commentaires||[]).filter(function(c){return c.id!==id;})}));}
   function ad(){
@@ -1042,9 +1066,18 @@ function Directeur(props){
       h("div",{style:{flex:1}},
         h("div",{style:{fontWeight:800,fontSize:15}},"👨‍🏫 Espace Directeur · ",h("span",{style:{color:C.accent}},"Jain Loic")),
         h("div",{style:{color:C.muted,fontSize:12}},esis.length+" ESI · Promo 2024-27")),
+      h("button",{onClick:function(){setShowBroadcast(!showBroadcast);},style:bs(showBroadcast?C.accent:C.card,showBroadcast?"#fff":C.muted,{border:"1px solid "+(showBroadcast?C.accent:C.border),fontSize:12})},"📢 Message à tous"),
       h("button",{onClick:function(){setTab(tab==="dashboard"?"suivi":"dashboard");},
         style:bs(tab==="dashboard"?C.accent:C.card,tab==="dashboard"?"#fff":C.muted,{border:"1px solid "+(tab==="dashboard"?C.accent:C.border),fontSize:12})},
         tab==="dashboard"?"📋 Vue ESI →":"🏠 Vue globale")),
+
+    broadcastOk&&h("div",{style:{background:C.greenDim,border:"1px solid "+C.green+"44",borderRadius:0,padding:"10px 20px",color:C.green,fontWeight:700,fontSize:13}},broadcastOk),
+    showBroadcast&&h("div",{style:{background:C.panel,borderBottom:"1px solid "+C.border,padding:"16px 20px"}},
+      h("div",{style:{color:C.accent,fontWeight:700,fontSize:13,marginBottom:10}},"📢 Envoyer un message à toutes les ESI ("+esis.length+")"),
+      h("textarea",{value:broadcastTxt,onChange:function(e){setBroadcastTxt(e.target.value);},placeholder:"Ton message...",rows:3,style:Object.assign({},inp(C),{resize:"vertical",fontSize:14,padding:"10px 12px",lineHeight:1.5,marginBottom:10})}),
+      h("div",{style:{display:"flex",gap:8}},
+        h("button",{onClick:envoyerBroadcast,style:bs(C.accent,"#fff",{flex:1})},"Envoyer à toutes les ESI"),
+        h("button",{onClick:function(){setShowBroadcast(false);setBroadcastTxt("");},style:bs(C.card,C.muted,{border:"1px solid "+C.border})},"Annuler"))),
 
     tab==="dashboard"
       ? h("div",{style:{flex:1,overflowY:"auto",padding:"24px"}},
