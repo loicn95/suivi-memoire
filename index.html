@@ -67,7 +67,9 @@ const ESI_DEFAUT=[
 const EXEMPLES=[
   {id:"ex1",label:"Exemple de mémoire de fin d'études",icon:"📄",desc:"Mémoire d'Ingrid ALVES RODRIGUES — IFSI Beaujon, Promo 2019-2022, dirigé par Jain Loïc",url:"https://drive.google.com/file/d/10ovz_HTmnRHixk_QqCR2O8FQlLm6XK-X/view?usp=drive_link"},
   {id:"ex2",label:"Exemple de PPT de soutenance",icon:"🎤",desc:"Support de présentation de soutenance (anonymisé) — IFSI Beaujon",url:"https://drive.google.com/file/d/1kf6aOlV-6troUYsfuaeOiVBLyjnmHNH7/view?usp=drive_link"},
-  {id:"ex3",label:"Procédure officielle ARS Ile-de-France",icon:"📋",desc:"Procédure d'élaboration du mémoire (UE 3.4.S6 et 5.6.S6) — grilles d'évaluation, consignes de rédaction, bibliographie ISO 690, glossaire",url:"https://drive.google.com/file/d/1nVghTeBC5h93QyQ2NFl2KzQwj0YRflGl/view?usp=drive_link"}
+  {id:"ex3",label:"Procédure officielle ARS Ile-de-France",icon:"📋",desc:"Procédure d'élaboration du mémoire (UE 3.4.S6 et 5.6.S6) — grilles d'évaluation, consignes de rédaction, bibliographie ISO 690, glossaire",url:"https://drive.google.com/file/d/1nVghTeBC5h93QyQ2NFl2KzQwj0YRflGl/view?usp=drive_link"},
+  {id:"ex4",label:"Exemple de confrontation données empiriques / théoriques",icon:"⚖️",desc:"Illustration de la mise en relation entre le cadre théorique et les résultats de l'enquête exploratoire",url:"https://drive.google.com/file/d/1UumMVCYK8QbxKvTTgaLCCdEz50tKo3sS/view?usp=drive_link"},
+  {id:"ex5",label:"Exemple de note de recherche",icon:"📝",desc:"Exemple de note de recherche (UE 3.4.S6) — IFSI Beaujon",url:"https://docs.google.com/document/d/1qnF4nEk4JAMuQOr56T741nyh6TzcyqWU/edit?usp=drive_link&ouid=110874615456736059081&rtpof=true&sd=true"}
 ];
 const RESSOURCES=[
   {id:"r1",label:"Formuler une problématique",icon:"🎯",contenu:"La problématique est une question centrale.\n\n• Découler d'une situation clinique réelle\n• Formulée sous forme de question ouverte\n• Ni trop large, ni trop précise\n\nExemple : En quoi la relation soignant-soigné influence-t-elle la prise en charge de la douleur ?"},
@@ -1356,6 +1358,12 @@ function Directeur(props){
                 h("a",{href:EXEMPLES[2].url,target:"_blank",rel:"noopener noreferrer",style:{marginLeft:"auto",flexShrink:0,background:C.accentDim,color:C.accent,border:"1px solid "+C.accent+"44",borderRadius:8,padding:"6px 14px",fontSize:12,fontWeight:700,textDecoration:"none"}},"⬇ Ouvrir")),
               h("div",{style:{color:C.muted,fontSize:12,fontWeight:700,marginBottom:8,textTransform:"uppercase",letterSpacing:1}},"Contenu du document"),
               ["Finalité du mémoire et cadre du référentiel de formation","Modalités d'évaluation des UE 3.4.S6 et 5.6.S6","Rôle et missions du directeur de mémoire","Grilles d'évaluation officielles (note de recherche, mémoire écrit, soutenance orale)","Consignes de présentation et normes de rédaction (format, marges, citations)","Bibliographie norme ISO 690 complète avec exemples","Glossaire des termes de la recherche en soins infirmiers","Recommandations des pratiques documentaires"].map(function(p,i){return h("div",{key:i,style:{display:"flex",gap:8,marginBottom:5}},h("span",{style:{color:C.accent,marginTop:1,flexShrink:0}},"→"),h("span",{style:{color:C.text,fontSize:13,lineHeight:1.5}},p));}))),
+            [EXEMPLES[3],EXEMPLES[4]].map(function(ex){return h("div",{key:ex.id,style:{background:C.card,borderRadius:14,padding:20,marginTop:16,display:"flex",alignItems:"center",gap:14}},
+              h("span",{style:{fontSize:28}},ex.icon),
+              h("div",{style:{flex:1}},
+                h("div",{style:{color:C.text,fontWeight:800,fontSize:15}},ex.label),
+                h("div",{style:{color:C.muted,fontSize:12,marginTop:2}},ex.desc)),
+              h("a",{href:ex.url,target:"_blank",rel:"noopener noreferrer",style:{flexShrink:0,background:C.accentDim,color:C.accent,border:"1px solid "+C.accent+"44",borderRadius:8,padding:"6px 14px",fontSize:12,fontWeight:700,textDecoration:"none"}},"⬇ Ouvrir"));}),
           tab==="journal"&&h(JournalESI,{esiId:esi.id,esiPrenom:esi.prenom,c:C}),
           tab==="notes"&&h("div",null,
             h("div",{style:{display:"flex",gap:8,marginBottom:14}},
