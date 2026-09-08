@@ -62,7 +62,11 @@ const ESI_DEFAUT=[
   {id:"e4",prenom:"LECHOPIER-SIKORSKI Chloé",sujet:"Gestion des urgences / barrière linguistique",pwd:"22413962",email:"Chloe.lechopier.sikorski@gmail.com"},
   {id:"e5",prenom:"PECOUD Émilie",sujet:"Douleur du patient amputé",pwd:"22418729",email:"emilie.pecoud24@orange.fr"},
   {id:"e6",prenom:"RYST Lucie",sujet:"Communication patient / extubation",pwd:"71613697",email:"ryst.lucie@gmail.com"},
-  {id:"e7",prenom:"RANDAL Laétitia",sujet:"",pwd:"22319100",email:""}
+  {id:"e7",prenom:"RANDAL Laétitia",sujet:"",pwd:"22319100",email:"laetitiarandal@gmail.com"}
+];
+const EXEMPLES=[
+  {id:"ex1",label:"Exemple de mémoire de fin d'études",icon:"📄",desc:"Mémoire d'Ingrid ALVES RODRIGUES — IFSI Beaujon, Promo 2019-2022, dirigé par Jain Loïc",url:"https://drive.google.com/file/d/10ovz_HTmnRHixk_QqCR2O8FQlLm6XK-X/view?usp=drive_link"},
+  {id:"ex2",label:"Exemple de PPT de soutenance",icon:"🎤",desc:"Support de présentation de soutenance (anonymisé) — IFSI Beaujon",url:"https://drive.google.com/file/d/1kf6aOlV-6troUYsfuaeOiVBLyjnmHNH7/view?usp=drive_link"}
 ];
 const RESSOURCES=[
   {id:"r1",label:"Formuler une problématique",icon:"🎯",contenu:"La problématique est une question centrale.\n\n• Découler d'une situation clinique réelle\n• Formulée sous forme de question ouverte\n• Ni trop large, ni trop précise\n\nExemple : En quoi la relation soignant-soigné influence-t-elle la prise en charge de la douleur ?"},
@@ -326,6 +330,10 @@ function Messagerie(props){
     var id=uid();
     fbEcrire("messages/"+esiId+"/"+id,{id:id,texte:txt.trim(),auteur:mode,date:new Date().toISOString(),lu:false});
     if(mode==="esi") envoyerNotification(esiPrenom,0,"Message: "+txt.trim().substring(0,50));
+    if(mode==="dir") envoyerEmailESI(esiId,
+      "Nouveau message de ton directeur",
+      "Jain Loic t'a répondu : \""+txt.trim().substring(0,100)+(txt.trim().length>100?"…":"")+"\". Connecte-toi sur suivi-memoire.vercel.app pour lire et répondre."
+    );
     setTxt("");
   }
   return h("div",{style:{display:"flex",flexDirection:"column",height:"65vh",minHeight:400}},
@@ -1014,6 +1022,10 @@ function Directeur(props){
     esis.forEach(function(e){
       var id=uid();
       fbEcrire("messages/"+e.id+"/"+id,{id:id,texte:txt,auteur:"dir",date:new Date().toISOString(),lu:false});
+      envoyerEmailESI(e.id,
+        "Nouveau message de ton directeur",
+        "Jain Loic a envoyé un message à toutes les ESI : \""+txt.substring(0,100)+(txt.length>100?"…":"")+"\". Connecte-toi sur suivi-memoire.vercel.app pour lire et répondre."
+      );
     });
     setBroadcastTxt("");setShowBroadcast(false);
     setBroadcastOk("Message envoyé à toutes les ESI ("+esis.length+") !");
@@ -1609,6 +1621,14 @@ function EsiApp(props){
           h("div",{style:{color:C2.muted,fontSize:12,marginBottom:10}},"ALVES RODRIGUES Ingrid · Promo 2019-2022 · IFSI Beaujon · Directeur : Jain Loïc"),
           h("div",{style:{color:C2.muted,fontSize:12,lineHeight:1.7}},
             "Ce mémoire de 81 pages (33 de corps + annexes) suit la structure recommandée : situation de départ clinique → exploration empirique (5 entretiens semi-directifs) → cadre de référence (4 concepts) → discussion et hypothèse de recherche. Il te sert de modèle pour structurer ton propre travail. Ton directeur s'en inspire pour évaluer tes documents soumis.")),
+        h("div",{style:{marginBottom:20}},
+          h("div",{style:{color:C2.text,fontWeight:800,fontSize:14,marginBottom:10}},"📂 Exemples de travaux à télécharger"),
+          EXEMPLES.map(function(ex){return h("a",{key:ex.id,href:ex.url,target:"_blank",rel:"noopener noreferrer",style:{display:"flex",alignItems:"center",gap:14,background:C2.panel,borderRadius:12,padding:"14px 18px",marginBottom:10,textDecoration:"none",border:"1px solid "+C2.accent+"33"}},
+            h("span",{style:{fontSize:26}},ex.icon),
+            h("div",{style:{flex:1}},
+              h("div",{style:{color:C2.accent,fontWeight:700,fontSize:14}},ex.label),
+              h("div",{style:{color:C2.muted,fontSize:12,marginTop:2}},ex.desc)),
+            h("span",{style:{color:C2.accent,fontSize:20}},"⬇"));})),
         GUIDE_ARS.concat(RESSOURCES).map(function(r){return h("div",{key:r.id||r.titre,style:{background:C2.panel,borderRadius:14,marginBottom:12,overflow:"hidden"}},
           h("button",{onClick:function(){setRo((ro===r.id||ro===r.titre)?null:(r.id||r.titre));},style:{width:"100%",background:"transparent",border:"none",color:C2.text,padding:"16px 20px",cursor:"pointer",display:"flex",alignItems:"center",gap:12,textAlign:"left"}},
             h("span",{style:{fontSize:22}},r.icon),
