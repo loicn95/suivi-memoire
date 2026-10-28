@@ -798,7 +798,8 @@ function Accueil(props){
     h("p",{style:{color:C.muted,fontSize:15,marginBottom:40,textAlign:"center"}},"Directeur : ",h("strong",{style:{color:C.accent}},"Jain Loic")," · IFSI Beaujon · Promo 2024-27"),
     h("div",{style:{display:"flex",gap:20,flexWrap:"wrap",justifyContent:"center"}},
       h(BtnDir,{onDir:props.onDir}),
-      h("button",{onClick:props.onEsi,style:{background:C.panel,color:C.text,border:"2px solid "+C.border,borderRadius:16,padding:"22px 40px",cursor:"pointer",fontSize:17,fontWeight:700}},"👩‍🎓 Espace ESI")));
+      h("button",{onClick:props.onEsi,style:{background:C.panel,color:C.text,border:"2px solid "+C.border,borderRadius:16,padding:"22px 40px",cursor:"pointer",fontSize:17,fontWeight:700}},"👩‍🎓 Espace ESI")),
+    h("button",{onClick:props.onLibre,style:{marginTop:24,background:"transparent",color:C.accent,border:"1px dashed "+C.accent,borderRadius:12,padding:"12px 26px",cursor:"pointer",fontSize:14,fontWeight:700}},"📚 Ressources mémoire — accès libre (sans compte)"));
 }
 
 // ---- JOURNAL DE BORD ----
@@ -1688,11 +1689,54 @@ function EsiApp(props){
     )));
 }
 
+// ---- ESPACE RESSOURCES (accès libre, lecture seule) ----
+function RessourcesLibres(props){
+  var _a=useState("methodo"),tab=_a[0],setTab=_a[1];
+  var _b=useState(null),ro=_b[0],setRo=_b[1];
+  var tabs=[["methodo","📚 Méthodo"],["exemples","📂 Exemples"],["grilles","📋 Grilles"]];
+  function grille(titre,g){return h("div",{key:titre},
+    h("h3",{style:{color:C2.accent,fontSize:14,fontWeight:700,margin:"20px 0 12px"}},titre),
+    g.map(function(x,i){return h("div",{key:i,style:{background:C2.panel,borderRadius:12,padding:14,marginBottom:10}},
+      h("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}},
+        h("div",{style:{color:C2.text,fontWeight:700,fontSize:13,flex:1}},x.capacite),
+        h("span",{style:{color:C2.green,fontWeight:800,fontSize:13,background:C2.greenDim,borderRadius:99,padding:"2px 10px"}},"/"+x.points+" pts")),
+      h("div",null,x.criteres.map(function(c,j){return h("div",{key:j,style:{color:C2.muted,fontSize:12,marginBottom:3}},"• "+c);})));}));}
+  return h("div",{style:{minHeight:"100vh",background:C2.bg,color:C2.text}},
+    h("div",{style:{background:C2.panel,borderBottom:"1px solid "+C2.border,padding:"14px 18px",display:"flex",alignItems:"center",gap:12}},
+      h("button",{onClick:props.onBack,style:{background:C2.card,color:C2.muted,border:"1px solid "+C2.border,borderRadius:10,padding:"7px 14px",cursor:"pointer",fontSize:13}},"← Retour"),
+      h("div",{style:{fontWeight:800,fontSize:16}},"📚 Ressources mémoire — accès libre")),
+    h("div",{style:{display:"flex",gap:8,padding:"12px 18px",flexWrap:"wrap"}},
+      tabs.map(function(t){return h("button",{key:t[0],onClick:function(){setTab(t[0]);},style:{background:tab===t[0]?C2.accent:C2.card,color:tab===t[0]?"#fff":C2.muted,border:"none",borderRadius:99,padding:"8px 18px",cursor:"pointer",fontWeight:700,fontSize:13}},t[1]);})),
+    h("div",{style:{padding:"8px 18px 40px",maxWidth:800,margin:"0 auto"}},
+      tab==="methodo"&&h("div",null,
+        h("p",{style:{color:C2.muted,fontSize:13,marginBottom:16}},"Guide méthodologique — IFSI Beaujon / ARS Île-de-France"),
+        GUIDE_ARS.concat(RESSOURCES).map(function(r){var k=r.id||r.titre;return h("div",{key:k,style:{background:C2.panel,borderRadius:14,marginBottom:12,overflow:"hidden"}},
+          h("button",{onClick:function(){setRo(ro===k?null:k);},style:{width:"100%",background:"transparent",border:"none",color:C2.text,padding:"16px 20px",cursor:"pointer",display:"flex",alignItems:"center",gap:12,textAlign:"left"}},
+            h("span",{style:{fontSize:22}},r.icon||"📘"),
+            h("span",{style:{flex:1,fontWeight:700,fontSize:14}},r.label||r.titre),
+            h("span",{style:{color:C2.muted,fontSize:20,transform:ro===k?"rotate(90deg)":"none",display:"inline-block"}},"›")),
+          ro===k&&h("div",{style:{padding:"16px 20px 20px",color:C2.muted,fontSize:13,lineHeight:1.9,whiteSpace:"pre-line",borderTop:"1px solid "+C2.border}},r.contenu||""));})),
+      tab==="exemples"&&h("div",null,
+        h("p",{style:{color:C2.muted,fontSize:13,marginBottom:16}},"Exemples de travaux (mémoire, soutenance, note de recherche, procédure ARS)"),
+        EXEMPLES.map(function(ex){return h("a",{key:ex.id,href:ex.url,target:"_blank",rel:"noopener noreferrer",style:{display:"flex",alignItems:"center",gap:14,background:C2.panel,borderRadius:12,padding:"14px 18px",marginBottom:10,textDecoration:"none",border:"1px solid "+C2.border}},
+          h("span",{style:{fontSize:26}},ex.icon),
+          h("div",{style:{flex:1}},
+            h("div",{style:{color:C2.accent,fontWeight:700,fontSize:14}},ex.label),
+            h("div",{style:{color:C2.muted,fontSize:12,marginTop:2}},ex.desc)),
+          h("span",{style:{color:C2.accent,fontSize:20}},"⬇"));})),
+      tab==="grilles"&&h("div",null,
+        h("p",{style:{color:C2.muted,fontSize:13}},"Critères officiels IFSI Beaujon — ARS Île-de-France"),
+        grille("Grille UE 3.4.S6 - Note de recherche",GRILLE_NR),
+        grille("Grille UE 5.6.S6 - Mémoire écrit (/20)",GRILLE_MFE_ECRIT),
+        grille("Grille UE 5.6.S6 - Soutenance orale (/20)",GRILLE_MFE_ORAL))));
+}
+
 function Main(){
   var _s1=useState(null),mode=_s1[0],setMode=_s1[1];
   if(mode==="dir")return h(Directeur,{onBack:function(){setMode(null);}});
   if(mode==="esi")return h(EsiApp,{onBack:function(){setMode(null);}});
-  return h(Accueil,{onDir:function(){setMode("dir");},onEsi:function(){setMode("esi");}});
+  if(mode==="libre")return h(RessourcesLibres,{onBack:function(){setMode(null);}});
+  return h(Accueil,{onDir:function(){setMode("dir");},onEsi:function(){setMode("esi");},onLibre:function(){setMode("libre");}});
 }
 
 ReactDOM.createRoot(document.getElementById("root")).render(h(Main,null));
