@@ -11,14 +11,52 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:Inter,system-ui,sans-serif;background:#0D1117}
-input,textarea,button{font-family:inherit}
-/* Mobile */
-@media(max-width:600px){
-  .tabs-scroll{display:flex;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;gap:4px;padding-bottom:2px}
-  .tabs-scroll::-webkit-scrollbar{display:none}
-  .tab-btn{white-space:nowrap;flex-shrink:0;font-size:12px!important;padding:6px 10px!important}
+html{-webkit-text-size-adjust:100%}
+body{font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:#0D1117;-webkit-font-smoothing:antialiased}
+input,textarea,button,select{font-family:inherit}
+button{transition:filter .15s,background .15s,border-color .15s;-webkit-tap-highlight-color:transparent}
+button:hover:not(:disabled){filter:brightness(1.12)}
+button:active:not(:disabled){filter:brightness(.94)}
+a{transition:filter .15s}
+a:hover{filter:brightness(1.12)}
+button:focus-visible,a:focus-visible{outline:2px solid #58A6FF;outline-offset:2px}
+input:focus,textarea:focus,select:focus{border-color:#58A6FF!important}
+*{scrollbar-width:thin;scrollbar-color:#3a424d transparent}
+::-webkit-scrollbar{width:8px;height:8px}
+::-webkit-scrollbar-thumb{background:#3a424d;border-radius:99px}
+.tabs-scroll{scrollbar-width:none}
+.tabs-scroll::-webkit-scrollbar{display:none}
+.tab-btn{white-space:nowrap}
+.clickable{transition:border-color .15s,transform .15s}
+.clickable:hover{border-color:#58A6FF!important}
+/* Espace directeur : barre latérale et contenu défilent séparément sur grand écran */
+.dir-root{height:100vh;height:100dvh}
+.print-only{display:none}
+@media print{
+  @page{margin:16mm}
+  html,body{background:#fff!important}
+  .dir-root{height:auto!important;min-height:0!important;display:block!important;background:#fff!important}
+  .dir-root>*:not(.print-only){display:none!important}
+  body[data-print="fiche"] .print-fiche,body:not([data-print]) .print-fiche,
+  body[data-print="nr"] .print-nr,body[data-print="ecrit"] .print-ecrit,body[data-print="oral"] .print-oral{display:block!important}
+}
+/* Mobile et petites tablettes */
+@media(max-width:760px){
+  .dir-root{height:auto!important;min-height:100dvh}
+  .dir-layout{flex-direction:column!important}
+  .dir-sidebar{width:auto!important;min-width:0!important;display:flex;gap:8px;overflow-x:auto;overflow-y:hidden!important;border-right:none!important;border-bottom:1px solid #30363D;padding:10px 12px!important;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+  .dir-sidebar::-webkit-scrollbar{display:none}
+  .esi-card{flex:0 0 200px;margin-bottom:0!important}
+  .dir-main{overflow:visible!important}
+  .dir-head{padding:12px 14px 0!important}
+  .dir-content,.page-pad{padding:16px 14px!important;overflow:visible!important}
+  .app-header{padding:10px 14px!important;gap:8px!important}
+  .app-header>:nth-child(2){order:-1;flex:1 1 100%!important}
+  .tabs-scroll{flex-wrap:nowrap!important;overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .tab-btn{flex-shrink:0}
   .card-grid{grid-template-columns:1fr!important}
+  .kanban{grid-template-columns:repeat(4,78vw)!important;overflow-x:auto;padding-bottom:8px;-webkit-overflow-scrolling:touch}
+  input,textarea,select{font-size:16px!important}
   .hide-mobile{display:none!important}
 }
 </style>
@@ -26,7 +64,7 @@ input,textarea,button{font-family:inherit}
 <body>
 <div id="root"></div>
 <script>
-const {useState,useEffect,useCallback}=React;
+const {useState,useEffect,useCallback,useRef}=React;
 
 const C={bg:"#0D1117",panel:"#161B22",card:"#21262D",cardHover:"#2D333B",border:"#30363D",accent:"#58A6FF",accentDim:"#1F3A5F",green:"#3FB950",greenDim:"#1A3A2A",amber:"#D29922",amberDim:"#3A2A0A",red:"#F85149",redDim:"#3A1A1A",text:"#E6EDF3",muted:"#8B949E",subtle:"#484F58"};
 const C2={bg:"#0F172A",panel:"#1E293B",card:"#273449",border:"#334155",accent:"#6366F1",accentDim:"#1e1b4b",green:"#22C55E",greenDim:"#14532d",amber:"#F59E0B",amberDim:"#451a03",red:"#EF4444",redDim:"#450a0a",text:"#F1F5F9",muted:"#94A3B8",subtle:"#475569"};
@@ -56,7 +94,9 @@ const STATUTS=[
   {id:"fait",label:"Fait",color:"#3FB950",bg:"#1A3A2A"},
   {id:"bloque",label:"Bloqué",color:"#F85149",bg:"#3A1A1A"}
 ];
-const ESI_DEFAUT=[
+var PROMO="2024-27";
+// Liste de départ ; remplacée par la configuration Firebase (chemin « config ») dès qu'elle existe.
+var ESI_DEFAUT=[
   {id:"e1",prenom:"BRUCTER Naïma",sujet:"Refus de soins / manque d'asepsie",pwd:"22323033",email:"bructernaima.esi@gmail.com"},
   {id:"e2",prenom:"IOJE Paula",sujet:"Levée de sédation patient intubé ventilé",pwd:"22422307",email:"ioje.paula@gmail.com"},
   {id:"e4",prenom:"LECHOPIER-SIKORSKI Chloé",sujet:"Gestion des urgences / barrière linguistique",pwd:"22413962",email:"Chloe.lechopier.sikorski@gmail.com"},
@@ -74,8 +114,8 @@ const EXEMPLES=[
 const RESSOURCES=[
   {id:"r1",label:"Formuler une problématique",icon:"🎯",contenu:"La problématique est une question centrale.\n\n• Découler d'une situation clinique réelle\n• Formulée sous forme de question ouverte\n• Ni trop large, ni trop précise\n\nExemple : En quoi la relation soignant-soigné influence-t-elle la prise en charge de la douleur ?"},
   {id:"r2",label:"Construire un plan",icon:"📋",contenu:"1. Introduction\n   - Situation d'appel\n   - Question de départ\n\n2. Cadre conceptuel\n   - Définitions des concepts\n   - Appui littérature\n\n3. Partie terrain\n   - Confrontation théorie/pratique\n   - Problématique + hypothèses\n\n4. Conclusion"},
-  {id:"r3",label:"Faire une bibliographie",icon:"📚",contenu:"Norme APA :\n\nLivre : Auteur, A. (Année). Titre. Éditeur.\nArticle : Auteur, A. (Année). Titre. Revue, vol(n), pages.\nSite : Auteur. (Année). Titre. Consulté le JJ/MM/AAAA sur https://...\n\nMinimum 10 références."},
-  {id:"r4",label:"Préparer la soutenance",icon:"🎓",contenu:"• Durée : 10 à 15 minutes\n• Structure : sujet - cheminement - résultats - apports\n• Questions fréquentes : Pourquoi ce sujet ? Comment as-tu choisi tes concepts ?\n• Entraîne-toi à voix haute plusieurs fois"}
+  {id:"r3",label:"Faire une bibliographie",icon:"📚",contenu:"Norme ISO 690 :\n\nLivre : AUTEUR, Prénom. Titre en italique. Ville : Éditeur, année.\nArticle : AUTEUR, Prénom. Titre de l'article. Titre de la revue. Année, vol., n°, pages.\nSite : AUTEUR. Titre [en ligne]. [Consulté le JJ/MM/AAAA]. Disponible : URL\n\nMinimum 10 références, de préférence de moins de 10 ans."},
+  {id:"r4",label:"Préparer la soutenance",icon:"🎓",contenu:"• Durée : 10 minutes d'exposé, puis échanges avec le jury\n• Structure : sujet - cheminement - résultats - apports\n• Questions fréquentes : Pourquoi ce sujet ? Comment as-tu choisi tes concepts ?\n• Entraîne-toi à voix haute plusieurs fois"}
 ];
 
 const ZOOM_LINK="https://u-paris.zoom.us/j/8813251138?pwd=WFpwcHJQZlVJSkpnQXNHVmp3TkxHUT09";
@@ -107,7 +147,7 @@ const GRILLE_MFE_ORAL=[
   {capacite:"S'exprimer oralement",criteres:["Vocabulaire précis et professionnel","Elocution claire et aisée"],points:3},
 ];
 const GUIDE_ARS=[
-  {titre:"Finalité du mémoire",contenu:"Le mémoire contribue aux compétences 7 et 8 :\n• Analyser la qualité des soins et ameliorer sa pratique\n• Rechercher et traiter des données professionnelles et scientifiques\n\nIl s'agit d'un travail réflexif, méthodique et rigoureux à partir d'une situation clinique vécue."},
+  {titre:"Finalité du mémoire",contenu:"Le mémoire contribue aux compétences 7 et 8 :\n• Analyser la qualité des soins et améliorer sa pratique\n• Rechercher et traiter des données professionnelles et scientifiques\n\nIl s'agit d'un travail réflexif, méthodique et rigoureux à partir d'une situation clinique vécue."},
   {titre:"La note de recherche (UE 3.4.S6 - 2 ECTS)",contenu:"4 à 5 pages. Doit comporter :\n• Description de la situation d'appel\n• Exploration de la situation et intérêt professionnel\n• Question de départ\n• Notions et/ou concepts choisis\n• Recension des écrits\n• Références théoriques\n• Méthode d'enquête envisagée\n\nNote sur 20 points."},
   {titre:"Le mémoire de fin d'études (UE 5.6.S6 - 8 ECTS)",contenu:"25 à 30 pages hors annexes. Doit comporter :\n• Description de la situation d'appel\n• Exploration de la situation et intérêt professionnel\n• Question de départ\n• La problématique\n• Le cadre de références\n• L'enquête exploratoire\n• La question de recherche (et hypothèse si pertinent)\n• La bibliographie\n\nNote écrit /20 + soutenance /20 = total /40 ramené à /20."},
   {titre:"La soutenance orale",contenu:"• L'étudiant présente son travail pendant 10 minutes\n• Echanges avec le jury : 45 minutes maximum\n• Jury : directeur de mémoire + personne qualifiée extérieure\n• Les deux évaluateurs s'accordent avant la soutenance sur la note de l'écrit\n• La soutenance peut être publique\n• Date communiquée au moins 1 semaine avant"},
@@ -297,6 +337,39 @@ function fbChargerToutesESI(cb){
   });
 }
 function uid(){return Math.random().toString(36).slice(2,9);}
+// ---- CONFIGURATION (liste des ESI, promotion) ----
+function appliquerConfig(cfg){
+  if(!cfg||!cfg.init)return false;
+  ESI_DEFAUT=Object.values(cfg.esis||{}).filter(function(e){return e&&e.id&&e.prenom;})
+    .sort(function(a,b){return (a.ordre||0)-(b.ordre||0);})
+    .map(function(e){return {id:e.id,prenom:e.prenom,sujet:e.sujet||"",pwd:String(e.pwd||""),email:e.email||""};});
+  if(cfg.promo)PROMO=cfg.promo;
+  return true;
+}
+try{appliquerConfig(JSON.parse(localStorage.getItem("sm-config")||"null"));}catch(e){}
+// ---- ÉVALUATION (grilles officielles) ----
+function grillesEval(){return [
+  {id:"nr",titre:"UE 3.4.S6 — Note de recherche",g:GRILLE_NR},
+  {id:"ecrit",titre:"UE 5.6.S6 — Mémoire écrit",g:GRILLE_MFE_ECRIT},
+  {id:"oral",titre:"UE 5.6.S6 — Soutenance orale",g:GRILLE_MFE_ORAL}];}
+function totalGrille(ev,gr){
+  var n=(ev&&ev[gr.id])||{},s=0,nb=0;
+  gr.g.forEach(function(x,i){var v=n["c"+i];if(typeof v==="number"){s+=v;nb++;}});
+  return {somme:s,nb:nb,complet:nb===gr.g.length,max:gr.g.reduce(function(a,x){return a+x.points;},0)};
+}
+function fmtNote(n){return String(Math.round(n*100)/100).replace(".",",");}
+function useEvaluation(esiId){
+  var _s=useState({}),ev=_s[0],setEv=_s[1];
+  useEffect(function(){
+    setEv({});
+    if(!esiId)return;
+    var r=fbRef("evaluations/"+esiId);
+    if(!r)return;
+    r.on("value",function(snap){setEv(snap.val()||{});});
+    return function(){r.off();};
+  },[esiId]);
+  return ev;
+}
 function pctNR(etapes){if(!etapes)return 0;return Math.round(ETAPES_NR.filter(function(e){return etapes[e.id]==="fait";}).length/ETAPES_NR.length*100);}
 function pctMFE(etapes){if(!etapes)return 0;return Math.round(ETAPES_MFE.filter(function(e){return etapes[e.id]==="fait";}).length/ETAPES_MFE.length*100);}
 function pct(etapes){return Math.round((pctNR(etapes)+pctMFE(etapes))/2);}
@@ -316,12 +389,324 @@ function Barre(props){
     h("div",{style:{width:v+"%",height:"100%",background:col,borderRadius:99,transition:"width .4s"}}));
 }
 
+// ---- SESSION MÉMORISÉE ----
+function lireSession(){try{return JSON.parse(localStorage.getItem("sm-session")||"null")||{};}catch(e){return {};}}
+function ecrireSession(s){try{if(s)localStorage.setItem("sm-session",JSON.stringify(s));else localStorage.removeItem("sm-session");}catch(e){}}
+
+// ---- BOUTON DE SUPPRESSION AVEC CONFIRMATION (2 clics) ----
+function BtnSuppr(props){
+  var _s=useState(false),armed=_s[0],setArmed=_s[1];
+  useEffect(function(){
+    if(!armed)return;
+    var t=setTimeout(function(){setArmed(false);},3000);
+    return function(){clearTimeout(t);};
+  },[armed]);
+  var c=props.c||C;
+  if(armed)return h("button",{onClick:function(ev){ev.stopPropagation();setArmed(false);props.onConfirm();},title:"Cliquer à nouveau pour confirmer",style:bs(c.red,"#fff",props.full?{width:"100%",marginTop:8}:{fontSize:11,padding:"5px 10px",whiteSpace:"nowrap"})},"Confirmer la suppression ?");
+  return h("button",{onClick:function(ev){ev.stopPropagation();setArmed(true);},title:"Supprimer",style:props.style},props.children);
+}
+
+// ---- KANBAN D'UNE ESI ----
+function Kanban(props){
+  var esi=props.esi,C=props.c,onMove=props.onMove;
+  var _s=useState(null),over=_s[0],setOver=_s[1];
+  var et=esi.etapes||{},dem=esi.etapesEsi||{};
+  var fl={background:"transparent",border:"1px solid "+C.border,color:C.muted,borderRadius:6,width:28,height:26,cursor:"pointer",fontSize:15,lineHeight:1,padding:0};
+  return h("div",null,
+    h("h2",{style:{color:C.text,fontSize:16,fontWeight:800,marginBottom:4}},"Tableau Kanban — "+esi.prenom),
+    h("div",{style:{color:C.muted,fontSize:13,marginBottom:16}},"Glisse une carte d'une colonne à l'autre, ou utilise les flèches ‹ › sur mobile."),
+    h("div",{className:"kanban",style:{display:"grid",gridTemplateColumns:"repeat(4,minmax(0,1fr))",gap:12,alignItems:"start"}},
+      STATUTS.map(function(st,si){
+        var cartes=ETAPES.filter(function(e){return (et[e.id]||"todo")===st.id;});
+        return h("div",{key:st.id,
+          onDragOver:function(ev){ev.preventDefault();if(over!==st.id)setOver(st.id);},
+          onDrop:function(ev){ev.preventDefault();var id=ev.dataTransfer.getData("text/plain");setOver(null);if(id&&(et[id]||"todo")!==st.id)onMove(id,st.id);},
+          style:{background:C.panel,borderRadius:12,padding:10,border:over===st.id?"1.5px dashed "+C.accent:"1.5px solid "+C.border,minHeight:150}},
+          h("div",{style:{display:"flex",alignItems:"center",gap:8,marginBottom:10}},
+            h("span",{style:{width:10,height:10,borderRadius:99,background:st.color,flexShrink:0}}),
+            h("span",{style:{color:C.text,fontWeight:800,fontSize:13,flex:1}},st.label),
+            h("span",{style:{color:C.muted,fontSize:11,fontWeight:700,background:C.card,borderRadius:99,padding:"1px 8px"}},cartes.length)),
+          cartes.length===0&&h("div",{style:{color:C.subtle,fontSize:12,fontStyle:"italic",textAlign:"center",padding:"18px 0"}},"Aucune étape"),
+          cartes.map(function(e){
+            var isNR=e.id.indexOf("nr_")===0;
+            return h("div",{key:e.id,draggable:true,
+              onDragStart:function(ev){ev.dataTransfer.setData("text/plain",e.id);ev.dataTransfer.effectAllowed="move";},
+              onDragEnd:function(){setOver(null);},
+              style:{background:C.card,border:"1px solid "+C.border,borderLeft:"3px solid "+st.color,borderRadius:8,padding:"8px 10px",marginBottom:8,cursor:"grab"}},
+              h("div",{style:{color:C.text,fontSize:12,fontWeight:600,lineHeight:1.4}},e.icon+" "+e.label),
+              h("div",{style:{display:"flex",alignItems:"center",gap:6,marginTop:8}},
+                h("span",{style:{fontSize:10,fontWeight:700,color:isNR?C.accent:C.green,background:isNR?C.accentDim:C.greenDim,borderRadius:99,padding:"1px 7px"}},isNR?"NR":"MFE"),
+                dem[e.id]==="demande"&&st.id!=="fait"&&h("span",{style:{fontSize:10,fontWeight:700,color:C.amber,background:C.amberDim,borderRadius:99,padding:"1px 7px"}},"✋ demandé"),
+                h("span",{style:{flex:1}}),
+                si>0&&h("button",{onClick:function(){onMove(e.id,STATUTS[si-1].id);},title:"Vers « "+STATUTS[si-1].label+" »",style:fl},"‹"),
+                si<STATUTS.length-1&&h("button",{onClick:function(){onMove(e.id,STATUTS[si+1].id);},title:"Vers « "+STATUTS[si+1].label+" »",style:fl},"›")));
+          }));
+      })));
+}
+
+// ---- TABLEAU DU GROUPE (vue globale) ----
+function TableauGroupe(props){
+  var esis=props.esis,C=props.c,onOpen=props.onOpen;
+  var cols=[{id:"start",l:"À démarrer",color:C.subtle},{id:"nr",l:"Note de recherche",color:C.accent},{id:"mfe",l:"Mémoire",color:C.amber},{id:"fin",l:"Terminé",color:C.green}];
+  function phase(e){
+    var et=e.etapes||{};
+    var demarre=ETAPES.some(function(x){return et[x.id]&&et[x.id]!=="todo";});
+    if(!demarre)return"start";
+    if(pctNR(et)<100)return"nr";
+    if(pctMFE(et)<100)return"mfe";
+    return"fin";
+  }
+  return h("div",{className:"kanban",style:{display:"grid",gridTemplateColumns:"repeat(4,minmax(0,1fr))",gap:12,alignItems:"start"}},
+    cols.map(function(col){
+      var membres=esis.filter(function(e){return phase(e)===col.id;});
+      return h("div",{key:col.id,style:{background:C.panel,borderRadius:12,padding:10,border:"1.5px solid "+C.border,minHeight:120}},
+        h("div",{style:{display:"flex",alignItems:"center",gap:8,marginBottom:10}},
+          h("span",{style:{width:10,height:10,borderRadius:99,background:col.color,flexShrink:0}}),
+          h("span",{style:{color:C.text,fontWeight:800,fontSize:13,flex:1}},col.l),
+          h("span",{style:{color:C.muted,fontSize:11,fontWeight:700,background:C.card,borderRadius:99,padding:"1px 8px"}},membres.length)),
+        membres.length===0&&h("div",{style:{color:C.subtle,fontSize:12,fontStyle:"italic",textAlign:"center",padding:"14px 0"}},"—"),
+        membres.map(function(e){
+          var et=e.etapes||{};
+          var cur=ETAPES.find(function(x){return et[x.id]!=="fait";});
+          var bloque=ETAPES.some(function(x){return et[x.id]==="bloque";});
+          return h("div",{key:e.id,className:"clickable",onClick:function(){onOpen(e.id);},style:{background:C.card,border:"1px solid "+C.border,borderLeft:"3px solid "+col.color,borderRadius:8,padding:"8px 10px",marginBottom:8,cursor:"pointer"}},
+            h("div",{style:{display:"flex",justifyContent:"space-between",gap:8}},
+              h("span",{style:{color:C.text,fontSize:12,fontWeight:700}},e.prenom),
+              h("span",{style:{color:col.color,fontSize:12,fontWeight:800}},pct(et)+"%")),
+            cur&&h("div",{style:{color:C.muted,fontSize:11,marginTop:4,lineHeight:1.4}},cur.icon+" "+cur.label),
+            bloque&&h("span",{style:{display:"inline-block",marginTop:6,fontSize:10,fontWeight:700,color:C.red,background:C.redDim,borderRadius:99,padding:"1px 7px"}},"🚫 Étape bloquée"));
+        }));
+    }));
+}
+
+// ---- FICHE DE SYNTHÈSE IMPRIMABLE ----
+function FicheSynthese(props){
+  var esi=props.esi;
+  if(!esi)return null;
+  var et=esi.etapes||{};
+  var td={border:"1px solid #999",padding:"5px 8px",fontSize:12,color:"#111",textAlign:"left"};
+  var h3={fontSize:14,margin:"18px 0 8px",color:"#111",borderBottom:"1px solid #999",paddingBottom:4};
+  function table(liste){
+    return h("table",{style:{width:"100%",borderCollapse:"collapse"}},
+      h("tbody",null,liste.map(function(e){
+        var s=STATUTS.find(function(x){return x.id===(et[e.id]||"todo");})||STATUTS[0];
+        return h("tr",{key:e.id},h("td",{style:td},e.label),h("td",{style:Object.assign({},td,{width:110,fontWeight:700})},s.label));
+      })));
+  }
+  var retours=(esi.retours||[]).slice().reverse();
+  var depots=esi.documentsEsi||[];
+  var ev=props.ev||{};
+  var tot=grillesEval().map(function(gr){return {gr:gr,t:totalGrille(ev,gr)};});
+  var aNotes=tot.some(function(x){return x.t.nb>0;});
+  return h("div",{className:"print-only print-fiche",style:{fontFamily:"Georgia,'Times New Roman',serif",color:"#111",background:"#fff"}},
+    h("h1",{style:{fontSize:20,marginBottom:4,color:"#111"}},"Fiche de synthèse — Suivi de mémoire"),
+    h("div",{style:{fontSize:12,color:"#444",marginBottom:16}},"IFSI Beaujon · Promo "+PROMO+" · Directeur de mémoire : Jain Loïc · Éditée le "+new Date().toLocaleDateString("fr-FR",{day:"numeric",month:"long",year:"numeric"})),
+    h("div",{style:{fontSize:16,fontWeight:700,color:"#111"}},esi.prenom),
+    h("div",{style:{fontSize:13,fontStyle:"italic",color:"#111",marginBottom:10}},"Sujet : "+(esi.sujet||"non renseigné")),
+    h("div",{style:{fontSize:13,color:"#111"}},"Avancement global : "+pct(et)+" % — Note de recherche : "+pctNR(et)+" % — Mémoire : "+pctMFE(et)+" %"),
+    futur(esi.prochainRdv)&&h("div",{style:{fontSize:13,color:"#111",marginTop:4}},"Prochain rendez-vous : "+rfr(esi.prochainRdv)),
+    h("h3",{style:h3},"UE 3.4.S6 — Note de recherche"),table(ETAPES_NR),
+    h("h3",{style:h3},"UE 5.6.S6 — Mémoire de fin d'études"),table(ETAPES_MFE),
+    aNotes&&h("h3",{style:h3},"Évaluation"),
+    aNotes&&h("table",{style:{width:"100%",borderCollapse:"collapse"}},h("tbody",null,
+      tot.filter(function(x){return x.t.nb>0;}).map(function(x){return h("tr",{key:x.gr.id},
+        h("td",{style:td},x.gr.titre+(x.t.complet?"":" (notation incomplète)")),
+        h("td",{style:Object.assign({},td,{width:110,fontWeight:700})},fmtNote(x.t.somme)+" / "+x.t.max));}),
+      (tot[1].t.nb+tot[2].t.nb)>0&&h("tr",null,
+        h("td",{style:Object.assign({},td,{fontWeight:700})},"UE 5.6.S6 — écrit + soutenance, ramené sur 20"),
+        h("td",{style:Object.assign({},td,{width:110,fontWeight:700})},fmtNote((tot[1].t.somme+tot[2].t.somme)/2)+" / 20")))),
+    aNotes&&ev.appreciation&&h("div",{style:{fontSize:12,color:"#111",lineHeight:1.5,whiteSpace:"pre-wrap",marginTop:6}},"Appréciation : "+ev.appreciation),
+    h("h3",{style:h3},"Retours du directeur ("+retours.length+")"),
+    retours.length===0&&h("div",{style:{fontSize:12,color:"#444",fontStyle:"italic"}},"Aucun retour."),
+    retours.map(function(r){return h("div",{key:r.id,style:{marginBottom:12,breakInside:"avoid"}},
+      h("div",{style:{fontSize:12,fontWeight:700,color:"#111"}},dfr(r.date)+" — avancement estimé : "+r.avancement+" %"),
+      h("div",{style:{fontSize:12,color:"#111",lineHeight:1.5,whiteSpace:"pre-wrap",margin:"3px 0"}},r.commentaire_esi),
+      (r.points_forts||[]).length>0&&h("div",{style:{fontSize:12,color:"#111"}},"Points forts : "+(r.points_forts||[]).join(" ; ")),
+      (r.axes_amelioration||[]).length>0&&h("div",{style:{fontSize:12,color:"#111"}},"À améliorer : "+(r.axes_amelioration||[]).join(" ; ")));}),
+    depots.length>0&&h("h3",{style:h3},"Documents déposés par l'ESI ("+depots.length+")"),
+    depots.map(function(d){return h("div",{key:d.id,style:{fontSize:12,color:"#111",marginBottom:3}},"• "+d.label+" — "+dfr(d.date));}));
+}
+
+// ---- GRILLES D'ÉVALUATION INTERACTIVES (directeur uniquement) ----
+function Evaluation(props){
+  var esi=props.esi,C=props.c;
+  var _s=useState(props.ev||{}),ev=_s[0],setEv=_s[1];
+  var _a=useState((props.ev&&props.ev.appreciation)||""),app=_a[0],setApp=_a[1];
+  useEffect(function(){setEv(props.ev||{});setApp((props.ev&&props.ev.appreciation)||"");},[props.ev]);
+  var grilles=grillesEval();
+  function noter(gid,i,val){
+    var g=Object.assign({},ev[gid]||{});
+    if(val==="")delete g["c"+i];else g["c"+i]=parseFloat(val);
+    setEv(Object.assign({},ev,{[gid]:g}));
+    if(val==="")fbSuppr("evaluations/"+esi.id+"/"+gid+"/c"+i);
+    else fbEcrire("evaluations/"+esi.id+"/"+gid+"/c"+i,parseFloat(val));
+  }
+  var depots=(esi.documentsEsi||[]).slice().reverse();
+  function lierDepot(gid,depId){
+    var d=depots.find(function(x){return x.id===depId;});
+    var g=Object.assign({},ev[gid]||{});
+    if(d){g.depot={id:d.id,label:d.label,url:d.url,date:d.date};fbEcrire("evaluations/"+esi.id+"/"+gid+"/depot",g.depot);}
+    else{delete g.depot;fbSuppr("evaluations/"+esi.id+"/"+gid+"/depot");}
+    setEv(Object.assign({},ev,{[gid]:g}));
+  }
+  var t=grilles.map(function(gr){return totalGrille(ev,gr);});
+  function tuile(titre,valeur,sur,partiel,couleur){
+    return h("div",{style:{flex:1,minWidth:130,background:C.card,borderRadius:12,padding:"12px 14px",textAlign:"center",border:"1px solid "+C.border}},
+      h("div",{style:{color:C.muted,fontSize:11,fontWeight:700,marginBottom:4}},titre),
+      h("div",{style:{color:valeur===null?C.subtle:couleur,fontWeight:800,fontSize:22}},valeur===null?"—":fmtNote(valeur)+" / "+sur),
+      partiel&&h("div",{style:{color:C.amber,fontSize:10,marginTop:2}},"notation incomplète"));
+  }
+  var mfeNote=(t[1].nb+t[2].nb)>0?(t[1].somme+t[2].somme)/2:null;
+  return h("div",null,
+    h("h2",{style:{color:C.text,fontSize:16,fontWeight:800,marginBottom:4}},"Évaluation — "+esi.prenom),
+    h("div",{style:{color:C.muted,fontSize:13,marginBottom:16}},"Grilles officielles ARS. Ces notes n'apparaissent pas dans l'espace de l'ESI ; elles sont reprises dans la fiche de synthèse."),
+    h("div",{style:{display:"flex",gap:10,flexWrap:"wrap",marginBottom:20}},
+      tuile("NOTE DE RECHERCHE",t[0].nb?t[0].somme:null,20,t[0].nb>0&&!t[0].complet,C.accent),
+      tuile("MÉMOIRE ÉCRIT",t[1].nb?t[1].somme:null,20,t[1].nb>0&&!t[1].complet,C.accent),
+      tuile("SOUTENANCE",t[2].nb?t[2].somme:null,20,t[2].nb>0&&!t[2].complet,C.accent),
+      tuile("UE 5.6 (ÉCRIT + ORAL)",mfeNote,20,mfeNote!==null&&!(t[1].complet&&t[2].complet),C.green)),
+    grilles.map(function(gr,gi){
+      return h("div",{key:gr.id,style:{marginBottom:20}},
+        h("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:8,gap:8}},
+          h("div",{style:{color:C.accent,fontSize:13,fontWeight:700}},gr.titre),
+          h("div",{style:{color:C.text,fontSize:13,fontWeight:800,whiteSpace:"nowrap"}},(t[gi].nb?fmtNote(t[gi].somme):"—")+" / "+t[gi].max)),
+        (function(){
+          var g=ev[gr.id]||{},dep=g.depot,tr=g.trace;
+          return h("div",{style:{background:C.panel,border:"1px solid "+C.border,borderRadius:10,padding:"10px 12px",marginBottom:8}},
+            h("div",{style:{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}},
+              h("span",{style:{color:C.muted,fontSize:11,fontWeight:700}},"RENDU ÉVALUÉ"),
+              h("select",{value:dep?dep.id:"",onChange:function(e){lierDepot(gr.id,e.target.value);},"aria-label":"Rendu évalué — "+gr.titre,style:Object.assign({},inp(C),{flex:"1 1 180px",width:"auto"})},
+                h("option",{value:""},depots.length?"— Choisir un dépôt de l'ESI —":"Aucun dépôt de l'ESI pour l'instant"),
+                dep&&!depots.some(function(d){return d.id===dep.id;})&&h("option",{value:dep.id},dep.label+" (dépôt retiré)"),
+                depots.map(function(d){return h("option",{key:d.id,value:d.id},d.label+" — "+dfr(d.date));})),
+              dep&&h("a",{href:dep.url,target:"_blank",rel:"noopener noreferrer",style:{color:C.accent,fontSize:12,fontWeight:700,textDecoration:"none",whiteSpace:"nowrap"}},"Ouvrir ↗"),
+              h("button",{onClick:function(){props.onPrint(gr.id);},style:bs(C.accentDim,C.accent,{border:"1px solid "+C.accent+"44",fontSize:12,whiteSpace:"nowrap"})},"🖨 Imprimer la grille")),
+            h("div",{style:{color:C.subtle,fontSize:11,marginTop:6}},tr&&tr.imprimeLe?"Dernière édition de la grille : "+dfr(tr.imprimeLe)+(tr.nb>1?" ("+tr.nb+" éditions)":"")+" — tracée dans le journal":"Grille pas encore éditée. Chaque impression est tracée dans le journal."));
+        })(),
+        gr.g.map(function(x,i){
+          var v=(ev[gr.id]||{})["c"+i];
+          var opts=[];for(var k=0;k<=x.points*2;k++)opts.push(k/2);
+          return h("div",{key:i,style:{background:C.card,borderRadius:10,padding:"10px 14px",marginBottom:6,display:"flex",gap:12,alignItems:"flex-start"}},
+            h("div",{style:{flex:1,minWidth:0}},
+              h("div",{style:{color:C.text,fontSize:13,fontWeight:700,marginBottom:4}},x.capacite),
+              x.criteres.map(function(c,j){return h("div",{key:j,style:{color:C.muted,fontSize:11,lineHeight:1.5}},"• "+c);})),
+            h("div",{style:{display:"flex",alignItems:"center",gap:6,flexShrink:0}},
+              h("select",{value:typeof v==="number"?String(v):"",onChange:function(e){noter(gr.id,i,e.target.value);},"aria-label":"Note pour : "+x.capacite,style:Object.assign({},inp(C),{width:74,fontWeight:700,textAlign:"center",borderColor:typeof v==="number"?C.green+"88":C.border})},
+                h("option",{value:""},"—"),
+                opts.map(function(o){return h("option",{key:o,value:String(o)},fmtNote(o));})),
+              h("span",{style:{color:C.muted,fontSize:12,whiteSpace:"nowrap"}},"/ "+x.points)));
+        }));
+    }),
+    h("div",{style:{color:C.muted,fontSize:11,fontWeight:700,marginBottom:4}},"APPRÉCIATION GÉNÉRALE"),
+    h("textarea",{value:app,rows:3,placeholder:"Appréciation reprise dans la fiche de synthèse…",onChange:function(e){setApp(e.target.value);},onBlur:function(){fbEcrire("evaluations/"+esi.id+"/appreciation",app.trim());},style:Object.assign({},inp(C),{resize:"vertical",lineHeight:1.5})}));
+}
+
+// ---- GESTION DES ESI ET DE LA PROMOTION (directeur) ----
+function GestionESI(props){
+  var C=props.c;
+  var VIDE={id:null,prenom:"",pwd:"",email:""};
+  var _s1=useState(VIDE),form=_s1[0],setForm=_s1[1];
+  var _s2=useState(""),err=_s2[0],setErr=_s2[1];
+  var _s3=useState(PROMO),promo=_s3[0],setPromo=_s3[1];
+  function ecrire(liste,pr){
+    var o={};
+    liste.forEach(function(e,i){o[e.id]={id:e.id,prenom:e.prenom,sujet:e.sujet||"",pwd:e.pwd,email:e.email||"",ordre:i};});
+    var r=fbRef("config");
+    if(!r){setErr("Connexion à la base impossible.");return;}
+    var res=r.set({init:true,promo:pr,esis:o});
+    if(res&&res.catch)res.catch(function(){setErr("Enregistrement refusé par Firebase : vérifie les règles de sécurité du chemin « config ».");});
+  }
+  function valider(){
+    var nom=form.prenom.trim(),pwd=form.pwd.trim(),email=form.email.trim();
+    if(!nom||!pwd){setErr("Le nom et le numéro étudiant sont obligatoires.");return;}
+    if(ESI_DEFAUT.some(function(e){return e.pwd===pwd&&e.id!==form.id;})){setErr("Ce numéro étudiant est déjà utilisé par une autre ESI.");return;}
+    var liste=form.id
+      ? ESI_DEFAUT.map(function(e){return e.id===form.id?Object.assign({},e,{prenom:nom,pwd:pwd,email:email}):e;})
+      : ESI_DEFAUT.concat([{id:"e"+uid(),prenom:nom,sujet:"",pwd:pwd,email:email}]);
+    setErr("");setForm(VIDE);ecrire(liste,PROMO);
+  }
+  function retirer(id){setErr("");ecrire(ESI_DEFAUT.filter(function(e){return e.id!==id;}),PROMO);}
+  function sauverPromo(){var pr=promo.trim();if(pr&&pr!==PROMO)ecrire(ESI_DEFAUT.slice(),pr);}
+  function champ(label,key,ph,type){
+    return h("div",{style:{flex:1,minWidth:150}},
+      h("div",{style:{color:C.muted,fontSize:11,fontWeight:700,marginBottom:4}},label),
+      h("input",{value:form[key],type:type||"text",placeholder:ph,onChange:function(e){setForm(Object.assign({},form,{[key]:e.target.value}));},onKeyDown:function(e){if(e.key==="Enter")valider();},style:inp(C)}));
+  }
+  return h("div",null,
+    h("div",{style:{display:"flex",alignItems:"center",gap:10,marginBottom:12,flexWrap:"wrap"}},
+      h("div",{style:{color:C.accent,fontWeight:700,fontSize:13,flex:1}},"👥 ESI suivies ("+ESI_DEFAUT.length+")"),
+      h("span",{style:{color:C.muted,fontSize:12}},"Promotion"),
+      h("input",{value:promo,onChange:function(e){setPromo(e.target.value);},onBlur:sauverPromo,onKeyDown:function(e){if(e.key==="Enter")e.target.blur();},"aria-label":"Promotion",style:Object.assign({},inp(C),{width:110,textAlign:"center"})}),
+      props.onClose&&h("button",{onClick:props.onClose,style:bs(C.card,C.muted,{border:"1px solid "+C.border,fontSize:12})},"Fermer")),
+    ESI_DEFAUT.length===0&&h("div",{style:{color:C.subtle,fontSize:13,fontStyle:"italic",marginBottom:12}},"Aucune ESI. Ajoute la première ci-dessous."),
+    ESI_DEFAUT.map(function(e){
+      return h("div",{key:e.id,style:{display:"flex",alignItems:"center",gap:10,background:C.card,borderRadius:10,padding:"8px 12px",marginBottom:6,flexWrap:"wrap",border:"1px solid "+(form.id===e.id?C.accent:"transparent")}},
+        h("div",{style:{flex:1,minWidth:160}},
+          h("div",{style:{color:C.text,fontSize:13,fontWeight:700}},e.prenom),
+          h("div",{style:{color:C.muted,fontSize:11,marginTop:2,wordBreak:"break-all"}},"N° "+e.pwd+(e.email?" · "+e.email:" · pas d'e-mail"))),
+        h("button",{onClick:function(){setErr("");setForm({id:e.id,prenom:e.prenom,pwd:e.pwd,email:e.email||""});},style:bs(C.panel,C.muted,{border:"1px solid "+C.border,fontSize:12})},"✏️ Modifier"),
+        h(BtnSuppr,{c:C,onConfirm:function(){retirer(e.id);},style:bs(C.redDim,C.red,{border:"1px solid "+C.red+"33",fontSize:12})},"Retirer"));
+    }),
+    h("div",{style:{background:C.card,borderRadius:10,padding:12,marginTop:10,border:"1px solid "+C.accent+"44"}},
+      h("div",{style:{color:C.accent,fontWeight:700,fontSize:12,marginBottom:8}},form.id?"Modifier l'ESI":"Ajouter une ESI"),
+      h("div",{style:{display:"flex",gap:8,flexWrap:"wrap",marginBottom:10}},
+        champ("NOM PRÉNOM","prenom","DUPONT Marie"),
+        champ("N° ÉTUDIANT (IDENTIFIANT DE CONNEXION)","pwd","22400000"),
+        champ("E-MAIL","email","prenom.nom@exemple.fr","email")),
+      err&&h("div",{style:{color:C.red,fontSize:12,fontWeight:700,marginBottom:8}},err),
+      h("div",{style:{display:"flex",gap:8}},
+        h("button",{onClick:valider,style:bs(C.accent,"#fff",{flex:1})},form.id?"Enregistrer":"+ Ajouter"),
+        form.id&&h("button",{onClick:function(){setForm(VIDE);setErr("");},style:bs(C.panel,C.muted,{border:"1px solid "+C.border})},"Annuler"))),
+    h("div",{style:{color:C.subtle,fontSize:11,marginTop:8,lineHeight:1.5}},"Retirer une ESI la masque de l'outil ; son suivi, ses messages et son journal restent conservés dans la base."));
+}
+
+// ---- GRILLE DE CORRECTION IMPRIMABLE (avec traçabilité) ----
+function GrilleImprimable(props){
+  var esi=props.esi,gr=props.gr,ev=props.ev||{};
+  if(!esi)return null;
+  var g=ev[gr.id]||{},dep=g.depot,t=totalGrille(ev,gr);
+  var td={border:"1px solid #999",padding:"6px 8px",fontSize:12,color:"#111",textAlign:"left",verticalAlign:"top"};
+  var th=Object.assign({},td,{background:"#eee",fontWeight:700});
+  var lg={fontSize:12,color:"#111",marginBottom:3};
+  return h("div",{className:"print-only print-"+gr.id,style:{fontFamily:"Georgia,'Times New Roman',serif",color:"#111",background:"#fff"}},
+    h("h1",{style:{fontSize:19,marginBottom:4,color:"#111"}},"Grille de correction — "+gr.titre),
+    h("div",{style:{fontSize:12,color:"#444",marginBottom:14}},"IFSI Beaujon · Promo "+PROMO+" · Grille officielle ARS Île-de-France"),
+    h("div",{style:{fontSize:15,fontWeight:700,color:"#111"}},esi.prenom),
+    h("div",{style:{fontSize:13,fontStyle:"italic",color:"#111",marginBottom:12}},"Sujet : "+(esi.sujet||"non renseigné")),
+    h("table",{style:{width:"100%",borderCollapse:"collapse"}},
+      h("thead",null,h("tr",null,h("th",{style:th},"Capacités et critères"),h("th",{style:Object.assign({},th,{width:90,textAlign:"center"})},"Note"))),
+      h("tbody",null,
+        gr.g.map(function(x,i){
+          var v=g["c"+i];
+          return h("tr",{key:i,style:{breakInside:"avoid"}},
+            h("td",{style:td},
+              h("div",{style:{fontWeight:700,marginBottom:3}},x.capacite),
+              x.criteres.map(function(c,j){return h("div",{key:j,style:{fontSize:11,color:"#333",lineHeight:1.45}},"• "+c);})),
+            h("td",{style:Object.assign({},td,{textAlign:"center",fontWeight:700,fontSize:13,whiteSpace:"nowrap"})},(typeof v==="number"?fmtNote(v):"……")+" / "+x.points));
+        }),
+        h("tr",null,
+          h("td",{style:Object.assign({},td,{fontWeight:700,textAlign:"right"})},"Total"+(t.nb>0&&!t.complet?" (notation incomplète)":"")),
+          h("td",{style:Object.assign({},td,{textAlign:"center",fontWeight:700,fontSize:14,whiteSpace:"nowrap"})},(t.nb?fmtNote(t.somme):"……")+" / "+t.max)))),
+    ev.appreciation&&h("div",{style:{fontSize:12,color:"#111",lineHeight:1.5,whiteSpace:"pre-wrap",marginTop:10}},h("strong",null,"Appréciation : "),ev.appreciation),
+    h("div",{style:{marginTop:16,border:"1px solid #999",padding:"8px 10px",breakInside:"avoid"}},
+      h("div",{style:{fontSize:12,fontWeight:700,color:"#111",marginBottom:5}},"Traçabilité"),
+      h("div",{style:lg},"Rendu évalué : "+(dep?"« "+dep.label+" », déposé par l'ESI le "+dfr(dep.date):"aucun dépôt associé")),
+      dep&&h("div",{style:Object.assign({},lg,{wordBreak:"break-all"})},"Lien du rendu : "+dep.url),
+      h("div",{style:lg},"Grille éditée le "+new Date().toLocaleDateString("fr-FR",{day:"numeric",month:"long",year:"numeric",hour:"2-digit",minute:"2-digit"})+" depuis l'outil de suivi des mémoires"),
+      h("div",{style:lg},"Évaluateur : Jain Loïc, directeur de mémoire")),
+    h("div",{style:{display:"flex",gap:40,marginTop:26,fontSize:12,color:"#111",breakInside:"avoid"}},
+      h("div",{style:{flex:1,borderTop:"1px solid #111",paddingTop:4}},"Date et signature de l'évaluateur"),
+      h("div",{style:{flex:1,borderTop:"1px solid #111",paddingTop:4}},gr.id==="nr"?"Visa":"Second évaluateur (jury)")));
+}
+
 
 // ---- MESSAGERIE ----
 function Messagerie(props){
   var esiId=props.esiId,esiPrenom=props.esiPrenom,mode=props.mode,C=props.c;
   var _s1=useState([]),msgs=_s1[0],setMsgs=_s1[1];
   var _s2=useState(""),txt=_s2[0],setTxt=_s2[1];
+  var boxRef=useRef(null);
+  useEffect(function(){var b=boxRef.current;if(b)b.scrollTop=b.scrollHeight;},[msgs.length]);
   useEffect(function(){
     fbLire("messages/"+esiId,function(data){
       if(!data)return setMsgs([]);
@@ -340,14 +725,15 @@ function Messagerie(props){
     setTxt("");
   }
   return h("div",{style:{display:"flex",flexDirection:"column",height:"65vh",minHeight:400}},
-    h("div",{style:{flex:1,overflowY:"auto",display:"flex",flexDirection:"column",gap:8,paddingBottom:12}},
+    h("div",{ref:boxRef,style:{flex:1,overflowY:"auto",display:"flex",flexDirection:"column",gap:8,paddingBottom:12}},
       msgs.length===0&&h("div",{style:{color:C.subtle,fontSize:13,fontStyle:"italic",textAlign:"center",padding:"40px 0"}},"Aucun message pour l'instant."),
       msgs.map(function(m){
         var estMoi=(mode==="dir"&&m.auteur==="dir")||(mode==="esi"&&m.auteur==="esi");
         return h("div",{key:m.id,style:{display:"flex",justifyContent:estMoi?"flex-end":"flex-start"}},
           h("div",{style:{maxWidth:"80%",background:estMoi?C.accentDim:C.panel,border:"1px solid "+(estMoi?C.accent:C.border)+"44",borderRadius:estMoi?"14px 14px 4px 14px":"14px 14px 14px 4px",padding:"10px 14px"}},
-            h("div",{style:{color:estMoi?C.accent:C.muted,fontSize:10,fontWeight:700,marginBottom:4}},estMoi?"Moi":(mode==="dir"?esiPrenom:"Directeur")+" · "+dfr(m.date)),
-            h("div",{style:{color:C.text,fontSize:13,lineHeight:1.6}},m.texte)));
+            h("div",{style:{color:estMoi?C.accent:C.muted,fontSize:10,fontWeight:700,marginBottom:4}},(estMoi?"Moi":(mode==="dir"?esiPrenom:"Directeur"))+" · "+dfr(m.date)),
+            h("div",{style:{color:C.text,fontSize:13,lineHeight:1.6,whiteSpace:"pre-wrap"}},m.texte),
+            estMoi&&h("div",{style:{color:m.lu?C.green:C.subtle,fontSize:10,marginTop:4,textAlign:"right"}},m.lu?"✓✓ Lu":"✓ Envoyé")));
       })),
     h("div",{style:{display:"flex",gap:8,borderTop:"1px solid "+C.border,paddingTop:12,alignItems:"flex-end"}},
       h("textarea",{value:txt,onChange:function(e){setTxt(e.target.value);},onKeyDown:function(e){if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();envoyer();}},placeholder:"Votre message...",rows:3,style:Object.assign({},inp(C),{flex:1,resize:"vertical",fontSize:15,padding:"12px 14px",lineHeight:1.5,minHeight:60})}),
@@ -483,7 +869,7 @@ function DeadlineEdit(props){
           !passe&&h("div",{style:{color:C.subtle,fontSize:10}},"restants")),
         h("div",{style:{display:"flex",gap:6}},
           h("button",{onClick:function(){editer(dl);},style:bs(C.card,C.muted,{border:"1px solid "+C.border,fontSize:12})},"✏️"),
-          h("button",{onClick:function(){suppr(dl.id);},style:bs(C.redDim,C.red,{border:"1px solid "+C.red+"33",fontSize:12})},"🗑")));
+          h(BtnSuppr,{c:C,onConfirm:function(){suppr(dl.id);},style:bs(C.redDim,C.red,{border:"1px solid "+C.red+"33",fontSize:12})},"🗑")));
     }));
 }
 
@@ -551,7 +937,7 @@ function useNotifs(esiId){
   },[esiId]);
 
   function marquerLus(){
-    fbLire("messages/"+esiId,function(data){
+    fbLireUne("messages/"+esiId,function(data){
       if(!data)return;
       Object.values(data).forEach(function(m){
         if(m.auteur==="dir"&&!m.lu) fbEcrire("messages/"+esiId+"/"+m.id+"/lu",true);
@@ -610,10 +996,10 @@ function Planning(props){
     return C.accentDim;
   }
   function labelEtat(etat){
-    if(etat==="indispo")return"🔴 Pas dispo";
-    if(etat==="demande")return"🟡 Demande";
-    if(etat==="confirme")return"🟠 Confirmé";
-    return"🟢 Dispo";
+    if(etat==="indispo")return"Indisponible";
+    if(etat==="demande")return"Demande en attente";
+    if(etat==="confirme")return"RDV confirmé";
+    return"Créneau disponible";
   }
 
   function ajouterCreneau(key){
@@ -640,14 +1026,32 @@ function Planning(props){
     }
   }
 
+  function quandCren(c){return new Date(c.jour+"T12:00").toLocaleDateString("fr-FR",{weekday:"long",day:"numeric",month:"long"})+(c.heure?" à "+c.heure:"");}
   function accepter(id){
+    var c=jours[id];
     fbEcrire("creneaux/"+id+"/etat","confirme");
-    showMsg("RDV confirmé !");
+    var e=c&&c.esiPrenom?ESI_DEFAUT.find(function(x){return x.prenom===c.esiPrenom;}):null;
+    if(e){
+      envoyerEmailESI(e.id,"RDV de guidance confirmé","Ton RDV de guidance du "+quandCren(c)+" est confirmé par ton directeur. Retrouve-le sur suivi-memoire.vercel.app, onglet Planning.");
+      var jid=uid();
+      fbEcrire("journal/"+e.id+"/"+jid,{id:jid,date:new Date().toISOString(),type:"rdv",msg:"📅 RDV de guidance confirmé : "+quandCren(c)});
+      if(c.heure){
+        var dt=c.jour+"T"+c.heure;
+        // Reporte le RDV dans « Prochain RDV » s'il est à venir et plus proche que celui déjà noté
+        fbLireUne("esis/"+e.id+"/prochainRdv",function(cur){
+          if(futur(dt)&&(typeof cur!=="string"||!futur(cur)||new Date(dt)<new Date(cur)))fbEcrire("esis/"+e.id+"/prochainRdv",dt);
+        });
+      }
+    }
+    showMsg(e?"RDV confirmé — "+e.prenom+" est prévenue par e-mail.":"RDV confirmé !");
     setDetail(null);
   }
   function refuser(id,esiP){
+    var c=jours[id];
     fbSuppr("creneaux/"+id);
-    showMsg("Demande refusée.",false);
+    var e=esiP?ESI_DEFAUT.find(function(x){return x.prenom===esiP;}):null;
+    if(e&&c)envoyerEmailESI(e.id,"Demande de RDV non retenue","Ta demande de RDV du "+quandCren(c)+" n'a pas pu être acceptée. Propose un autre créneau sur suivi-memoire.vercel.app, onglet Planning.");
+    showMsg(e?"Demande refusée — "+e.prenom+" est prévenue par e-mail.":"Demande refusée.",false);
     setDetail(null);
   }
   function supprimer(id){
@@ -753,11 +1157,11 @@ function Planning(props){
         h("button",{onClick:function(){setDetail(null);},style:bs("transparent",C.subtle,{fontSize:18,padding:"0 6px"})},"×")),
       h("div",{style:{color:C.text,fontWeight:700,fontSize:14,marginBottom:4}},new Date(detail.jour+"T12:00").toLocaleDateString("fr-FR",{weekday:"long",day:"numeric",month:"long",year:"numeric"})),
       detail.heure&&h("div",{style:{color:C.muted,fontSize:13,marginBottom:4}},"⏰ "+detail.heure+(detail.duree?" · "+detail.duree+" min":"")),
-      detail.esiPrenom&&h("div",{style:{color:C.muted,fontSize:13,marginBottom:12}},"👩‍🎓 "+detail.esiPrenom),
+      detail.esiPrenom&&h("div",{style:{color:C.muted,fontSize:13,marginBottom:12}},"👩‍🎓 "+(mode==="dir"||detail.esiPrenom===esiPrenom?detail.esiPrenom:"Créneau réservé par une autre ESI")),
       mode==="dir"&&detail.etat==="demande"&&h("div",{style:{display:"flex",gap:8,marginTop:12}},
         h("button",{onClick:function(){accepter(detail.id);},style:bs(C.greenDim,C.green,{flex:1,border:"1px solid "+C.green+"44"})},"✅ Accepter"),
         h("button",{onClick:function(){refuser(detail.id,detail.esiPrenom);},style:bs(C.redDim,C.red,{flex:1,border:"1px solid "+C.red+"44"})},"❌ Refuser")),
-      mode==="dir"&&detail.etat!=="demande"&&h("button",{onClick:function(){supprimer(detail.id);},style:bs(C.redDim,C.red,{border:"1px solid "+C.red+"44",width:"100%",marginTop:8})},"🗑 Supprimer"),
+      mode==="dir"&&detail.etat!=="demande"&&h(BtnSuppr,{c:C,full:true,onConfirm:function(){supprimer(detail.id);},style:bs(C.redDim,C.red,{border:"1px solid "+C.red+"44",width:"100%",marginTop:8})},"🗑 Supprimer"),
       mode==="esi"&&detail.etat==="demande"&&detail.esiPrenom===esiPrenom&&h("button",{onClick:function(){annuler(detail.id);},style:bs(C.amberDim,C.amber,{border:"1px solid "+C.amber+"44",width:"100%",marginTop:8})},"Annuler ma demande"),
       mode==="esi"&&detail.etat==="dispo"&&h("button",{onClick:function(){
         fbEcrire("creneaux/"+detail.id+"/etat","demande");
@@ -767,7 +1171,7 @@ function Planning(props){
       },style:bs(C.accent,"#fff",{width:"100%",marginTop:8})},"📨 Demander ce créneau"),
       mode==="esi"&&detail.etat==="confirme"&&detail.esiPrenom===esiPrenom&&h("div",{style:{color:C.green,fontWeight:700,fontSize:13,marginTop:8,textAlign:"center"}},"✅ RDV confirmé par ton directeur !")),
     h("div",{style:{display:"flex",gap:16,flexWrap:"wrap",marginTop:8}},
-      [{etat:"dispo",l:"🟢 Dispo"},{etat:"demande",l:"🟡 En attente"},{etat:"confirme",l:"🟠 Confirmé"},{etat:"indispo",l:"🔴 Pas dispo"}].map(function(s){
+      [{etat:"dispo",l:"Dispo"},{etat:"demande",l:"En attente"},{etat:"confirme",l:"Confirmé"},{etat:"indispo",l:"Pas dispo"}].map(function(s){
         return h("div",{key:s.etat,style:{display:"flex",alignItems:"center",gap:6}},
           h("div",{style:{width:12,height:12,borderRadius:3,background:couleurEtat(s.etat)}}),
           h("span",{style:{color:C.muted,fontSize:11}},s.l));})));
@@ -795,7 +1199,7 @@ function Accueil(props){
   return h("div",{style:{minHeight:"100vh",background:C.bg,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:24}},
     h("div",{style:{fontSize:56,marginBottom:16}},"🎓"),
     h("h1",{style:{color:C.text,fontSize:24,fontWeight:800,marginBottom:8,textAlign:"center"}},"Suivi Mémoires Infirmiers"),
-    h("p",{style:{color:C.muted,fontSize:15,marginBottom:40,textAlign:"center"}},"Directeur : ",h("strong",{style:{color:C.accent}},"Jain Loic")," · IFSI Beaujon · Promo 2024-27"),
+    h("p",{style:{color:C.muted,fontSize:15,marginBottom:40,textAlign:"center"}},"Directeur : ",h("strong",{style:{color:C.accent}},"Jain Loic")," · IFSI Beaujon · Promo "+PROMO+""),
     h("div",{style:{display:"flex",gap:20,flexWrap:"wrap",justifyContent:"center"}},
       h(BtnDir,{onDir:props.onDir}),
       h("button",{onClick:props.onEsi,style:{background:C.panel,color:C.text,border:"2px solid "+C.border,borderRadius:16,padding:"22px 40px",cursor:"pointer",fontSize:17,fontWeight:700}},"👩‍🎓 Espace ESI")),
@@ -811,6 +1215,8 @@ function iconeEtCouleurEntree(e,C){
     if(e.msg&&e.msg.indexOf("bloqu")!==-1)return{icone:"🚫",couleur:C.red,bg:C.redDim};
     return{icone:"✅",couleur:C.green,bg:C.greenDim};
   }
+  if(e.type==="correction")return{icone:"🖨",couleur:C.accent,bg:C.accentDim};
+  if(e.type==="validation")return{icone:ICONES_TYPE.validation,couleur:C.amber,bg:C.amberDim};
   if(e.type==="retour")return{icone:ICONES_TYPE.retour,couleur:C.accent,bg:C.accentDim};
   if(e.type==="rdv")return{icone:ICONES_TYPE.rdv,couleur:C.amber,bg:C.amberDim};
   if(e.type==="depot")return{icone:ICONES_TYPE.depot,couleur:C.green,bg:C.greenDim};
@@ -838,7 +1244,7 @@ function useNotifsDir(esiId){
     });
   },[esiId]);
   function marquerMsgLus(){
-    fbLire("messages/"+esiId,function(data){
+    fbLireUne("messages/"+esiId,function(data){
       if(!data)return;
       Object.values(data).forEach(function(m){
         if(m.auteur==="esi"&&!m.lu) fbEcrire("messages/"+esiId+"/"+m.id+"/lu",true);
@@ -858,8 +1264,7 @@ function CarteESISidebar(props){
   var pp=pct(e.etapes);
   var notifs=useNotifsDir(e.id);
   var totalBadge=notifs.countMsg+notifs.countDepots;
-  return h("div",{onClick:function(){setSel(e.id);},style:{background:e.id===sel?C.accentDim:C.card,border:"1.5px solid "+(e.id===sel?C.accent:C.border),borderRadius:12,padding:"12px 14px",cursor:"pointer",marginBottom:8,position:"relative"}},
-    totalBadge>0&&h("div",{style:{position:"absolute",top:8,right:8,background:C.red,color:"#fff",borderRadius:99,width:18,height:18,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:800}},totalBadge),
+  return h("div",{className:"esi-card clickable",onClick:function(){setSel(e.id);},style:{background:e.id===sel?C.accentDim:C.card,border:"1.5px solid "+(e.id===sel?C.accent:C.border),borderRadius:12,padding:"12px 14px",cursor:"pointer",marginBottom:8,position:"relative"}},
     h("div",{style:{display:"flex",justifyContent:"space-between",marginBottom:6}},
       h("span",{style:{color:C.text,fontWeight:700,fontSize:13}},e.prenom),
       h("span",{style:{color:pp===100?C.green:C.accent,fontWeight:800,fontSize:13}},pp+"%")),
@@ -883,7 +1288,7 @@ function JournalESI(props){
       setEntries(arr);
     });
   },[esiId]);
-  var filtres=[{id:"tout",l:"Tout"},{id:"etape",l:"✅ Étapes"},{id:"retour",l:"💬 Retours"},{id:"doc",l:"📎 Docs"},{id:"depot",l:"📤 Dépôts"},{id:"rdv",l:"📅 RDV"}];
+  var filtres=[{id:"tout",l:"Tout"},{id:"etape",l:"✅ Étapes"},{id:"retour",l:"💬 Retours"},{id:"doc",l:"📎 Docs"},{id:"depot",l:"📤 Dépôts"},{id:"rdv",l:"📅 RDV"},{id:"validation",l:"✋ Demandes"},{id:"correction",l:"🖨 Corrections"}];
   var affich=filtre==="tout"?entries:entries.filter(function(e){return e.type===filtre;});
   return h("div",null,
     h("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16,flexWrap:"wrap",gap:8}},
@@ -962,11 +1367,20 @@ function Directeur(props){
   var _s11=useState(false),showBroadcast=_s11[0],setShowBroadcast=_s11[1];
   var _s12=useState(""),broadcastTxt=_s12[0],setBroadcastTxt=_s12[1];
   var _s13=useState(""),broadcastOk=_s13[0],setBroadcastOk=_s13[1];
+  var RF_VIDE={avancement:"",commentaire:"",forts:"",axes:"",structure:""};
+  var _s14=useState(false),showRetour=_s14[0],setShowRetour=_s14[1];
+  var _s15=useState(RF_VIDE),rf=_s15[0],setRf=_s15[1];
+  var _s16=useState(false),editSujet=_s16[0],setEditSujet=_s16[1];
+  var _s17=useState(""),sujetTxt=_s17[0],setSujetTxt=_s17[1];
+  var _s18=useState("tous"),dashFiltre=_s18[0],setDashFiltre=_s18[1];
+  var _s19=useState("nom"),dashTri=_s19[0],setDashTri=_s19[1];
+  var _s20=useState("cartes"),dashVue=_s20[0],setDashVue=_s20[1];
+  var _s21=useState(false),showGestion=_s21[0],setShowGestion=_s21[1];
 
   // Chargement Firebase - afficher immédiatement les données de base
   useEffect(function(){
     // Afficher immédiatement sans attendre Firebase
-    setEsis(ESI_DEFAUT);
+    setEsis(function(prev){return ESI_DEFAUT.map(function(b){var o=prev.find(function(x){return x.id===b.id;});return o?Object.assign({},o,{prenom:b.prenom}):Object.assign({},b);});});
     setFbLoad(false);
     // Enrichir avec Firebase en arrière-plan
     var r=fbRef("esis");
@@ -985,17 +1399,21 @@ function Directeur(props){
             notes:fb.notes||"",
             visio:fb.visio||"",
             prochainRdv:fb.prochainRdv||"",
-            sujet:fb.sujet||base.sujet||""
+            sujet:fb.sujet||base.sujet||"",
+            derniereMAJ:fb.derniereMAJ||null
           });
         }));
       });
       return function(){r.off();};
     }
-  },[]);
+  },[props.cfg]);
 
-  var esi=esis.find(function(e){return e.id===sel;});
+  var esi=esis.find(function(e){return e.id===sel;})||esis[0];
+  useEffect(function(){if(esis.length&&!esis.some(function(e){return e.id===sel;}))setSel(esis[0].id);},[esis,sel]);
   useEffect(function(){if(esi){setEv(esi.visio||"");setEr(esi.prochainRdv||"");};},[sel,esis]);
+  useEffect(function(){setEditSujet(false);setShowRetour(false);},[sel]);
   var notifsDir=useNotifsDir(sel);
+  var evalSel=useEvaluation(esi?esi.id:null);
 
   // Mise à jour Firebase + state local
   function up(u){
@@ -1035,6 +1453,47 @@ function Directeur(props){
     setBroadcastOk("Message envoyé à toutes les ESI ("+esis.length+") !");
     setTimeout(function(){setBroadcastOk("");},4000);
   }
+  function ajouterRetour(){
+    if(!esi||!rf.commentaire.trim())return;
+    var av=parseInt(rf.avancement,10);
+    if(isNaN(av))av=pct(esi.etapes||{});
+    av=Math.max(0,Math.min(100,av));
+    function lignes(s){return s.split("\n").map(function(x){return x.replace(/^[\s•\-–]+/,"").trim();}).filter(Boolean);}
+    var retour={id:uid(),date:new Date().toISOString(),avancement:av,structure:rf.structure.trim(),points_forts:lignes(rf.forts),axes_amelioration:lignes(rf.axes),commentaire_esi:rf.commentaire.trim()};
+    up(Object.assign({},esi,{retours:(esi.retours||[]).concat([retour]),derniereMAJ:new Date().toISOString()}));
+    log(esi.id,"retour","💬 Retour envoyé à l'ESI — avancement estimé : "+av+"%");
+    envoyerEmailESI(esi.id,"Nouveau retour de ton directeur","Jain Loic t'a envoyé un retour sur ton travail. Connecte-toi sur suivi-memoire.vercel.app, onglet Retours, pour le lire.");
+    setRf(RF_VIDE);setShowRetour(false);
+  }
+  function sauverSujet(){
+    if(!esi)return;
+    var s=sujetTxt.trim();
+    if(s!==(esi.sujet||"")){
+      up(Object.assign({},esi,{sujet:s}));
+      log(esi.id,"default","✏️ Sujet modifié : "+(s||"(vide)"));
+    }
+    setEditSujet(false);
+  }
+  // Impression d'une grille : trace dans le journal, sur l'évaluation et sur le dépôt concerné
+  function imprimerGrille(gid){
+    if(!esi)return;
+    var gr=grillesEval().find(function(g){return g.id===gid;});
+    var g=(evalSel||{})[gid]||{},dep=g.depot||null,t=totalGrille(evalSel,gr),now=new Date().toISOString();
+    fbEcrire("evaluations/"+esi.id+"/"+gid+"/trace",{imprimeLe:now,nb:((g.trace&&g.trace.nb)||0)+1});
+    log(esi.id,"correction","🖨 Grille de correction éditée — "+gr.titre+" : "+(t.nb?fmtNote(t.somme)+" / "+t.max+(t.complet?"":" (notation incomplète)"):"non notée")+(dep?" — rendu « "+dep.label+" » déposé le "+dfr(dep.date):" — sans rendu associé"));
+    if(dep&&(esi.documentsEsi||[]).some(function(d){return d.id===dep.id;})){
+      up(Object.assign({},esi,{documentsEsi:(esi.documentsEsi||[]).map(function(d){return d.id===dep.id?Object.assign({},d,{corrigeLe:now,grille:gr.titre}):d;})}));
+    }
+    document.body.setAttribute("data-print",gid);
+    window.print();
+  }
+  function champRetour(label,key,rows,ph){
+    return h("div",{style:{marginBottom:10}},
+      h("div",{style:{color:C.muted,fontSize:11,fontWeight:700,marginBottom:4}},label),
+      h("textarea",{value:rf[key],rows:rows,placeholder:ph,onChange:function(e){setRf(Object.assign({},rf,{[key]:e.target.value}));},style:Object.assign({},inp(C),{resize:"vertical",lineHeight:1.5})}));
+  }
+  function joursDepuis(iso){if(!iso)return null;return Math.floor((new Date()-new Date(iso))/86400000);}
+  function nbDemandes(e){return Object.entries(e.etapesEsi||{}).filter(function(kv){return kv[1]==="demande"&&(e.etapes||{})[kv[0]]!=="fait";}).length;}
   function ac(){if(!nc.trim()||!esi)return;up(Object.assign({},esi,{commentaires:(esi.commentaires||[]).concat([{id:uid(),texte:nc.trim(),date:new Date().toISOString()}]),derniereMAJ:new Date().toISOString()}));setNc("");}
   function dc(id){if(!esi)return;up(Object.assign({},esi,{commentaires:(esi.commentaires||[]).filter(function(c){return c.id!==id;})}));}
   function ad(){
@@ -1072,21 +1531,38 @@ function Directeur(props){
   }
 
   if(fbLoad)return h("div",{style:{minHeight:"100vh",background:C.bg,display:"flex",alignItems:"center",justifyContent:"center",color:C.muted,fontSize:15}},"⏳ Chargement des données...");
-  if(!esi)return null;
+  if(!esi)return h("div",{className:"dir-root",style:{background:C.bg,minHeight:"100vh",display:"flex",flexDirection:"column",color:C.text}},
+    h("div",{className:"app-header",style:{background:C.panel,borderBottom:"1px solid "+C.border,padding:"12px 20px",display:"flex",alignItems:"center",gap:12}},
+      h("button",{onClick:onBack,style:bs(C.card,C.muted,{border:"1px solid "+C.border})},"← Accueil"),
+      h("div",{style:{fontWeight:800,fontSize:15}},"Espace Directeur")),
+    h("div",{className:"page-pad",style:{padding:24,maxWidth:760,width:"100%",margin:"0 auto"}},h(GestionESI,{c:C})));
   var p=pct(esi.etapes||{});
-  var tabs=[{id:"dashboard",l:"🏠 Vue globale"},{id:"suivi",l:"📊 Suivi"+(Object.values(esi.etapesEsi||{}).filter(function(v){return v==="demande";}).length>0?" ✋":"")},{id:"retours",l:"💬 Retours"+(esi.retours&&esi.retours.length>0?" ("+esi.retours.length+")":"")},{id:"messages",l:"✉️ Messages"},{id:"docs",l:"📎 Docs"+(esi.documents&&esi.documents.length>0?" ("+esi.documents.length+")":"")},{id:"planning",l:"📅 Planning"},{id:"deadlines",l:"⚠️ Deadlines"},{id:"refs",l:"📚 Références"},{id:"journal",l:"📒 Journal"},{id:"notes",l:"🗒 Notes perso"}];
+  var liste=esis.filter(function(e){
+    if(dashFiltre==="retard")return pct(e.etapes)<30;
+    if(dashFiltre==="valider")return nbDemandes(e)>0;
+    if(dashFiltre==="inactif"){var j=joursDepuis(e.derniereMAJ);return j===null||j>=14;}
+    return true;
+  }).sort(function(a,b){
+    if(dashTri==="pctAsc")return pct(a.etapes)-pct(b.etapes);
+    if(dashTri==="pctDesc")return pct(b.etapes)-pct(a.etapes);
+    if(dashTri==="activite")return (b.derniereMAJ||"")>(a.derniereMAJ||"")?1:-1;
+    return a.prenom.localeCompare(b.prenom,"fr");
+  });
+  var tabs=[{id:"dashboard",l:"🏠 Vue globale"},{id:"suivi",l:"📊 Suivi"+(Object.values(esi.etapesEsi||{}).filter(function(v){return v==="demande";}).length>0?" ✋":"")},{id:"kanban",l:"🗂 Kanban"},{id:"retours",l:"💬 Retours"+(esi.retours&&esi.retours.length>0?" ("+esi.retours.length+")":"")},{id:"messages",l:"✉️ Messages"+(notifsDir.countMsg>0?" 🔴"+notifsDir.countMsg:"")},{id:"docs",l:"📎 Docs"+(esi.documents&&esi.documents.length>0?" ("+esi.documents.length+")":"")+(notifsDir.countDepots>0?" 🔴"+notifsDir.countDepots:"")},{id:"planning",l:"📅 Planning"},{id:"deadlines",l:"⚠️ Deadlines"},{id:"eval",l:"📝 Évaluation"},{id:"refs",l:"📚 Références"},{id:"journal",l:"📒 Journal"},{id:"notes",l:"🗒 Notes perso"}];
 
-  return h("div",{style:{background:C.bg,minHeight:"100vh",display:"flex",flexDirection:"column",color:C.text}},
-    h("div",{style:{background:C.panel,borderBottom:"1px solid "+C.border,padding:"12px 20px",display:"flex",alignItems:"center",gap:12,flexWrap:"wrap"}},
+  return h("div",{className:"dir-root",style:{background:C.bg,minHeight:"100vh",display:"flex",flexDirection:"column",color:C.text}},
+    h("div",{className:"app-header",style:{background:C.panel,borderBottom:"1px solid "+C.border,padding:"12px 20px",display:"flex",alignItems:"center",gap:12,flexWrap:"wrap"}},
       h("button",{onClick:onBack,style:bs(C.card,C.muted,{border:"1px solid "+C.border})},"← Accueil"),
       h("div",{style:{flex:1}},
         h("div",{style:{fontWeight:800,fontSize:15}},"👨‍🏫 Espace Directeur · ",h("span",{style:{color:C.accent}},"Jain Loic")),
-        h("div",{style:{color:C.muted,fontSize:12}},esis.length+" ESI · Promo 2024-27")),
+        h("div",{style:{color:C.muted,fontSize:12}},esis.length+" ESI · Promo "+PROMO+"")),
+      h("button",{onClick:function(){setShowGestion(!showGestion);},style:bs(showGestion?C.accent:C.card,showGestion?"#fff":C.muted,{border:"1px solid "+(showGestion?C.accent:C.border),fontSize:12})},"👥 Gérer les ESI"),
       h("button",{onClick:function(){setShowBroadcast(!showBroadcast);},style:bs(showBroadcast?C.accent:C.card,showBroadcast?"#fff":C.muted,{border:"1px solid "+(showBroadcast?C.accent:C.border),fontSize:12})},"📢 Message à tous"),
       h("button",{onClick:function(){setTab(tab==="dashboard"?"suivi":"dashboard");},
         style:bs(tab==="dashboard"?C.accent:C.card,tab==="dashboard"?"#fff":C.muted,{border:"1px solid "+(tab==="dashboard"?C.accent:C.border),fontSize:12})},
         tab==="dashboard"?"📋 Vue ESI →":"🏠 Vue globale")),
 
+    showGestion&&h("div",{style:{background:C.panel,borderBottom:"1px solid "+C.border,padding:"16px 20px",maxHeight:"70vh",overflowY:"auto"}},h(GestionESI,{c:C,onClose:function(){setShowGestion(false);}})),
     broadcastOk&&h("div",{style:{background:C.greenDim,border:"1px solid "+C.green+"44",borderRadius:0,padding:"10px 20px",color:C.green,fontWeight:700,fontSize:13}},broadcastOk),
     showBroadcast&&h("div",{style:{background:C.panel,borderBottom:"1px solid "+C.border,padding:"16px 20px"}},
       h("div",{style:{color:C.accent,fontWeight:700,fontSize:13,marginBottom:10}},"📢 Envoyer un message à toutes les ESI ("+esis.length+")"),
@@ -1096,10 +1572,10 @@ function Directeur(props){
         h("button",{onClick:function(){setShowBroadcast(false);setBroadcastTxt("");},style:bs(C.card,C.muted,{border:"1px solid "+C.border})},"Annuler"))),
 
     tab==="dashboard"
-      ? h("div",{style:{flex:1,overflowY:"auto",padding:"24px"}},
+      ? h("div",{className:"page-pad",style:{flex:1,minHeight:0,overflowY:"auto",padding:"24px"}},
           h("div",{style:{marginBottom:20}},
-            h("div",{style:{color:C.text,fontWeight:800,fontSize:18,marginBottom:4}},"Vue globale — Promo 2024-27"),
-            h("div",{style:{color:C.muted,fontSize:13}},"Avancement de tes 6 ESI en un coup d'œil")),
+            h("div",{style:{color:C.text,fontWeight:800,fontSize:18,marginBottom:4}},"Vue globale — Promo "+PROMO+""),
+            h("div",{style:{color:C.muted,fontSize:13}},"Avancement de tes "+esis.length+" ESI en un coup d'œil")),
           h("div",{style:{display:"flex",gap:12,marginBottom:24,flexWrap:"wrap"}},
             (function(){
               var moyG=Math.round(esis.reduce(function(a,e){return a+pct(e.etapes);},0)/esis.length);
@@ -1121,15 +1597,28 @@ function Directeur(props){
                   h("div",{style:{color:C.amber,fontSize:12,marginTop:4,fontWeight:600}},"Étapes à valider"))
               ];
             })()),
-          h("div",{style:{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(320px,1fr))",gap:14}},
-            esis.map(function(e){
+          h("div",{style:{display:"flex",gap:8,flexWrap:"wrap",alignItems:"center",marginBottom:14}},
+            [["tous","Toutes"],["retard","En retard"],["valider","✋ À valider"],["inactif","Inactives 14 j+"]].map(function(f){
+              var on=dashFiltre===f[0];
+              return h("button",{key:f[0],onClick:function(){setDashFiltre(f[0]);},style:bs(on?C.accent:"transparent",on?"#fff":C.muted,{fontSize:12,padding:"5px 12px",borderRadius:99,border:"1px solid "+(on?C.accent:C.border)})},f[1]);}),
+            h("span",{style:{flex:1}}),
+            h("select",{value:dashTri,onChange:function(e){setDashTri(e.target.value);},style:Object.assign({},inp(C),{width:"auto",fontSize:12,padding:"5px 8px"})},
+              h("option",{value:"nom"},"Tri : nom"),
+              h("option",{value:"pctAsc"},"Tri : avancement croissant"),
+              h("option",{value:"pctDesc"},"Tri : avancement décroissant"),
+              h("option",{value:"activite"},"Tri : activité récente")),
+            h("button",{onClick:function(){setDashVue(dashVue==="cartes"?"tableau":"cartes");},style:bs(C.card,C.text,{fontSize:12,padding:"5px 12px",border:"1px solid "+C.border})},dashVue==="cartes"?"🗂 Vue tableau":"▦ Vue cartes")),
+          liste.length===0&&h("div",{style:{color:C.subtle,fontSize:13,fontStyle:"italic",textAlign:"center",padding:"24px 0"}},"Aucune ESI ne correspond à ce filtre."),
+          dashVue==="tableau"&&h(TableauGroupe,{esis:liste,c:C,onOpen:function(id){setSel(id);setTab("kanban");}}),
+          dashVue==="cartes"&&h("div",{className:"card-grid",style:{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(300px,1fr))",gap:14}},
+            liste.map(function(e){
               var pp=pct(e.etapes);
               var nr=pctNR(e.etapes);
               var mfe=pctMFE(e.etapes);
               var dernierRetour=(e.retours||[]).slice(-1)[0];
               var demandesEsi=e.etapesEsi?Object.entries(e.etapesEsi).filter(function(kv){return kv[1]==="demande";}).map(function(kv){return kv[0];}):[];
               var couleur=pp>=70?C.green:pp>=40?C.accent:pp>=20?C.amber:C.red;
-              return h("div",{key:e.id,style:{background:C.card,borderRadius:16,padding:18,border:"1px solid "+C.border,cursor:"pointer"},
+              return h("div",{key:e.id,className:"clickable",style:{background:C.card,borderRadius:16,padding:18,border:"1px solid "+C.border,cursor:"pointer"},
                 onClick:function(){setSel(e.id);setTab("suivi");}},
                 h("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:12}},
                   h("div",null,
@@ -1159,7 +1648,8 @@ function Directeur(props){
                   demandesEsi.length>0&&h("div",{style:{background:C.amberDim,borderRadius:8,padding:"5px 10px",display:"flex",gap:6,alignItems:"center"}},
                     h("span",{style:{fontSize:11}},"✋"),
                     h("span",{style:{color:C.amber,fontSize:11,fontWeight:700}},demandesEsi.length+" étape(s) à valider")),
-                  (e.retours||[]).length===0&&!futur(e.prochainRdv)&&h("div",{style:{color:C.subtle,fontSize:11,fontStyle:"italic"}},"Aucun retour ni RDV planifié")),
+                  (e.retours||[]).length===0&&!futur(e.prochainRdv)&&h("div",{style:{color:C.subtle,fontSize:11,fontStyle:"italic"}},"Aucun retour ni RDV planifié"),
+                  h("div",{style:{color:C.subtle,fontSize:10}},"🕒 Dernière mise à jour : "+(e.derniereMAJ?dfr(e.derniereMAJ):"jamais"))),
                 h("div",{style:{display:"flex",gap:6,flexWrap:"wrap"}},
                   h("button",{onClick:function(ev){ev.stopPropagation();setSel(e.id);setTab("suivi");},style:bs(C.accentDim,C.accent,{fontSize:11,padding:"4px 10px",border:"1px solid "+C.accent+"44"})},"📊 Suivi"),
                   h("button",{onClick:function(ev){ev.stopPropagation();setSel(e.id);setTab("messages");},style:bs(C.card,C.muted,{fontSize:11,padding:"4px 10px",border:"1px solid "+C.border})},"✉️ Message")));
@@ -1169,20 +1659,27 @@ function Directeur(props){
             h("div",{style:{color:C.muted,fontSize:13,marginBottom:16}},"Les 30 dernières actions sur toutes les ESI"),
             h(JournalGlobal,{esis:esis,c:C})))
 
-      : h("div",{style:{display:"flex",flex:1,minHeight:0}},
-          h("div",{style:{width:250,minWidth:250,background:C.panel,borderRight:"1px solid "+C.border,overflowY:"auto",padding:"12px 8px"}},
+      : h("div",{className:"dir-layout",style:{display:"flex",flex:1,minHeight:0}},
+          h("div",{className:"dir-sidebar",style:{width:250,minWidth:250,background:C.panel,borderRight:"1px solid "+C.border,overflowY:"auto",padding:"12px 8px"}},
             esis.map(function(e){
               return h(CarteESISidebar,{key:e.id,e:e,sel:sel,setSel:setSel,C:C});
             })),
-          h("div",{style:{flex:1,display:"flex",flexDirection:"column",overflow:"hidden"}},
-            h("div",{style:{padding:"16px 24px 0",borderBottom:"1px solid "+C.border}},
+          h("div",{className:"dir-main",style:{flex:1,minWidth:0,display:"flex",flexDirection:"column",overflow:"hidden"}},
+            h("div",{className:"dir-head",style:{padding:"16px 24px 0",borderBottom:"1px solid "+C.border}},
               h("div",{style:{display:"flex",alignItems:"center",gap:12,marginBottom:12,flexWrap:"wrap"}},
-                h("div",{style:{flex:1}},
+                h("div",{style:{flex:"1 1 200px",minWidth:0}},
                   h("div",{style:{color:C.text,fontWeight:800,fontSize:17}},esi.prenom),
-                  h("div",{style:{color:C.muted,fontSize:13,fontStyle:"italic",marginTop:2}},esi.sujet)),
-                h("div",{style:{display:"flex",alignItems:"center",gap:10}},
+                  editSujet
+                    ? h("div",{style:{display:"flex",gap:6,marginTop:4}},
+                        h("input",{value:sujetTxt,autoFocus:true,placeholder:"Sujet du mémoire…",onChange:function(e){setSujetTxt(e.target.value);},onKeyDown:function(e){if(e.key==="Enter")sauverSujet();if(e.key==="Escape")setEditSujet(false);},style:Object.assign({},inp(C),{flex:1})}),
+                        h("button",{onClick:sauverSujet,style:bs(C.accent,"#fff",{fontSize:12})},"OK"),
+                        h("button",{onClick:function(){setEditSujet(false);},style:bs(C.card,C.muted,{fontSize:12,border:"1px solid "+C.border})},"Annuler"))
+                    : h("div",{style:{display:"flex",alignItems:"center",gap:6,marginTop:2}},
+                        h("span",{style:{color:esi.sujet?C.muted:C.amber,fontSize:13,fontStyle:"italic"}},esi.sujet||"Sujet non renseigné"),
+                        h("button",{onClick:function(){setSujetTxt(esi.sujet||"");setEditSujet(true);},title:"Modifier le sujet",style:{background:"transparent",border:"none",cursor:"pointer",fontSize:12,padding:"2px 4px"}},"✏️"))),
+                h("div",{style:{display:"flex",alignItems:"center",gap:10,flex:"0 1 240px",minWidth:150}},
                   h(Barre,{v:p,c:C}),
-                  h("span",{style:{color:p===100?C.green:C.accent,fontWeight:800,fontSize:18,minWidth:48}},p+"%"))),
+                  h("span",{style:{color:p===100?C.green:C.accent,fontWeight:800,fontSize:18,minWidth:48,textAlign:"right"}},p+"%"))),
               h("div",{style:{display:"flex",gap:10,marginBottom:12,flexWrap:"wrap"}},
                 h("div",{style:{display:"flex",alignItems:"center",gap:6}},
                   h("span",{style:{color:C.muted,fontSize:12}},"📅"),
@@ -1190,43 +1687,18 @@ function Directeur(props){
                 h("div",{style:{display:"flex",alignItems:"center",gap:6}},
                   h("span",{style:{color:C.muted,fontSize:12}},"🎥"),
                   h("input",{value:ev,onChange:function(e){setEv(e.target.value);},onBlur:si,placeholder:"Lien visio…",style:Object.assign({},inp(C),{width:200,fontSize:12,padding:"4px 8px"})}),
-                  esi.visio&&h("a",{href:esi.visio,target:"_blank",rel:"noopener noreferrer",style:{color:C.green,fontSize:12,fontWeight:700,textDecoration:"none"}},"→ Rejoindre"))),
-              h("div",{style:{display:"flex",gap:4,flexWrap:"wrap"}},
-                tabs.filter(function(t){return t.id!=="dashboard";}).map(function(t){return h("button",{key:t.id,onClick:function(){setTab(t.id);},style:Object.assign({},bs(tab===t.id?C.accent:"transparent",tab===t.id?"#fff":C.muted),{borderRadius:"8px 8px 0 0",padding:"7px 14px",fontSize:12,borderBottom:tab===t.id?"2px solid "+C.accent:"2px solid transparent"})},t.l);}))),
-            h("div",{style:{flex:1,overflowY:"auto",padding:"20px 24px"}},
-
-    // MODE ESI — sidebar + onglets
-    tab!=="dashboard"&&h("div",{style:{display:"flex",flex:1,minHeight:0}},
-      h("div",{style:{width:250,minWidth:250,background:C.panel,borderRight:"1px solid "+C.border,overflowY:"auto",padding:"12px 8px"}},
-        esis.map(function(e){
-          return h(CarteESISidebar,{key:e.id,e:e,sel:sel,setSel:setSel,C:C});
-        })),
-      h("div",{style:{flex:1,display:"flex",flexDirection:"column",overflow:"hidden"}},
-        h("div",{style:{padding:"16px 24px 0",borderBottom:"1px solid "+C.border}},
-          h("div",{style:{display:"flex",alignItems:"center",gap:12,marginBottom:12,flexWrap:"wrap"}},
-            h("div",{style:{flex:1}},
-              h("div",{style:{color:C.text,fontWeight:800,fontSize:17}},esi.prenom),
-              h("div",{style:{color:C.muted,fontSize:13,fontStyle:"italic",marginTop:2}},esi.sujet)),
-            h("div",{style:{display:"flex",alignItems:"center",gap:10}},
-              h(Barre,{v:p,c:C}),
-              h("span",{style:{color:p===100?C.green:C.accent,fontWeight:800,fontSize:18,minWidth:48}},p+"%"))),
-          h("div",{style:{display:"flex",gap:10,marginBottom:12,flexWrap:"wrap"}},
-            h("div",{style:{display:"flex",alignItems:"center",gap:6}},
-              h("span",{style:{color:C.muted,fontSize:12}},"📅"),
-              h("input",{type:"datetime-local",value:er,onChange:function(e){setEr(e.target.value);},onBlur:si,style:Object.assign({},inp(C),{width:"auto",fontSize:12,padding:"4px 8px",colorScheme:"dark"})})),
-            h("div",{style:{display:"flex",alignItems:"center",gap:6}},
-              h("span",{style:{color:C.muted,fontSize:12}},"🎥"),
-              h("input",{value:ev,onChange:function(e){setEv(e.target.value);},onBlur:si,placeholder:"Lien visio…",style:Object.assign({},inp(C),{width:200,fontSize:12,padding:"4px 8px"})}),
-              esi.visio&&h("a",{href:esi.visio,target:"_blank",rel:"noopener noreferrer",style:{color:C.green,fontSize:12,fontWeight:700,textDecoration:"none"}},"→ Rejoindre"))),
-          h("div",{style:{display:"flex",gap:4,flexWrap:"wrap"}},
-            tabs.filter(function(t){return t.id!=="dashboard";}).map(function(t){return h("button",{key:t.id,onClick:function(){setTab(t.id);},style:Object.assign({},bs(tab===t.id?C.accent:"transparent",tab===t.id?"#fff":C.muted),{borderRadius:"8px 8px 0 0",padding:"7px 14px",fontSize:12,borderBottom:tab===t.id?"2px solid "+C.accent:"2px solid transparent"})},t.l);}))),
-        h("div",{style:{flex:1,overflowY:"auto",padding:"20px 24px"}},
+                  esi.visio&&h("a",{href:esi.visio,target:"_blank",rel:"noopener noreferrer",style:{color:C.green,fontSize:12,fontWeight:700,textDecoration:"none"}},"→ Rejoindre")),
+                h("button",{onClick:function(){document.body.setAttribute("data-print","fiche");window.print();},title:"Imprimer ou enregistrer en PDF",style:bs(C.card,C.muted,{border:"1px solid "+C.border,fontSize:12,padding:"4px 10px"})},"🖨 Fiche de synthèse")),
+              h("div",{className:"tabs-scroll",style:{display:"flex",gap:4,flexWrap:"wrap"}},
+                tabs.filter(function(t){return t.id!=="dashboard";}).map(function(t){return h("button",{key:t.id,className:"tab-btn",onClick:function(){setTab(t.id);},style:Object.assign({},bs(tab===t.id?C.accent:"transparent",tab===t.id?"#fff":C.muted),{borderRadius:"8px 8px 0 0",padding:"8px 14px",fontSize:12,borderBottom:tab===t.id?"2px solid "+C.accent:"2px solid transparent"})},t.l);}))),
+            h("div",{className:"dir-content",style:{flex:1,minHeight:0,overflowY:"auto",padding:"20px 24px"}},
+              tab==="suivi"&&h("div",null,
             // Demandes de validation ESI
             (function(){
               var demandes=Object.entries(esi.etapesEsi||{}).filter(function(kv){return kv[1]==="demande"&&(esi.etapes||{})[kv[0]]!=="fait";});
               if(demandes.length===0)return null;
               return h("div",{style:{background:C.amberDim,border:"1px solid "+C.amber+"44",borderRadius:12,padding:16,marginBottom:16}},
-                h("div",{style:{color:C.amber,fontWeight:800,fontSize:13,marginBottom:10}},"✋ "+esi.prenom.split(" ")[1]+" a signalé "+demandes.length+" avancée(s) — en attente de ta validation"),
+                h("div",{style:{color:C.amber,fontWeight:800,fontSize:13,marginBottom:10}},"✋ "+(esi.prenom.split(" ")[1]||esi.prenom)+" a signalé "+demandes.length+" avancée(s) — en attente de ta validation"),
                 demandes.map(function(kv){
                   var et=ETAPES.find(function(e){return e.id===kv[0];});
                   if(!et)return null;
@@ -1238,11 +1710,13 @@ function Directeur(props){
                       var nEsi=Object.assign({},esi.etapesEsi||{});
                       delete nEsi[kv[0]];
                       up(Object.assign({},esi,{etapes:ne,etapesEsi:nEsi,derniereMAJ:new Date().toISOString()}));
+                      log(esi.id,"etape","✅ Étape validée (à la demande de l'ESI) : "+et.label);
                     },style:bs(C.green,"#fff",{fontSize:11,padding:"5px 12px"})},"✅ Valider"),
                     h("button",{onClick:function(){
                       var nEsi=Object.assign({},esi.etapesEsi||{});
                       delete nEsi[kv[0]];
                       up(Object.assign({},esi,{etapesEsi:nEsi}));
+                      log(esi.id,"validation","↩️ Demande de validation refusée : "+et.label);
                     },style:bs(C.card,C.muted,{fontSize:11,padding:"5px 10px",border:"1px solid "+C.border})},"Refuser"));
                 }));
             })(),
@@ -1274,25 +1748,40 @@ function Directeur(props){
                   h("div",{style:{display:"flex",gap:4,flexWrap:"wrap"}},
                     STATUTS.map(function(st){return h("button",{key:st.id,onClick:function(){se(et.id,st.id);},style:Object.assign({},bs(cur===st.id?st.bg:"transparent",cur===st.id?st.color:C.subtle),{border:"1px solid "+(cur===st.id?st.color+"88":C.border),fontSize:11,padding:"3px 9px"})},st.label);})));})),
           ),
+          tab==="kanban"&&h(Kanban,{esi:esi,c:C,onMove:se}),
           tab==="retours"&&h("div",null,
+            showRetour
+              ? h("div",{style:{background:C.card,borderRadius:12,padding:16,marginBottom:16,border:"1px solid "+C.accent+"44"}},
+                  h("div",{style:{color:C.accent,fontWeight:700,fontSize:13,marginBottom:12}},"💬 Nouveau retour pour "+esi.prenom),
+                  h("div",{style:{marginBottom:10}},
+                    h("div",{style:{color:C.muted,fontSize:11,fontWeight:700,marginBottom:4}},"AVANCEMENT ESTIMÉ (%)"),
+                    h("input",{type:"number",min:0,max:100,value:rf.avancement,placeholder:String(p),onChange:function(e){setRf(Object.assign({},rf,{avancement:e.target.value}));},style:Object.assign({},inp(C),{width:120})})),
+                  champRetour("COMMENTAIRE POUR L'ESI (obligatoire)","commentaire",4,"Ton message, visible par l'ESI…"),
+                  champRetour("POINTS FORTS (un par ligne)","forts",3,"Situation d'appel précise\nQuestion de départ pertinente"),
+                  champRetour("À AMÉLIORER (un par ligne)","axes",3,"Références à actualiser\nMéthode d'enquête à préciser"),
+                  champRetour("STRUCTURE DU TRAVAIL (facultatif)","structure",2,"Remarques sur le plan, l'enchaînement des parties…"),
+                  h("div",{style:{display:"flex",gap:8}},
+                    h("button",{onClick:ajouterRetour,disabled:!rf.commentaire.trim(),style:bs(C.accent,"#fff",{flex:1,opacity:rf.commentaire.trim()?1:0.5})},"Envoyer le retour à l'ESI"),
+                    h("button",{onClick:function(){setShowRetour(false);},style:bs(C.card,C.muted,{border:"1px solid "+C.border})},"Annuler")))
+              : h("button",{onClick:function(){setShowRetour(true);},style:Object.assign({},bs("transparent",C.accent),{border:"1.5px dashed "+C.accent+"44",width:"100%",padding:"10px 0",marginBottom:16})},"+ Rédiger un retour"),
             (esi.retours||[]).length===0?h("div",{style:{color:C.subtle,fontSize:13,fontStyle:"italic",padding:"20px 0"}},"Aucun retour pour l'instant.")
             :(esi.retours||[]).slice().reverse().map(function(r){return h("div",{key:r.id,style:{background:C.card,borderRadius:12,padding:16,marginBottom:12}},
               h("div",{style:{display:"flex",justifyContent:"space-between",marginBottom:10}},
                 h("span",{style:{color:C.muted,fontSize:12}},dfr(r.date)),
                 h("div",{style:{display:"flex",gap:8,alignItems:"center"}},
                   h("span",{style:{color:C.accent,fontWeight:700,fontSize:12}},"Avancement : "+r.avancement+"%"),
-                  h("button",{onClick:function(){dr(r.id);},style:{background:"transparent",border:"none",color:C.subtle,cursor:"pointer"}},"✕"))),
-              h("div",{style:{color:C.text,fontSize:13,lineHeight:1.6,marginBottom:10}},h("strong",{style:{color:C.muted}},"Structure : "),r.structure),
+                  h(BtnSuppr,{c:C,onConfirm:function(){dr(r.id);},style:{background:"transparent",border:"none",color:C.subtle,cursor:"pointer"}},"✕"))),
+              r.structure&&h("div",{style:{color:C.text,fontSize:13,lineHeight:1.6,marginBottom:10}},h("strong",{style:{color:C.muted}},"Structure : "),r.structure),
               h("div",{style:{display:"flex",gap:10,marginBottom:10,flexWrap:"wrap"}},
-                h("div",{style:{flex:1,minWidth:140,background:C.greenDim,borderRadius:8,padding:10}},
+                (r.points_forts||[]).length>0&&h("div",{style:{flex:1,minWidth:140,background:C.greenDim,borderRadius:8,padding:10}},
                   h("div",{style:{color:C.green,fontSize:11,fontWeight:700,marginBottom:6}},"✅ POINTS FORTS"),
                   (r.points_forts||[]).map(function(p,i){return h("div",{key:i,style:{color:C.text,fontSize:12,marginBottom:3}},"• "+p);})),
-                h("div",{style:{flex:1,minWidth:140,background:C.amberDim,borderRadius:8,padding:10}},
+                (r.axes_amelioration||[]).length>0&&h("div",{style:{flex:1,minWidth:140,background:C.amberDim,borderRadius:8,padding:10}},
                   h("div",{style:{color:C.amber,fontSize:11,fontWeight:700,marginBottom:6}},"⚠️ À AMÉLIORER"),
                   (r.axes_amelioration||[]).map(function(a,i){return h("div",{key:i,style:{color:C.text,fontSize:12,marginBottom:3}},"• "+a);}))),
               h("div",{style:{background:C.panel,borderRadius:8,padding:12,borderLeft:"3px solid "+C.accent}},
                 h("div",{style:{color:C.accent,fontSize:11,fontWeight:700,marginBottom:6}},"💬 COMMENTAIRE ENVOYÉ À L'ESI"),
-                h("div",{style:{color:C.text,fontSize:13,lineHeight:1.7,fontStyle:"italic"}},r.commentaire_esi)));
+                h("div",{style:{color:C.text,fontSize:13,lineHeight:1.7,fontStyle:"italic",whiteSpace:"pre-wrap"}},r.commentaire_esi)));
             })),
           tab==="docs"&&h("div",null,
             notifsDir.countDepots>0&&(function(){notifsDir.marquerDepotsVus();return null;})(),
@@ -1303,7 +1792,7 @@ function Directeur(props){
                 h("span",{style:{fontSize:18}},"📤"),
                 h("div",{style:{flex:1}},
                   h("a",{href:d.url,target:"_blank",rel:"noopener noreferrer",style:{color:C.green,fontWeight:600,fontSize:13,textDecoration:"none"}},d.label),
-                  h("div",{style:{color:C.subtle,fontSize:11,marginTop:2}},dfr(d.date))),
+                  h("div",{style:{color:C.subtle,fontSize:11,marginTop:2}},dfr(d.date)+(d.corrigeLe?" · ✔ Corrigé le "+dfr(d.corrigeLe):""))),
                 h("span",{style:{fontSize:11,color:C.green,background:C.greenDim,borderRadius:99,padding:"2px 8px"}},"ESI"));})),
             (esi.documents||[]).length===0&&!showDoc&&h("div",{style:{color:C.subtle,fontSize:13,fontStyle:"italic",padding:"12px 0"}},"Aucun document partagé."),
               (esi.documents||[]).map(function(d){return h("div",{key:d.id,style:{background:C.card,borderRadius:8,padding:"10px 14px",display:"flex",alignItems:"center",gap:10}},
@@ -1311,7 +1800,7 @@ function Directeur(props){
                 h("div",{style:{flex:1}},
                   h("a",{href:d.url,target:"_blank",rel:"noopener noreferrer",style:{color:C.accent,fontWeight:600,fontSize:13,textDecoration:"none"}},d.label),
                   h("div",{style:{color:C.subtle,fontSize:11,marginTop:2}},dfr(d.date))),
-                h("button",{onClick:function(){dd(d.id);},style:{background:"transparent",border:"none",color:C.subtle,cursor:"pointer",fontSize:14}},"✕"));})),
+                h(BtnSuppr,{c:C,onConfirm:function(){dd(d.id);},style:{background:"transparent",border:"none",color:C.subtle,cursor:"pointer",fontSize:14}},"✕"));})),
             showDoc?h("div",{style:{background:C.card,borderRadius:10,padding:14,display:"flex",flexDirection:"column",gap:8}},
               h("input",{value:ndl,onChange:function(e){setNdl(e.target.value);},placeholder:"Nom du document",style:inp(C)}),
               h("input",{value:ndu,onChange:function(e){setNdu(e.target.value);},placeholder:"URL (https://…)",style:inp(C)}),
@@ -1358,13 +1847,14 @@ function Directeur(props){
                   h("div",{style:{color:C.muted,fontSize:12,marginTop:2}},"Mars 2014 · Unités d'enseignement 3.4.S6 et 5.6.S6")),
                 h("a",{href:EXEMPLES[2].url,target:"_blank",rel:"noopener noreferrer",style:{marginLeft:"auto",flexShrink:0,background:C.accentDim,color:C.accent,border:"1px solid "+C.accent+"44",borderRadius:8,padding:"6px 14px",fontSize:12,fontWeight:700,textDecoration:"none"}},"⬇ Ouvrir")),
               h("div",{style:{color:C.muted,fontSize:12,fontWeight:700,marginBottom:8,textTransform:"uppercase",letterSpacing:1}},"Contenu du document"),
-              ["Finalité du mémoire et cadre du référentiel de formation","Modalités d'évaluation des UE 3.4.S6 et 5.6.S6","Rôle et missions du directeur de mémoire","Grilles d'évaluation officielles (note de recherche, mémoire écrit, soutenance orale)","Consignes de présentation et normes de rédaction (format, marges, citations)","Bibliographie norme ISO 690 complète avec exemples","Glossaire des termes de la recherche en soins infirmiers","Recommandations des pratiques documentaires"].map(function(p,i){return h("div",{key:i,style:{display:"flex",gap:8,marginBottom:5}},h("span",{style:{color:C.accent,marginTop:1,flexShrink:0}},"→"),h("span",{style:{color:C.text,fontSize:13,lineHeight:1.5}},p));}))),
+              ["Finalité du mémoire et cadre du référentiel de formation","Modalités d'évaluation des UE 3.4.S6 et 5.6.S6","Rôle et missions du directeur de mémoire","Grilles d'évaluation officielles (note de recherche, mémoire écrit, soutenance orale)","Consignes de présentation et normes de rédaction (format, marges, citations)","Bibliographie norme ISO 690 complète avec exemples","Glossaire des termes de la recherche en soins infirmiers","Recommandations des pratiques documentaires"].map(function(p,i){return h("div",{key:i,style:{display:"flex",gap:8,marginBottom:5}},h("span",{style:{color:C.accent,marginTop:1,flexShrink:0}},"→"),h("span",{style:{color:C.text,fontSize:13,lineHeight:1.5}},p));})),
             [EXEMPLES[3],EXEMPLES[4]].map(function(ex){return h("div",{key:ex.id,style:{background:C.card,borderRadius:14,padding:20,marginTop:16,display:"flex",alignItems:"center",gap:14}},
               h("span",{style:{fontSize:28}},ex.icon),
               h("div",{style:{flex:1}},
                 h("div",{style:{color:C.text,fontWeight:800,fontSize:15}},ex.label),
                 h("div",{style:{color:C.muted,fontSize:12,marginTop:2}},ex.desc)),
-              h("a",{href:ex.url,target:"_blank",rel:"noopener noreferrer",style:{flexShrink:0,background:C.accentDim,color:C.accent,border:"1px solid "+C.accent+"44",borderRadius:8,padding:"6px 14px",fontSize:12,fontWeight:700,textDecoration:"none"}},"⬇ Ouvrir"));}),
+              h("a",{href:ex.url,target:"_blank",rel:"noopener noreferrer",style:{flexShrink:0,background:C.accentDim,color:C.accent,border:"1px solid "+C.accent+"44",borderRadius:8,padding:"6px 14px",fontSize:12,fontWeight:700,textDecoration:"none"}},"⬇ Ouvrir"));})),
+          tab==="eval"&&h(Evaluation,{key:esi.id,esi:esi,ev:evalSel,c:C,onPrint:imprimerGrille}),
           tab==="journal"&&h(JournalESI,{esiId:esi.id,esiPrenom:esi.prenom,c:C}),
           tab==="notes"&&h("div",null,
             h("div",{style:{display:"flex",gap:8,marginBottom:14}},
@@ -1376,7 +1866,9 @@ function Directeur(props){
               h("div",{style:{flex:1}},
                 h("div",{style:{color:C.text,fontSize:13,lineHeight:1.5}},c.texte),
                 h("div",{style:{color:C.subtle,fontSize:11,marginTop:4}},dfr(c.date))),
-              h("button",{onClick:function(){dc(c.id);},style:{background:"transparent",border:"none",color:C.subtle,cursor:"pointer"}},"✕"));}))))))));
+              h(BtnSuppr,{c:C,onConfirm:function(){dc(c.id);},style:{background:"transparent",border:"none",color:C.subtle,cursor:"pointer"}},"✕"));}))))),
+    h(FicheSynthese,{esi:esi,ev:evalSel}),
+    grillesEval().map(function(gr){return h(GrilleImprimable,{key:gr.id,esi:esi,ev:evalSel,gr:gr});}));
 }
 
 function LoginESI(props){
@@ -1397,7 +1889,7 @@ function LoginESI(props){
 
 function EsiApp(props){
   var onBack=props.onBack;
-  var _s1=useState(null),esiId=_s1[0],setEsiId=_s1[1];
+  var _s1=useState(function(){var id=lireSession().esiId;return ESI_DEFAUT.some(function(e){return e.id===id;})?id:null;}),esiId=_s1[0],setEsiId=_s1[1];
   var _s2=useState("accueil"),tab=_s2[0],setTab=_s2[1];
   var _s3=useState(null),ro=_s3[0],setRo=_s3[1];
   var _s4=useState(false),showDepot=_s4[0],setShowDepot=_s4[1];
@@ -1443,13 +1935,14 @@ function EsiApp(props){
   }
 
   var notifs=useNotifs(esiId);
+  var dlsEsi=useDeadlines();
 
-  if(!esiId)return h("div",{style:{minHeight:"100vh",background:C2.bg,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:24}},
+  if(!esiId||!ESI_DEFAUT.some(function(e){return e.id===esiId;}))return h("div",{style:{minHeight:"100vh",background:C2.bg,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:24}},
     h("button",{onClick:onBack,style:Object.assign({},bs(C2.panel,C2.muted,{border:"1px solid "+C2.border}),{position:"absolute",top:20,left:20})},"← Accueil"),
     h("div",{style:{fontSize:52,marginBottom:16}},"🎓"),
     h("h1",{style:{color:C2.text,fontSize:22,fontWeight:800,marginBottom:8,textAlign:"center"}},"Mon Espace Mémoire"),
-    h("p",{style:{color:C2.muted,fontSize:14,marginBottom:32,textAlign:"center"}},"Directeur : ",h("strong",{style:{color:C2.accent}},"Jain Loic")," · Promo 2024-27"),
-    h(LoginESI,{onLogin:function(id){setEsiId(id);setTab("accueil");},C:C2}));
+    h("p",{style:{color:C2.muted,fontSize:14,marginBottom:32,textAlign:"center"}},"Directeur : ",h("strong",{style:{color:C2.accent}},"Jain Loic")," · Promo "+PROMO+""),
+    h(LoginESI,{onLogin:function(id){ecrireSession({mode:"esi",esiId:id});setEsiId(id);setTab("accueil");},C:C2}));
 
   if(fbLoad)return h("div",{style:{minHeight:"100vh",background:C2.bg,display:"flex",alignItems:"center",justifyContent:"center",color:C2.muted,fontSize:15}},"⏳ Chargement...");
   if(!data)return null;
@@ -1462,17 +1955,17 @@ function EsiApp(props){
   var tabs=[{id:"accueil",l:"🏠 Accueil"},{id:"etapes",l:"📊 Avancement"},{id:"position",l:"📈 Ma position"},{id:"retours",l:"💬 Retours"+retourBadge+((data.retours||[]).length>0?" ("+(data.retours||[]).length+")":"")},{id:"messages",l:"✉️ Messages"+msgBadge},{id:"docs",l:"📎 Docs"+docBadge+((data.documents||[]).length>0?" ("+(data.documents||[]).length+")":"")},{id:"planning",l:"📅 Planning"},{id:"deadlines",l:"⚠️ Deadlines"},{id:"methodo",l:"📚 Méthodo"},{id:"grilles",l:"📋 Grilles"},{id:"visio",l:"🎥 Visio"}];
 
   return h("div",{style:{background:C2.bg,minHeight:"100vh",display:"flex",flexDirection:"column",color:C2.text}},
-    h("div",{style:{background:C2.panel,borderBottom:"1px solid "+C2.border,padding:"12px 20px",display:"flex",alignItems:"center",gap:12,flexWrap:"wrap"}},
+    h("div",{className:"app-header",style:{background:C2.panel,borderBottom:"1px solid "+C2.border,padding:"12px 20px",display:"flex",alignItems:"center",gap:12,flexWrap:"wrap"}},
       h("button",{onClick:onBack,style:bs(C2.panel,C2.muted,{border:"1px solid "+C2.border})},"← Accueil"),
       h("div",{style:{flex:1}},
         h("div",{style:{fontWeight:800,fontSize:15}},"🎓 Mon Mémoire · ",h("span",{style:{color:C2.accent}},data.prenom)),
         h("div",{style:{color:C2.muted,fontSize:12,fontStyle:"italic",marginTop:2}},data.sujet)),
       h("div",{style:{display:"flex",gap:10,alignItems:"center"}},
         h("span",{style:{color:p===100?C2.green:C2.accent,fontWeight:800,fontSize:18}},p+"%"),
-        h("button",{onClick:function(){setEsiId(null);},style:bs(C2.panel,C2.muted,{border:"1px solid "+C2.border,fontSize:12})},"Changer"))),
-    h("div",{style:{background:C2.panel,borderBottom:"1px solid "+C2.border,display:"flex",overflowX:"auto"}},
-      tabs.map(function(t){return h("button",{key:t.id,onClick:function(){setTab(t.id);},style:{background:"transparent",border:"none",borderBottom:"2px solid "+(tab===t.id?C2.accent:"transparent"),color:tab===t.id?C2.accent:C2.muted,padding:"10px 16px",cursor:"pointer",fontWeight:600,fontSize:12,whiteSpace:"nowrap"}},t.l);})),
-    h("div",{style:{flex:1,overflowY:"auto",padding:"24px 20px",maxWidth:720,width:"100%",margin:"0 auto"}},
+        h("button",{onClick:function(){ecrireSession({mode:"esi"});setEsiId(null);},style:bs(C2.panel,C2.muted,{border:"1px solid "+C2.border,fontSize:12})},"Déconnexion"))),
+    h("div",{className:"tabs-scroll",style:{background:C2.panel,borderBottom:"1px solid "+C2.border,display:"flex",overflowX:"auto",padding:"0 8px"}},
+      tabs.map(function(t){return h("button",{key:t.id,className:"tab-btn",onClick:function(){setTab(t.id);},style:{background:"transparent",border:"none",borderBottom:"2px solid "+(tab===t.id?C2.accent:"transparent"),color:tab===t.id?C2.accent:C2.muted,padding:"10px 16px",cursor:"pointer",fontWeight:600,fontSize:12,whiteSpace:"nowrap"}},t.l);})),
+    h("div",{className:"page-pad",style:{flex:1,overflowY:"auto",padding:"24px 20px",maxWidth:720,width:"100%",margin:"0 auto"}},
       tab==="accueil"&&h("div",null,
         h("div",{style:{background:C2.panel,borderRadius:16,padding:24,marginBottom:20}},
           h("div",{style:{fontSize:13,color:C2.muted,marginBottom:8}},"TON AVANCEMENT GLOBAL"),
@@ -1480,6 +1973,22 @@ function EsiApp(props){
           h("div",{style:{display:"flex",justifyContent:"space-between",marginTop:8,fontSize:13,color:C2.muted}},
             h("span",null,ETAPES.filter(function(e){return (data.etapes||{})[e.id]==="fait";}).length+"/"+ETAPES.length+" étapes validées"),
             h("span",{style:{color:p===100?C2.green:C2.accent,fontWeight:700}},p+"%"))),
+        (function(){
+          var now=new Date();
+          var pro=dlsEsi.filter(function(d){return d.date&&Math.ceil((new Date(d.date)-now)/86400000)>=0;}).sort(function(a,b){return a.date>b.date?1:-1;})[0];
+          if(!pro)return null;
+          var jr=Math.ceil((new Date(pro.date)-now)/86400000);
+          var col=jr<30?C2.red:jr<60?C2.amber:C2.green;
+          return h("div",{className:"clickable",onClick:function(){setTab("deadlines");},style:{background:C2.panel,borderRadius:12,padding:16,marginBottom:16,border:"1px solid "+col+"44",display:"flex",alignItems:"center",gap:14,cursor:"pointer"}},
+            h("span",{style:{fontSize:28}},pro.icon||"📅"),
+            h("div",{style:{flex:1,minWidth:0}},
+              h("div",{style:{color:C2.muted,fontSize:11,fontWeight:700,marginBottom:4}},"PROCHAINE ÉCHÉANCE"),
+              h("div",{style:{color:C2.text,fontWeight:700,fontSize:14}},pro.label),
+              h("div",{style:{color:C2.muted,fontSize:12,marginTop:2}},new Date(pro.date+"T12:00").toLocaleDateString("fr-FR",{weekday:"long",day:"numeric",month:"long",year:"numeric"}))),
+            h("div",{style:{textAlign:"right"}},
+              h("div",{style:{color:col,fontWeight:800,fontSize:24,whiteSpace:"nowrap"}},jr===0?"Aujourd'hui":"J-"+jr),
+              jr>0&&h("div",{style:{color:C2.subtle,fontSize:10}},jr===1?"jour restant":"jours restants")));
+        })(),
         data.prochainRdv&&h("div",{style:{background:futur(data.prochainRdv)?C2.amberDim:C2.redDim,border:"1px solid "+(futur(data.prochainRdv)?C2.amber:C2.red)+"44",borderRadius:12,padding:16,marginBottom:16}},
           h("div",{style:{color:futur(data.prochainRdv)?C2.amber:C2.red,fontWeight:700,fontSize:14,marginBottom:6}},"📅 "+(futur(data.prochainRdv)?"Prochain RDV avec ton directeur":"RDV passé")),
           h("div",{style:{color:C2.text,fontSize:15,fontWeight:600}},rfr(data.prochainRdv)),
@@ -1519,6 +2028,7 @@ function EsiApp(props){
               var updated=Object.assign({},data,{etapesEsi:Object.assign({},data.etapesEsi||{},{[et.id]:"demande"})});
               setData(updated);fbSauverESI(updated);
               envoyerNotification(data.prenom,0,"Demande validation étape : "+et.label);
+              var jid=uid();fbEcrire("journal/"+esiId+"/"+jid,{id:jid,date:new Date().toISOString(),type:"validation",msg:"✋ Avancée signalée par l'ESI : "+et.label});
             }
             function annulerDemande(){
               var upd=Object.assign({},data.etapesEsi||{});
@@ -1548,6 +2058,7 @@ function EsiApp(props){
             var updated=Object.assign({},data,{etapesEsi:Object.assign({},data.etapesEsi||{},{[et.id]:"demande"})});
             setData(updated);fbSauverESI(updated);
             envoyerNotification(data.prenom,0,"Demande validation étape : "+et.label);
+              var jid=uid();fbEcrire("journal/"+esiId+"/"+jid,{id:jid,date:new Date().toISOString(),type:"validation",msg:"✋ Avancée signalée par l'ESI : "+et.label});
           }
           function annulerDemande(){
             var upd=Object.assign({},data.etapesEsi||{});
@@ -1577,12 +2088,12 @@ function EsiApp(props){
             h("span",{style:{color:C2.accent,fontWeight:700,fontSize:13}},"Avancement : "+r.avancement+"%")),
           h("div",{style:{background:C2.card,borderRadius:10,padding:14,marginBottom:12,borderLeft:"3px solid "+C2.accent}},
             h("div",{style:{color:C2.accent,fontSize:11,fontWeight:700,marginBottom:6}},"💬 MESSAGE DE TON DIRECTEUR"),
-            h("div",{style:{color:C2.text,fontSize:14,lineHeight:1.8,fontStyle:"italic"}},r.commentaire_esi)),
+            h("div",{style:{color:C2.text,fontSize:14,lineHeight:1.8,fontStyle:"italic",whiteSpace:"pre-wrap"}},r.commentaire_esi)),
           h("div",{style:{display:"flex",gap:12,flexWrap:"wrap"}},
-            h("div",{style:{flex:1,minWidth:140,background:C2.greenDim,borderRadius:10,padding:12}},
+            (r.points_forts||[]).length>0&&h("div",{style:{flex:1,minWidth:140,background:C2.greenDim,borderRadius:10,padding:12}},
               h("div",{style:{color:C2.green,fontSize:11,fontWeight:700,marginBottom:6}},"✅ TES POINTS FORTS"),
               (r.points_forts||[]).map(function(p,i){return h("div",{key:i,style:{color:C2.text,fontSize:13,marginBottom:4}},"• "+p);})),
-            h("div",{style:{flex:1,minWidth:140,background:C2.amberDim,borderRadius:10,padding:12}},
+            (r.axes_amelioration||[]).length>0&&h("div",{style:{flex:1,minWidth:140,background:C2.amberDim,borderRadius:10,padding:12}},
               h("div",{style:{color:C2.amber,fontSize:11,fontWeight:700,marginBottom:6}},"⚠️ À AMÉLIORER"),
               (r.axes_amelioration||[]).map(function(a,i){return h("div",{key:i,style:{color:C2.text,fontSize:13,marginBottom:4}},"• "+a);}))));})),
       tab==="docs"&&h("div",null,
@@ -1593,7 +2104,8 @@ function EsiApp(props){
         showDepot?h("div",{style:{background:C2.panel,borderRadius:12,padding:16,marginBottom:16,border:"1px solid "+C2.accent+"44"}},
           h("div",{style:{color:C2.accent,fontWeight:700,fontSize:13,marginBottom:12}},"📎 Déposer un document"),
           h("input",{value:depotLabel,onChange:function(e){setDepotLabel(e.target.value);},placeholder:"Nom du document (ex: Chapitre 1 - brouillon)",style:Object.assign({},inp(C2),{marginBottom:8})}),
-          h("input",{value:depotUrl,onChange:function(e){setDepotUrl(e.target.value);},placeholder:"Lien (https://drive.google.com/...)",style:Object.assign({},inp(C2),{marginBottom:12})}),
+          h("input",{value:depotUrl,onChange:function(e){setDepotUrl(e.target.value);},placeholder:"Lien (https://drive.google.com/...)",style:Object.assign({},inp(C2),{marginBottom:6})}),
+          h("div",{style:{color:C2.muted,fontSize:12,lineHeight:1.5,marginBottom:12}},"🔗 Dans Drive : Partager → ajoute ton directeur avec le rôle « Commentateur », pour qu'il puisse ouvrir et annoter ton document."),
           h("div",{style:{display:"flex",gap:8}},
             h("button",{onClick:deposer,style:bs(C2.accent,"#fff",{flex:1})},"Déposer"),
             h("button",{onClick:function(){setShowDepot(false);setDepotLabel("");setDepotUrl("");},style:bs(C2.card,C2.muted,{border:"1px solid "+C2.border})},"Annuler")))
@@ -1604,7 +2116,8 @@ function EsiApp(props){
             h("span",{style:{fontSize:24}},"📤"),
             h("div",{style:{flex:1}},
               h("div",{style:{color:C2.green,fontWeight:700,fontSize:14}},d.label),
-              h("div",{style:{color:C2.subtle,fontSize:12,marginTop:2}},dfr(d.date))),
+              h("div",{style:{color:C2.subtle,fontSize:12,marginTop:2}},dfr(d.date)),
+              d.corrigeLe&&h("div",{style:{color:C2.green,fontSize:12,fontWeight:700,marginTop:3}},"✔ Corrigé par ton directeur le "+dfr(d.corrigeLe))),
             h("span",{style:{color:C2.accent,fontSize:20}},"→"));})),
         (data.documents||[]).length>0&&h("div",null,
           h("div",{style:{color:C2.muted,fontSize:11,fontWeight:700,marginBottom:8}},"DOCUMENTS DE TON DIRECTEUR"),
@@ -1620,6 +2133,7 @@ function EsiApp(props){
         h("div",{style:{color:C2.muted,fontSize:13,marginBottom:20}},"Anonyme — les noms des autres ESI ne sont pas affichés"),
         h(Positionnement,{esiId:esiId,data:data,c:C2})),
       tab==="messages"&&h("div",null,
+        notifs.count>0&&(function(){notifs.marquerLus();return null;})(),
         h("h2",{style:{color:C2.text,fontSize:16,fontWeight:800,marginBottom:4}},"Messages avec ton directeur"),
         h("div",{style:{color:C2.muted,fontSize:13,marginBottom:20}},"Pose tes questions, reçois des réponses"),
         h(Messagerie,{esiId:esiId,esiPrenom:data.prenom,mode:"esi",c:C2})),
@@ -1650,13 +2164,13 @@ function EsiApp(props){
             h("span",{style:{color:C2.accent,fontSize:20}},"⬇"));})),
         GUIDE_ARS.concat(RESSOURCES).map(function(r){return h("div",{key:r.id||r.titre,style:{background:C2.panel,borderRadius:14,marginBottom:12,overflow:"hidden"}},
           h("button",{onClick:function(){setRo((ro===r.id||ro===r.titre)?null:(r.id||r.titre));},style:{width:"100%",background:"transparent",border:"none",color:C2.text,padding:"16px 20px",cursor:"pointer",display:"flex",alignItems:"center",gap:12,textAlign:"left"}},
-            h("span",{style:{fontSize:22}},r.icon),
+            h("span",{style:{fontSize:22}},r.icon||"📘"),
             h("span",{style:{flex:1,fontWeight:700,fontSize:14}},r.label||r.titre),
-            h("span",{style:{color:C2.muted,fontSize:20,transform:ro===r.id?"rotate(90deg)":"none",transition:"transform .2s",display:"inline-block"}},"›")),
+            h("span",{style:{color:C2.muted,fontSize:20,transform:(ro===r.id||ro===r.titre)?"rotate(90deg)":"none",transition:"transform .2s",display:"inline-block"}},"›")),
           (ro===r.id||ro===r.titre)&&h("div",{style:{padding:"0 20px 20px",color:C2.muted,fontSize:13,lineHeight:1.9,whiteSpace:"pre-line",borderTop:"1px solid "+C2.border,paddingTop:16}},r.contenu||""));}))
       ,tab==="grilles"&&h("div",null,
-        h("h2",{style:{color:C2.text,fontSize:16,fontWeight:800,marginBottom:4}},"Grilles d'evaluation"),
-        h("p",{style:{color:C2.muted,fontSize:13,marginBottom:20}},"Criteres officiels IFSI Beaujon - ARS Ile-de-France"),
+        h("h2",{style:{color:C2.text,fontSize:16,fontWeight:800,marginBottom:4}},"Grilles d'évaluation"),
+        h("p",{style:{color:C2.muted,fontSize:13,marginBottom:20}},"Critères officiels IFSI Beaujon — ARS Île-de-France"),
         h("div",{style:{background:C2.amberDim,border:"1px solid "+C2.amber+"44",borderRadius:10,padding:"12px 16px",marginBottom:20,fontSize:13,color:C2.amber}},
           "📋 UE 3.4.S6 - Note de recherche : ",h("strong",null,"20 points")," | ",
           "📝 UE 5.6.S6 - Mémoire écrit : ",h("strong",null,"20 points")," + Soutenance : ",h("strong",null,"20 points")," = Total : ",h("strong",null,"40 pts ramené à /20")),
@@ -1680,7 +2194,7 @@ function EsiApp(props){
           h("div",null,g.criteres.map(function(c,j){return h("div",{key:j,style:{color:C2.muted,fontSize:12,marginBottom:3}},"• "+c);})));}))
       ,tab==="visio"&&h("div",null,
         h("h2",{style:{color:C2.text,fontSize:16,fontWeight:800,marginBottom:4}},"Rejoindre la visio"),
-        h("p",{style:{color:C2.muted,fontSize:13,marginBottom:24}},"Rendez-vous en ligne avec ton directeur de memoire"),
+        h("p",{style:{color:C2.muted,fontSize:13,marginBottom:24}},"Rendez-vous en ligne avec ton directeur de mémoire"),
         h("div",{style:{background:C2.panel,borderRadius:16,padding:28,textAlign:"center",marginBottom:20}},
           h("div",{style:{fontSize:48,marginBottom:16}},"🎥"),
           h("div",{style:{color:C2.text,fontWeight:700,fontSize:16,marginBottom:8}},"Zoom - Jain Loic"),
@@ -1714,7 +2228,7 @@ function RessourcesLibres(props){
           h("button",{onClick:function(){setRo(ro===k?null:k);},style:{width:"100%",background:"transparent",border:"none",color:C2.text,padding:"16px 20px",cursor:"pointer",display:"flex",alignItems:"center",gap:12,textAlign:"left"}},
             h("span",{style:{fontSize:22}},r.icon||"📘"),
             h("span",{style:{flex:1,fontWeight:700,fontSize:14}},r.label||r.titre),
-            h("span",{style:{color:C2.muted,fontSize:20,transform:ro===k?"rotate(90deg)":"none",display:"inline-block"}},"›")),
+            h("span",{style:{color:C2.muted,fontSize:20,transform:ro===k?"rotate(90deg)":"none",transition:"transform .2s",display:"inline-block"}},"›")),
           ro===k&&h("div",{style:{padding:"16px 20px 20px",color:C2.muted,fontSize:13,lineHeight:1.9,whiteSpace:"pre-line",borderTop:"1px solid "+C2.border}},r.contenu||""));})),
       tab==="exemples"&&h("div",null,
         h("p",{style:{color:C2.muted,fontSize:13,marginBottom:16}},"Exemples de travaux (mémoire, soutenance, note de recherche, procédure ARS)"),
@@ -1732,8 +2246,27 @@ function RessourcesLibres(props){
 }
 
 function Main(){
-  var _s1=useState(null),mode=_s1[0],setMode=_s1[1];
-  if(mode==="dir")return h(Directeur,{onBack:function(){setMode(null);}});
+  var _s1=useState(function(){return lireSession().mode||null;}),mode=_s1[0],setModeBrut=_s1[1];
+  // La session est mémorisée sur cet appareil ; « ← Accueil » la ferme.
+  function setMode(m){
+    if(m)ecrireSession(Object.assign({},lireSession(),{mode:m}));else ecrireSession(null);
+    setModeBrut(m);
+  }
+  var _c=useState(0),cfgV=_c[0],setCfgV=_c[1];
+  var _r=useState(function(){try{return !!localStorage.getItem("sm-config");}catch(e){return false;}}),pret=_r[0],setPret=_r[1];
+  useEffect(function(){
+    var t=setTimeout(function(){setPret(true);},4000);
+    var r=fbRef("config");
+    if(!r){setPret(true);return function(){clearTimeout(t);};}
+    r.on("value",function(snap){
+      var cfg=snap.val();
+      if(appliquerConfig(cfg)){try{localStorage.setItem("sm-config",JSON.stringify(cfg));}catch(e){}}
+      setCfgV(function(v){return v+1;});setPret(true);
+    },function(){setPret(true);});
+    return function(){clearTimeout(t);r.off();};
+  },[]);
+  if(!pret)return h("div",{style:{minHeight:"100vh",background:C.bg,display:"flex",alignItems:"center",justifyContent:"center",color:C.muted,fontSize:15}},"⏳ Chargement…");
+  if(mode==="dir")return h(Directeur,{cfg:cfgV,onBack:function(){setMode(null);}});
   if(mode==="esi")return h(EsiApp,{onBack:function(){setMode(null);}});
   if(mode==="libre")return h(RessourcesLibres,{onBack:function(){setMode(null);}});
   return h(Accueil,{onDir:function(){setMode("dir");},onEsi:function(){setMode("esi");},onLibre:function(){setMode("libre");}});
