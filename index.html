@@ -1338,6 +1338,7 @@ function EsiApp(props){
   var monDossier=dossierDe(ESI_DEFAUT.find(function(e){return e.id===esiId;}));
   var lienOk=/^https?:\/\/\S+$/i.test(depotUrl.trim());
   var typeSel=TYPES_DEPOT.find(function(t){return t.id===depotType;});
+  var NE=monDossier?1:0;
   var urlOk=depotUrl.trim()?lienOk:!!monDossier;
   var peutDeposer=!!typeSel&&urlOk&&depotCheck&&(depotType!=="autre"||!!depotLabel.trim());
   function deposer(){
@@ -1481,7 +1482,7 @@ function EsiApp(props){
       tab==="docs"&&h("div",null,
         notifs.countDocs>0&&(function(){notifs.marquerDocsVus();return null;})(),
         h("h2",{style:{color:C2.text,fontSize:16,fontWeight:800,marginBottom:4}},"Documents"),
-        h("div",{style:{color:C2.muted,fontSize:13,marginBottom:16}},"Dépose ici ta note de recherche, ton mémoire ou un autre travail, sous forme de lien Google Drive, OneDrive, etc."),
+        h("div",{style:{color:C2.muted,fontSize:13,marginBottom:16}},(monDossier?"Dépose ta note de recherche, ton mémoire ou un autre travail dans ton dossier Drive, puis confirme le dépôt ici.":"Dépose ici ta note de recherche, ton mémoire ou un autre travail, sous forme de lien Google Drive, OneDrive, etc.")),
         depotConf&&h("div",{id:"depot-conf",role:"status",style:{background:C2.greenDim,border:"1.5px solid "+C2.green,borderRadius:14,padding:18,marginBottom:16}},
           h("div",{style:{display:"flex",alignItems:"center",gap:12,marginBottom:12}},
             h("span",{style:{fontSize:30}},"✅"),
@@ -1496,7 +1497,12 @@ function EsiApp(props){
           h("button",{onClick:function(){setDepotConf(null);},style:bs(C2.green,"#fff",{marginTop:12,width:"100%"})},"OK, j'ai compris")),
         h("div",{style:{background:C2.panel,borderRadius:14,padding:16,marginBottom:16,border:"1px solid "+C2.accent+"44"}},
           h("div",{style:{color:C2.accent,fontWeight:800,fontSize:14,marginBottom:14}},"📤 Nouveau dépôt"),
-          h("div",{style:{color:C2.muted,fontSize:11,fontWeight:700,marginBottom:6}},"1 · QUE DÉPOSES-TU ?"),
+          monDossier&&h("div",{style:{color:C2.muted,fontSize:11,fontWeight:700,marginBottom:6}},"1 · DÉPOSE TON FICHIER DANS TON DOSSIER"),
+          monDossier&&h("a",{href:monDossier,target:"_blank",rel:"noopener noreferrer",style:{display:"flex",alignItems:"center",gap:10,background:C2.accentDim,border:"1.5px solid "+C2.accent,borderRadius:10,padding:"10px 12px",marginBottom:14,textDecoration:"none",color:C2.text,fontSize:14,fontWeight:700}},
+            h("span",{style:{fontSize:20}},"📂"),
+            h("span",{style:{flex:1}},"Ouvrir mon dossier de dépôt",h("span",{style:{display:"block",color:C2.muted,fontWeight:500,fontSize:12,marginTop:2,lineHeight:1.5}},"Dans Drive, glisse ton PDF dans la fenêtre (ou clique sur « Nouveau » puis « Importer un fichier »). Attends la fin du téléversement, puis reviens ici.")),
+            h("span",{style:{color:C2.accent}},"↗")),
+          h("div",{style:{color:C2.muted,fontSize:11,fontWeight:700,marginBottom:6}},(1+NE)+" · QUE DÉPOSES-TU ?"),
           h("div",{style:{display:"flex",flexDirection:"column",gap:6,marginBottom:14}},
             TYPES_DEPOT.map(function(t){
               var on=depotType===t.id;
@@ -1504,15 +1510,12 @@ function EsiApp(props){
                 h("span",{style:{fontSize:20}},t.icon),
                 h("span",{style:{flex:1}},t.label,t.ue&&h("span",{style:{color:C2.muted,fontWeight:500,fontSize:12}}," · "+t.ue)),
                 h("span",{style:{width:18,height:18,borderRadius:99,border:"2px solid "+(on?C2.accent:C2.subtle),background:on?C2.accent:"transparent",flexShrink:0}}));})),
-          monDossier&&h("a",{href:monDossier,target:"_blank",rel:"noopener noreferrer",style:{display:"flex",alignItems:"center",gap:10,background:C2.accentDim,border:"1.5px solid "+C2.accent,borderRadius:10,padding:"10px 12px",marginBottom:14,textDecoration:"none",color:C2.text,fontSize:14,fontWeight:700}},
-            h("span",{style:{fontSize:20}},"📂"),
-            h("span",{style:{flex:1}},"Ouvrir mon dossier de dépôt",h("span",{style:{display:"block",color:C2.muted,fontWeight:500,fontSize:12,marginTop:2}},"Glisse ton PDF dedans, puis colle ci-dessous le lien du fichier (clic droit → Partager → Copier le lien).")),
-            h("span",{style:{color:C2.accent}},"↗")),
-          h("div",{style:{color:C2.muted,fontSize:11,fontWeight:700,marginBottom:6}},monDossier?"2 · LIEN DU FICHIER (facultatif si déposé dans ton dossier)":"2 · LIEN DU DOCUMENT"),
+          h("div",{style:{color:C2.muted,fontSize:11,fontWeight:700,marginBottom:6}},monDossier?"3 · LIEN DU FICHIER (facultatif)":"2 · LIEN DU DOCUMENT"),
           h("input",{value:depotUrl,onChange:function(e){setDepotUrl(e.target.value);},placeholder:"https://drive.google.com/...","aria-label":"Lien du document",style:Object.assign({},inp(C2),{marginBottom:depotUrl.trim()&&!lienOk?4:12,borderColor:depotUrl.trim()&&!lienOk?C2.red:C2.border})}),
           depotUrl.trim()&&!lienOk&&h("div",{style:{color:C2.red,fontSize:12,marginBottom:12}},"Le lien doit commencer par https://"),
-          h("div",{style:{color:C2.muted,fontSize:11,fontWeight:700,marginBottom:6}},depotType==="autre"?"3 · NOM DU DOCUMENT (obligatoire)":"3 · PRÉCISION (facultatif)"),
+          h("div",{style:{color:C2.muted,fontSize:11,fontWeight:700,marginBottom:6}},depotType==="autre"?(3+NE)+" · NOM DU DOCUMENT (obligatoire)":(3+NE)+" · PRÉCISION (facultatif)"),
           h("input",{value:depotLabel,onChange:function(e){setDepotLabel(e.target.value);},placeholder:depotType==="autre"?"Ex : Chapitre 1 - brouillon":"Ex : version 2, après corrections","aria-label":"Précision",style:Object.assign({},inp(C2),{marginBottom:14})}),
+          h("div",{style:{color:C2.muted,fontSize:11,fontWeight:700,marginBottom:6}},(4+NE)+" · CONFIRME"),
           h("label",{style:{display:"flex",gap:10,alignItems:"flex-start",background:C2.card,borderRadius:10,padding:"10px 12px",marginBottom:14,cursor:"pointer",color:C2.text,fontSize:13,lineHeight:1.5}},
             h("input",{type:"checkbox",checked:depotCheck,onChange:function(e){setDepotCheck(e.target.checked);},style:{width:18,height:18,marginTop:1,flexShrink:0,accentColor:"#6366F1"}}),
             monDossier&&!depotUrl.trim()?h("span",null,"J'ai ",h("strong",null,"déposé mon fichier dans mon dossier de dépôt")," ",h("span",{style:{color:C2.muted}},"(bouton 📂 ci-dessus).")):h("span",null,"J'ai partagé ce lien avec mon directeur en mode ",h("strong",null,"« Commentateur »")," ",h("span",{style:{color:C2.muted}},"(Drive : Partager → ajouter ton directeur → Commentateur)."))),
